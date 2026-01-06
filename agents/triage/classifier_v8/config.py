@@ -17,7 +17,7 @@ class ClassifierV8Settings(BaseSettings):
     model_name: str = Field(default="roberta-base", description="RoBERTa base model from HuggingFace")
 
     # Specify device for model loading
-    device: str = Field(default="mps", description="Device to load the model on (mps, cuda, cpu)")
+    device: str = Field(default="cpu", description="Device to load the model on (mps, cuda, cpu)")
     
     # Fine-tuning parameters
     train_sample_size: int = Field(default=-1, description="Number of training samples to use")
