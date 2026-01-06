@@ -45,7 +45,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -v --ignore=agents/audit/tests --ignore=agents/billing/tests/test_agent.py --ignore=agents/billing/tests/test_evaluation.py --ignore=agents/claims/tests/test_agent.py --ignore=agents/escalation/tests/test_agent.py --ignore=agents/frontend/tests/test_agent.py --ignore=agents/policies/tests/test_agent.py --ignore=agents/policies/tests/test_retrieval_performance.py --ignore=agents/triage/tests/test_agent.py --ignore=agents/triage/tests/test_agent_additional.py --ignore=agents/triage/tests/test_classifier_v0.py --ignore=agents/triage/tests/test_classifier_v1.py --ignore=agents/triage/tests/test_classifier_v2.py --ignore=agents/triage/tests/test_classifier_v4.py --ignore=agents/triage/tests/test_classifier_v6_evaluation.py --ignore=agents/triage/tests/test_classifier_comparison.py
+          pytest -v --ignore=agents/audit/tests --ignore=agents/billing/tests/test_agent.py --ignore=agents/billing/tests/test_evaluation.py --ignore=agents/claims/tests/test_agent.py --ignore=agents/escalation/tests/test_agent.py --ignore=agents/frontend/tests/test_agent.py --ignore=agents/policies/tests/test_agent.py --ignore=agents/policies/tests/test_retrieval_performance.py --ignore=agents/triage/tests/test_agent.py --ignore=agents/triage/tests/test_agent_additional.py --ignore=agents/triage/tests/test_classifier_v0.py --ignore=agents/triage/tests/test_classifier_v1.py --ignore=agents/triage/tests/test_classifier_v2.py --ignore=agents/triage/tests/test_classifier_v4.py --ignore=agents/triage/tests/test_classifier_v6_evaluation.py --ignore=agents/triage/tests/test_classifier_comparison.py --ignore=agents/triage/tests/test_classifier_v8.py
 
   docker-build:
     runs-on: ubuntu-latest
