@@ -92,5 +92,5 @@ class Gemma3TextForSequenceClassification(Gemma3PreTrainedModel):
 
 # register for auto-loading
 AutoModelForSequenceClassification.register(
-    Gemma3TextConfig, Gemma3TextForSequenceClassification
+    Gemma3TextConfig, Gemma3TextForSequenceClassification, exist_ok=True
 )
