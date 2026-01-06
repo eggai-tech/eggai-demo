@@ -37,7 +37,7 @@ class FinetunedRobertaClassifier:
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
             self.model = RobertaForSequenceClassification.from_pretrained(
-                v8_settings.get_model_name(),
+                v8_settings.model_name,
                 num_labels=len(ID2LABEL)
             )
 
@@ -47,8 +47,8 @@ class FinetunedRobertaClassifier:
             logger.info(f"Fine-tuned LoRA RoBERTa model loaded from: {model_path}")
         else:
             logger.warning(f"Fine-tuned model not found at {model_path}")
-            logger.warning(f"Loading base model with random classification head: {v8_settings.get_model_name()}")
-            model_name = v8_settings.get_model_name()
+            logger.warning(f"Loading base model with random classification head: {v8_settings.model_name}")
+            model_name = v8_settings.model_name
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
             self.model = RobertaForSequenceClassification.from_pretrained(
