@@ -10,6 +10,8 @@ import pytest
 from eggai import Agent, Channel
 from eggai.transport import eggai_set_default_transport
 
+pytestmark = pytest.mark.integration
+
 from agents.audit.config import settings
 from libraries.communication.transport import create_kafka_transport
 

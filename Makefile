@@ -1,4 +1,4 @@
-.PHONY: default setup start test test-billing-agent test-claims-agent test-escalation-agent test-frontend-agent test-policies-agent test-policies-retrieval-performance test-triage-classifier-v0 test-triage-classifier-v1 test-triage-classifier-v2 test-triage-classifier-v3 test-triage-classifier-v4 test-triage-classifier-v5 test-triage-classifier-v6 test-triage-classifier-v7 test-triage-classifier-v6-evaluation test-triage-classifier-v7-evaluation test-triage-classifiers-evaluation test-triage-classifiers-comprehensive test-triage-classifiers-comparison test-triage-classifiers-unit test-triage-classifiers-config test-triage-classifiers-coverage test-triage-classifiers-all eval-triage-classifier-v0 eval-triage-classifier-v1 eval-triage-classifier-v2 eval-triage-classifier-v3 eval-triage-classifier-v4 eval-triage-classifier-v5 eval-triage-classifier-v6 eval-triage-classifier-v7 eval-all-triage-classifiers eval-latest-triage-classifiers check-triage-classifier-v6-setup train-triage-classifier-v6 train-triage-classifier-v7 serve-triage-classifier-v7 invoke-triage-classifier-v7 compile-triage-classifier-v2 compile-triage-classifier-v4 compile-billing-optimizer compile-claims-optimizer compile-policies-optimizer compile-escalation-optimizer compile-all test-triage-agent test-audit test-libraries stop kill-agents clean full-reset docker-up docker-down start-frontend start-billing start-escalation start-policies start-claims start-triage start-audit start-policies-document-ingestion start-all restart setup-and-run lint lint-fix build-policy-rag-index drop-vespa-index deploy-vespa-schema
+.PHONY: default setup start test test-ci test-integration test-all test-coverage test-billing-agent test-claims-agent test-escalation-agent test-frontend-agent test-policies-agent test-policies-retrieval-performance test-triage-classifier-v0 test-triage-classifier-v1 test-triage-classifier-v2 test-triage-classifier-v3 test-triage-classifier-v4 test-triage-classifier-v5 test-triage-classifier-v6 test-triage-classifier-v7 test-triage-classifier-v6-evaluation test-triage-classifier-v7-evaluation test-triage-classifiers-evaluation test-triage-classifiers-comprehensive test-triage-classifiers-comparison test-triage-classifiers-unit test-triage-classifiers-config test-triage-classifiers-coverage test-triage-classifiers-all eval-triage-classifier-v0 eval-triage-classifier-v1 eval-triage-classifier-v2 eval-triage-classifier-v3 eval-triage-classifier-v4 eval-triage-classifier-v5 eval-triage-classifier-v6 eval-triage-classifier-v7 eval-all-triage-classifiers eval-latest-triage-classifiers check-triage-classifier-v6-setup train-triage-classifier-v6 train-triage-classifier-v7 serve-triage-classifier-v7 invoke-triage-classifier-v7 compile-triage-classifier-v2 compile-triage-classifier-v4 compile-billing-optimizer compile-claims-optimizer compile-policies-optimizer compile-escalation-optimizer compile-all test-triage-agent test-audit test-libraries stop kill-agents clean full-reset docker-up docker-down start-frontend start-billing start-escalation start-policies start-claims start-triage start-audit start-policies-document-ingestion start-all restart setup-and-run lint lint-fix build-policy-rag-index drop-vespa-index deploy-vespa-schema
 
 PYTHON := python3.11
 VENV_DIR := .venv
@@ -81,8 +81,25 @@ setup:
 start: setup docker-up start-all
 	@echo "Environment, Docker Compose, and agents are running."
 
-test:
-	@echo "Running tests..."
+test: test-ci
+
+test-ci:
+	@echo "Running CI tests (no external dependencies)..."
+	@source $(VENV_DIR)/bin/activate && $(VENV_DIR)/bin/pytest -v
+	@echo "CI tests completed."
+
+test-integration:
+	@echo "Running integration tests (requires docker-compose infrastructure)..."
+	@source $(VENV_DIR)/bin/activate && $(VENV_DIR)/bin/pytest -v -m "integration or requires_kafka or requires_llm or requires_vespa or slow"
+	@echo "Integration tests completed."
+
+test-all:
+	@echo "Running all tests..."
+	@source $(VENV_DIR)/bin/activate && $(VENV_DIR)/bin/pytest -v -m ""
+	@echo "All tests completed."
+
+test-coverage:
+	@echo "Running tests with coverage..."
 	@source $(VENV_DIR)/bin/activate && $(VENV_DIR)/bin/pytest -s \
        --cov=agents --cov-report=xml:coverage.xml --cov-report=term \
        --junitxml=reports/pytest-results.xml \

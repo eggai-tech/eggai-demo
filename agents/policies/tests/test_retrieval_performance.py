@@ -12,6 +12,8 @@ from typing import List, Tuple
 import httpx
 import pytest
 
+pytestmark = pytest.mark.requires_vespa
+
 from agents.policies.agent.config import settings as agent_settings
 from agents.policies.ingestion.config import settings as ingestion_settings
 from agents.policies.ingestion.workflows.activities.document_chunking_activity import (

@@ -1,7 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+import pytest
 import torch
+
+pytestmark = pytest.mark.requires_llm
 
 from agents.triage.classifier_v8.classifier_v8 import (
     ClassificationResult,

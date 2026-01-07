@@ -31,7 +31,7 @@ eggai_set_default_transport(
     )
 )
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 # Mock the WebSocket manager to avoid actual socket connections
 websocket_manager.send_message_to_connection = AsyncMock()

@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
+pytestmark = pytest.mark.requires_llm
+
 # Set tokenizers parallelism to avoid warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 

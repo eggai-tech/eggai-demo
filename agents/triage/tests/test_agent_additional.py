@@ -7,6 +7,8 @@ from uuid import uuid4
 import pytest
 from dotenv import load_dotenv
 
+pytestmark = pytest.mark.integration
+
 from agents.triage.agent import handle_others, handle_user_message
 from agents.triage.models import TargetAgent
 from libraries.observability.tracing import TracedMessage

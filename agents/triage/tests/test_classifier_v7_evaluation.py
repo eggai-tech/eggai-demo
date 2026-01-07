@@ -10,6 +10,8 @@ import mlflow
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.requires_llm
+
 from agents.triage.classifier_v7.classifier_v7 import classifier_v7
 from agents.triage.classifier_v7.config import ClassifierV7Settings
 from agents.triage.data_sets.loader import load_dataset_triage_testing

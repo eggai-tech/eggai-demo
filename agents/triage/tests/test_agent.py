@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from eggai import Agent, Channel
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+pytestmark = pytest.mark.integration
+
 from agents.triage.agent import handle_user_message
 from agents.triage.config import Settings
 from libraries.communication.channels import channels, clear_channels

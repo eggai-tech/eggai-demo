@@ -605,6 +605,7 @@ class TestClassifierV7TrainingUtils:
         assert 'billingagent_precision' in metrics
         assert 'claimsagent_precision' in metrics
 
+    @pytest.mark.requires_llm
     @patch('agents.triage.classifier_v7.training_utils.AutoTokenizer')
     @patch('agents.triage.classifier_v7.training_utils.Gemma3TextForSequenceClassification')
     @patch('agents.triage.classifier_v7.training_utils.get_peft_model')
