@@ -11,6 +11,8 @@ import pytest
 from eggai import Agent, Channel
 from eggai.transport import eggai_set_default_transport
 
+pytestmark = pytest.mark.integration
+
 from libraries.communication.channels import channels, clear_channels
 from libraries.communication.messaging import MessageType, OffsetReset, subscribe
 from libraries.communication.transport import create_kafka_transport

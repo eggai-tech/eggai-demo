@@ -4,6 +4,8 @@ from datetime import datetime
 import mlflow
 import pytest
 
+pytestmark = pytest.mark.requires_llm
+
 from agents.billing.config import settings
 from agents.billing.dspy_modules.billing import process_billing
 from agents.billing.dspy_modules.evaluation.metrics import precision_metric

@@ -42,7 +42,7 @@ cp .env.example .env
 #### Option A: Local Models (Default - No API Keys Required)
 
 1. Download and install [LM Studio](https://lmstudio.ai/)
-2. Launch LM Studio and load a compatible model (e.g., gemma-3-12b-it-qat)
+2. Launch LM Studio and load a compatible model (e.g., `google/gemma-3-4b`)
 3. Start the local server (should run on http://localhost:1234)
 
 #### Option B: OpenAI Models
@@ -67,12 +67,12 @@ All services are accessible directly from the chat UI header, or you can open th
 
 | Service     | Local URL                            | Description                            | Product URL                              |
 |-------------|--------------------------------------|----------------------------------------|-------------------------------------------|
-| Redpanda    | [http://localhost:8082](http://localhost:8082)   | Kafka-compatible message queue         | [redpanda.com](https://redpanda.com)       |
-| Vespa       | [http://localhost:19071](http://localhost:19071) | Vector search engine and ranking       | [vespa.ai](https://vespa.ai)               |
-| Temporal    | [http://localhost:8081](http://localhost:8081)   | Orchestration engine for workflows     | [temporal.io](https://temporal.io)         |
-| MLflow      | [http://localhost:5001](http://localhost:5001)   | Machine learning experiment tracking   | [mlflow.org](https://mlflow.org)           |
-| Grafana     | [http://localhost:3000](http://localhost:3000)   | Visualization and dashboarding tool    | [grafana.com](https://grafana.com)         |
-| Prometheus  | [http://localhost:9090](http://localhost:9090)   | Metrics collection and time-series DB  | [prometheus.io](https://prometheus.io)     |
+| Redpanda    | [http://localhost:9878](http://localhost:9878)   | Kafka-compatible message queue         | [redpanda.com](https://redpanda.com)       |
+| Vespa       | [http://localhost:9894](http://localhost:9894)   | Vector search engine and ranking       | [vespa.ai](https://vespa.ai)               |
+| Temporal    | [http://localhost:9892](http://localhost:9892)   | Orchestration engine for workflows     | [temporal.io](https://temporal.io)         |
+| MLflow      | [http://localhost:9889](http://localhost:9889)   | Machine learning experiment tracking   | [mlflow.org](https://mlflow.org)           |
+| Grafana     | [http://localhost:9884](http://localhost:9884)   | Visualization and dashboarding tool    | [grafana.com](https://grafana.com)         |
+| Prometheus  | [http://localhost:9883](http://localhost:9883)   | Metrics collection and time-series DB  | [prometheus.io](https://prometheus.io)     |
 
 ## Run the System
 
@@ -80,7 +80,7 @@ All services are accessible directly from the chat UI header, or you can open th
 make start-all
 ```
 
-**Open http://localhost:8000 to start chatting!**
+**Open http://localhost:9903 to start chatting!**
 
 The chat interface includes example questions to get started:
 
@@ -121,7 +121,20 @@ The system will automatically route your request to the appropriate agent.
 ### Testing
 
 ```bash
-make test        # Run all tests
+# Unit tests (no external dependencies - runs in CI)
+make test-ci
+
+# Integration tests (requires docker-compose infrastructure)
+docker compose up -d
+make test-integration
+
+# All tests
+make test-all
+```
+
+### Code Quality
+
+```bash
 make lint        # Check code quality
-make format      # Format code
+make lint-fix    # Auto-fix lint issues
 ```

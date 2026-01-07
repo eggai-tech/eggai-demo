@@ -7,6 +7,8 @@ import pytest
 from eggai import Agent, Channel
 from eggai.transport import eggai_set_default_transport
 
+pytestmark = pytest.mark.integration
+
 from agents.billing.config import MESSAGE_TYPE_BILLING_REQUEST, settings
 from agents.billing.dspy_modules.evaluation.metrics import precision_metric
 from agents.billing.tests.utils import (

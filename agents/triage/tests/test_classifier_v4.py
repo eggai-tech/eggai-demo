@@ -4,6 +4,8 @@ from datetime import datetime
 import mlflow
 import pytest
 
+pytestmark = pytest.mark.requires_llm
+
 from agents.triage.dspy_modules.classifier_v4.classifier_v4 import (
     classifier_v4,
     settings,

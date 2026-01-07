@@ -4,6 +4,8 @@ from datetime import datetime
 import mlflow
 import pytest
 
+pytestmark = pytest.mark.requires_llm
+
 from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
 

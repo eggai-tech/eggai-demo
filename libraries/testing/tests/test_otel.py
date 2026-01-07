@@ -2,6 +2,8 @@
 
 from unittest.mock import Mock, patch
 
+import pytest
+
 from libraries.observability.tracing.otel import (
     create_tracer,
     extract_span_context,
@@ -216,25 +218,31 @@ class TestFormatSpanAsTraceparent:
 class TestTracedHandler:
     """Test traced_handler decorator."""
 
+    @pytest.mark.asyncio
     @patch("libraries.observability.tracing.otel.get_tracer")
     async def test_traced_handler_basic(self, mock_get_tracer):
         """Test basic traced handler decoration."""
+        from uuid import uuid4
+
+        from libraries.observability.tracing import TracedMessage
+
         mock_tracer = Mock()
         mock_span = Mock()
         mock_get_tracer.return_value = mock_tracer
-        
+
         # Create a test handler
         @traced_handler("test_operation")
         async def test_handler(message):
             return "handled"
-        
+
         # Mock the tracer's context manager
         mock_tracer.start_as_current_span.return_value.__enter__ = Mock(return_value=mock_span)
         mock_tracer.start_as_current_span.return_value.__exit__ = Mock(return_value=None)
-        
-        # Call the handler
-        result = await test_handler({"id": "123"})
-        
+
+        # Call the handler with a proper TracedMessage
+        msg = TracedMessage(id=uuid4(), source="test", type="test_message")
+        result = await test_handler(msg)
+
         assert result == "handled"
         mock_tracer.start_as_current_span.assert_called_once()
         call_args = mock_tracer.start_as_current_span.call_args
