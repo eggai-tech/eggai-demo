@@ -35,7 +35,7 @@ After training the model with `make train-triage-classifier-v7`, you can serve i
 ```bash
 make serve-triage-classifier-v7
 ```
-This will start a local server and expose and endpoint for inference: http://127.0.0.1:5000/invocations.
+This will start a local server and expose an endpoint for inference: http://127.0.0.1:5000/invocations.
 
 To test the endpoint, you can use send a custom input via:
 

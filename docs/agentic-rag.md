@@ -62,7 +62,7 @@ Search Weights:
 ```
 
 ### Document Schema
-[`libraries/integrations/vespa.py`](../libraries/integrations/vespa.py)
+[`libraries/integrations/vespa/`](../libraries/integrations/vespa/)
 
 ```python
 {
@@ -82,13 +82,13 @@ Search Weights:
 ## Key Components
 
 ### Agent Tools
-[`agents/policies/agent/tools.py`](../agents/policies/agent/tools.py)
+[`agents/policies/agent/tools/`](../agents/policies/agent/tools/)
 
 1. **`get_personal_policy_details`** - Database lookup for personal policy data
 2. **`search_policy_documentation`** - Vespa search for general information
 
 ### Retrieval Implementation
-[`agents/policies/agent/services/retrieval.py`](../agents/policies/agent/services/retrieval.py)
+[`agents/policies/agent/services/`](../agents/policies/agent/services/)
 
 - Embedding generation using `all-MiniLM-L6-v2`
 - Query construction with category filtering
@@ -219,7 +219,7 @@ language_model = "gpt-4o-mini"
 
 - [Document Ingestion Pipeline](ingestion-pipeline.md) - Offline stage details
 - [Building Agents Guide](building-agents-eggai.md) - Agent development patterns
-- [Vespa Schema](../agents/policies/vespa/schema/) - Search configuration
+- [Vespa Configuration](../agents/policies/vespa/) - Search configuration and deployment
 
 ---
 

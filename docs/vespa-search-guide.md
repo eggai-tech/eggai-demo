@@ -19,8 +19,8 @@ The system uses Vespa as a search engine with support for:
 
 ### REST API (via Policies Agent)
 
-- **URL**: http://localhost:8003
-- **Endpoints**: `/search`, `/documents`, `/categories`
+- **URL**: http://localhost:8002/api/v1
+- **Endpoints**: `/kb/search`, `/kb/documents`, `/kb/categories`
 
 ## Search Types
 
@@ -37,7 +37,7 @@ curl -X POST http://localhost:8080/search/ \
   }'
 
 # Via Policies API
-curl -X POST http://localhost:8003/search \
+curl -X POST http://localhost:8002/api/v1/kb/search/vector \
   -H "Content-Type: application/json" \
   -d '{
     "query": "fire damage coverage",
@@ -52,7 +52,7 @@ Uses embeddings to find semantically similar content.
 
 ```bash
 # Via Policies API (handles embedding generation)
-curl -X POST http://localhost:8003/search \
+curl -X POST http://localhost:8002/api/v1/kb/search/vector \
   -H "Content-Type: application/json" \
   -d '{
     "query": "What is covered if my house burns down?",
@@ -67,7 +67,7 @@ Combines keyword and vector search with configurable weighting.
 
 ```bash
 # Via Policies API (default alpha=0.7)
-curl -X POST http://localhost:8003/search \
+curl -X POST http://localhost:8002/api/v1/kb/search/vector \
   -H "Content-Type: application/json" \
   -d '{
     "query": "fire damage coverage home insurance",
@@ -110,17 +110,17 @@ curl -X POST http://localhost:8003/search \
 
 ```bash
 # Get all documents
-curl "http://localhost:8003/documents"
+curl "http://localhost:8002/api/v1/kb/documents"
 
 # Get documents by category
-curl "http://localhost:8003/documents?category=home"
+curl "http://localhost:8002/api/v1/kb/documents?category=home"
 ```
 
 ### Search with Filters
 
 ```bash
 # Search within a category
-curl -X POST http://localhost:8003/search \
+curl -X POST http://localhost:8002/api/v1/kb/search/vector \
   -H "Content-Type: application/json" \
   -d '{
     "query": "deductible",
@@ -132,7 +132,7 @@ curl -X POST http://localhost:8003/search \
 ### Get Document Categories
 
 ```bash
-curl "http://localhost:8003/categories"
+curl "http://localhost:8002/api/v1/kb/categories"
 ```
 
 ## Advanced Queries
@@ -209,7 +209,7 @@ curl -X POST http://localhost:8080/search/ \
 
 ```bash
 # What does home insurance cover for water damage?
-curl -X POST http://localhost:8003/search \
+curl -X POST http://localhost:8002/api/v1/kb/search/vector \
   -H "Content-Type: application/json" \
   -d '{
     "query": "water damage flood coverage exclusions",
@@ -223,7 +223,7 @@ curl -X POST http://localhost:8003/search \
 
 ```bash
 # Get all deductible information across categories
-curl -X POST http://localhost:8003/search \
+curl -X POST http://localhost:8002/api/v1/kb/search/vector \
   -H "Content-Type: application/json" \
   -d '{
     "query": "deductible amount payment",
@@ -238,7 +238,7 @@ The Policies Agent provides REST endpoints that handle the Vespa integration:
 
 ### Unified Search Endpoint (Recommended)
 ```bash
-POST http://localhost:8001/api/v1/kb/search/vector
+POST http://localhost:8002/api/v1/kb/search/vector
 {
   "query": "your question",
   "search_type": "hybrid",  # or "vector", "keyword"
@@ -251,11 +251,7 @@ Note: Despite the endpoint path containing "vector", this endpoint handles all s
 
 ### Direct Keyword Search
 ```bash
-POST http://localhost:8001/api/v1/kb/search
-{
-  "query": "exact terms",
-  "category": "home"
-}
+GET http://localhost:8002/api/v1/kb/search?query=exact+terms&category=home
 ```
 
 ## Related Documentation

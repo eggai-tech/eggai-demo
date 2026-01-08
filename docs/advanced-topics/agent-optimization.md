@@ -35,6 +35,9 @@ The Triage agent evolved through multiple versions, from basic prompts to advanc
 | **v3** | ML baseline | Logistic regression training |
 | **v4** | DSPy zero-shot | COPRO optimization (recommended) |
 | **v5** | Neural network | Attention-based training |
+| **v6** | Fine-tuned LLM | OpenAI GPT-4o-mini fine-tuning |
+| **v7** | Local LLM | Gemma3 with LoRA fine-tuning |
+| **v8** | Local transformer | RoBERTa with LoRA fine-tuning |
 
 ### 1. Unoptimized Baselines (v0, v1)
 
@@ -76,13 +79,30 @@ make test-triage-classifier-v3
 make test-triage-classifier-v5
 ```
 
-### 4. Performance Comparison
+### 4. Fine-tuned Models (v6, v7, v8)
+
+For production deployments with high accuracy:
+
+```bash
+# v6: OpenAI fine-tuning (requires API key)
+make train-triage-classifier-v6
+
+# v7: Local Gemma3 with LoRA (no API costs)
+make train-triage-classifier-v7
+
+# v8: Local RoBERTa with LoRA (fastest inference)
+make train-triage-classifier-v8
+```
+
+**v7 and v8** run entirely locally, making them ideal for privacy-sensitive deployments.
+
+### 5. Performance Comparison
 
 Run comprehensive comparison across all versions:
 
 ```bash
 # Run all classifier tests to compare in MLflow
-for v in 0 1 2 3 4 5; do
+for v in 0 1 2 3 4 5 6 7 8; do
     make test-triage-classifier-v$v
 done
 
@@ -90,7 +110,7 @@ done
 # http://localhost:5001
 ```
 
-### 5. Performance Monitoring
+### 6. Performance Monitoring
 
 View metrics and comparisons in MLflow:
 - **URL**: http://localhost:5001
@@ -112,6 +132,8 @@ View metrics and comparisons in MLflow:
 2. **v1 → v2**: Automated optimization with DSPy few-shot learning
 3. **v2 → v4**: Eliminated need for examples with zero-shot COPRO
 4. **Parallel Track**: v3 (traditional ML) and v5 (neural) for production efficiency
+5. **v6**: Cloud-based fine-tuning via OpenAI for maximum accuracy
+6. **v7/v8**: Local fine-tuned models for privacy and cost efficiency
 
 ### Optimization Strategies
 
@@ -129,6 +151,8 @@ View metrics and comparisons in MLflow:
 | **Unoptimized (v0/v1)** | Simple, no setup | Lower accuracy, inconsistent |
 | **DSPy Optimized (v2/v4)** | Auto-optimization, flexible | Requires compilation step |
 | **Custom ML (v3/v5)** | Fast inference, low cost | Requires training data, less flexible |
+| **Cloud Fine-tuned (v6)** | High accuracy, simple deployment | API costs, data sent to cloud |
+| **Local Fine-tuned (v7/v8)** | No API costs, data privacy | Requires local GPU, more setup |
 
 
 ---
