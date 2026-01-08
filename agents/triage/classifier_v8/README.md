@@ -32,8 +32,8 @@ The classifier can be configured via environment variables with the `TRIAGE_V8_`
 
 ```bash
 # Set environment variables
-export FINETUNE_SAMPLE_SIZE=1000
-export EVALUATION_SAMPLE_SIZE=200
+export TRIAGE_V8_TRAIN_SAMPLE_SIZE=1000
+export TRIAGE_V8_EVAL_SAMPLE_SIZE=200
 
 # Run training
 python -m agents.triage.classifier_v8.finetune_trainer

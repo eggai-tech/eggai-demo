@@ -1,6 +1,6 @@
-# Contributing to EggAI Multi-Agent Meta Framework
+# Contributing to EggAI Demo
 
-Thank you for considering contributing to **EggAI Multi-Agent Meta Framework**! 🎉 We value your contributions and want to make the process as smooth as possible. Please follow the guidelines below to get started.
+Thank you for considering contributing to **EggAI Demo** (Multi-Agent Insurance Support System)! We value your contributions and want to make the process as smooth as possible. Please follow the guidelines below to get started.
 
 ---
 
@@ -26,7 +26,7 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you underst
 ## How Can I Contribute?
 
 ### Bug Reports
-1. Check if the bug has already been reported in the [Issues](https://github.com/eggai-tech/eggai/issues) section.
+1. Check if the bug has already been reported in the [Issues](https://github.com/eggai-tech/eggai-demo/issues) section.
 2. Create a new issue and include:
    - A clear and descriptive title.
    - Steps to reproduce the bug.
@@ -34,14 +34,14 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you underst
    - Relevant logs, screenshots, or error messages.
 
 ### Feature Requests
-1. Review the [Issues](https://github.com/eggai-tech/eggai/issues) section to see if your idea has already been proposed.
+1. Review the [Issues](https://github.com/eggai-tech/eggai-demo/issues) section to see if your idea has already been proposed.
 2. Create a new issue and describe:
    - The problem your feature solves.
    - The proposed solution.
    - Alternatives you've considered.
 
 ### Code Contributions
-1. Look for `good first issue` or `help wanted` tags in the [Issues](https://github.com/eggai-tech/eggai/issues).
+1. Look for `good first issue` or `help wanted` tags in the [Issues](https://github.com/eggai-tech/eggai-demo/issues).
 2. Discuss your plans in the issue before starting work.
 3. Fork the repository and work on a feature branch.
 
@@ -51,88 +51,49 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you underst
 
 We have a Makefile at the root of the project that simplifies common development tasks. It's the recommended way to work with the project.
 
-### Option 1: Using the Makefile (Recommended)
+### Getting Started
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/eggai-tech/eggai.git
-   cd eggai
+   git clone https://github.com/eggai-tech/eggai-demo.git
+   cd eggai-demo
    ```
 
-2. Install all dependencies (SDK, docs, examples):
+2. Set up the development environment:
    ```bash
-   make install
-   ```
-   
-   Or install specific components:
-   ```bash
-   # Install only SDK dependencies
-   make install-sdk
-   
-   # Install only documentation dependencies
-   make install-docs
-   
-   # Install dependencies for a specific example
-   make install-example EXAMPLE=multi_agent_conversation
+   make setup
    ```
 
 3. Run tests:
    ```bash
-   # Run all tests with summary
+   # Run CI tests (no external dependencies)
+   make test-ci
+
+   # Run integration tests (requires docker-compose infrastructure)
+   make test-integration
+
+   # Run all tests
    make test-all
-   
-   # Run SDK tests only
-   make test-sdk
-   
-   # Run tests for a specific example
-   make test-example EXAMPLE=multi_agent_conversation
    ```
 
-4. Clean up:
+4. Run linting:
    ```bash
-   # Clean Python cache files
-   make clean
-   
-   # Deep clean (removes virtual environments as well)
-   make deep-clean
+   make lint
+
+   # Auto-fix linting issues
+   make lint-fix
    ```
 
-### Option 2: SDK Development (Alternative)
+### Running the Application
 
-If you prefer to work directly in the SDK directory:
-
-1. Navigate to the SDK directory:
+1. Start the infrastructure:
    ```bash
-   cd sdk
-   ```
-2. Install dependencies:
-   ```bash
-   poetry install
-   ```
-3. Run SDK tests:
-   ```bash
-   poetry run pytest
+   docker compose up -d
    ```
 
-### Option 3: Example Project Development
-
-If you're working on a specific example:
-
-1. Navigate to the example directory:
+2. Run the agents:
    ```bash
-   cd examples/multi_agent_conversation
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run example-specific setup (if available):
-   ```bash
-   make setup
-   ```
-4. Run tests:
-   ```bash
-   pytest
+   make run
    ```
 
 ---
@@ -168,8 +129,8 @@ fix: resolve issue with login timeout
 
 ## License
 
-By contributing to **EggAI Multi-Agent Meta Framework**, you agree that your contributions will be licensed under the [Project License](LICENSE.md).
+By contributing to **EggAI Demo**, you agree that your contributions will be licensed under the [MIT License](LICENSE.md).
 
 ---
 
-Thank you for contributing to **EggAI Multi-Agent Meta Framework!** 💖
+Thank you for contributing to **EggAI Demo**!
