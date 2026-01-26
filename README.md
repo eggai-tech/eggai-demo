@@ -26,7 +26,7 @@ Open **http://localhost:8000** and start chatting.
 | Feature | Description |
 |---------|-------------|
 | **7 Collaborating Agents** | Triage, Billing, Claims, Policies, Escalation, Audit, Frontend |
-| **8 Classifier Strategies** | Compare LLM vs fine-tuned vs neural network approaches |
+| **9 Classifier Strategies** | Compare LLM vs fine-tuned vs neural network approaches |
 | **RAG Document Search** | Vespa-powered hybrid search (70% semantic + 30% keyword) |
 | **Production Patterns** | Health checks, observability, message-driven architecture |
 | **Full Observability** | Grafana dashboards, distributed tracing, metrics |
@@ -110,6 +110,7 @@ The triage agent supports 8 classification strategies. Select via `TRIAGE_CLASSI
 | **v5** | Attention network | ~20ms | $0 | Yes |
 | **v6** | OpenAI fine-tuned | ~300ms | $0.01 | Yes |
 | **v7** | Gemma fine-tuned | ~100ms | $0 | Yes |
+| **v8** | RoBERTa LoRA | ~50ms | $0 | Yes |
 
 **Default:** v4 (best balance of accuracy and simplicity)
 

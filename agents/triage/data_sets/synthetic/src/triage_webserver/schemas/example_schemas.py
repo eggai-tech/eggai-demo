@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -9,28 +8,28 @@ class ExampleBase(BaseModel):
     target_agent: str
     turns: int
     temperature: float
-    special_case: Optional[str] = None
+    special_case: str | None = None
 
 
 class ExampleCreate(ExampleBase):
     dataset_id: int
-    index_batch: Optional[int] = None
-    total_batch: Optional[int] = None
+    index_batch: int | None = None
+    total_batch: int | None = None
 
 
 class ExampleUpdate(BaseModel):
-    conversation: Optional[str] = None
-    target_agent: Optional[str] = None
-    turns: Optional[int] = None
-    temperature: Optional[float] = None
-    special_case: Optional[str] = None
+    conversation: str | None = None
+    target_agent: str | None = None
+    turns: int | None = None
+    temperature: float | None = None
+    special_case: str | None = None
 
 
 class ExampleResponse(ExampleBase):
     id: int
     dataset_id: int
-    index_batch: Optional[int]
-    total_batch: Optional[int]
+    index_batch: int | None
+    total_batch: int | None
     created_at: datetime
     updated_at: datetime
 
@@ -38,5 +37,5 @@ class ExampleResponse(ExampleBase):
 
 
 class ExampleList(BaseModel):
-    examples: List[ExampleResponse]
+    examples: list[ExampleResponse]
     total: int

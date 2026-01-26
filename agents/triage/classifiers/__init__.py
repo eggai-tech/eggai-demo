@@ -29,6 +29,7 @@ from agents.triage.classifiers.base import (
 )
 from agents.triage.classifiers.registry import (
     compare_classifiers,
+    get_available_versions,
     get_classifier,
     list_classifiers,
 )
@@ -41,6 +42,7 @@ __all__ = [
     "ClassifierInfo",
     # Registry functions
     "get_classifier",
+    "get_available_versions",
     "list_classifiers",
     "compare_classifiers",
 ]

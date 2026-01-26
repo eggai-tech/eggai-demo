@@ -2,17 +2,17 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from agents.triage.classifier_v7.classifier_v7 import ClassificationResult
+from agents.triage.classifiers.v7.classifier_v7 import ClassificationResult
 
 # Import your FastAPI app and classifier from your app file
-from agents.triage.classifier_v7.serve_classifier import app, init_classifier
+from agents.triage.classifiers.v7.serve_classifier import app, init_classifier
 from agents.triage.models import ClassifierMetrics, TargetAgent
 
 
-@patch("agents.triage.classifier_v7.serve_classifier.mlflow.artifacts.download_artifacts", return_value="/fake/model/path")
-@patch("agents.triage.classifier_v7.serve_classifier.Gemma3TextForSequenceClassification.from_pretrained")
-@patch("agents.triage.classifier_v7.serve_classifier.AutoTokenizer.from_pretrained")
-@patch("agents.triage.classifier_v7.serve_classifier.FinetunedClassifier")
+@patch("agents.triage.classifiers.v7.serve_classifier.mlflow.artifacts.download_artifacts", return_value="/fake/model/path")
+@patch("agents.triage.classifiers.v7.serve_classifier.Gemma3TextForSequenceClassification.from_pretrained")
+@patch("agents.triage.classifiers.v7.serve_classifier.AutoTokenizer.from_pretrained")
+@patch("agents.triage.classifiers.v7.serve_classifier.FinetunedClassifier")
 def test_predict(mock_classifier_class, mock_tokenizer, mock_model, mock_download_artifacts):
     # Mock model and tokenizer
     mock_model.return_value = MagicMock()

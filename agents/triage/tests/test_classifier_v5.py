@@ -3,7 +3,7 @@ import random
 import statistics
 from datetime import datetime
 
-from agents.triage.attention_net.classifier_v5 import classifier_v5
+from agents.triage.classifiers.v5.classifier_v5 import classifier_v5
 from agents.triage.config import settings
 
 # Set tokenizers parallelism to avoid warnings

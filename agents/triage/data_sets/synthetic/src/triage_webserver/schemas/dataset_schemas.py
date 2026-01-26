@@ -1,21 +1,20 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
 
 class DatasetBase(BaseModel):
     name: str
-    description: Optional[str] = None
-    model: Optional[str] = None
+    description: str | None = None
+    model: str | None = None
 
 
 class DatasetCreate(DatasetBase):
     total_target: int = 100
-    agent_distribution: Optional[Dict[str, float]] = None
-    special_case_distribution: Optional[Dict[str, float]] = None
-    temperatures: List[float] = [0.7, 0.8, 0.9]
-    turns: List[int] = [1, 3, 5]
+    agent_distribution: dict[str, float] | None = None
+    special_case_distribution: dict[str, float] | None = None
+    temperatures: list[float] = [0.7, 0.8, 0.9]
+    turns: list[int] = [1, 3, 5]
 
 
 class DatasetResponse(DatasetBase):
@@ -28,5 +27,5 @@ class DatasetResponse(DatasetBase):
 
 
 class DatasetList(BaseModel):
-    datasets: List[DatasetResponse]
+    datasets: list[DatasetResponse]
     total: int

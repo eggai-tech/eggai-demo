@@ -10,7 +10,7 @@ import mlflow
 import numpy as np
 import pytest
 
-from agents.triage.baseline_model.classifier_v3 import classifier_v3, settings
+from agents.triage.classifiers.v3.classifier_v3 import classifier_v3, settings
 from agents.triage.data_sets.loader import load_dataset_triage_testing
 from libraries.observability.logger import get_console_logger
 

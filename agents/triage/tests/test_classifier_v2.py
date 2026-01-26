@@ -6,11 +6,10 @@ import pytest
 
 pytestmark = pytest.mark.requires_llm
 
+from agents.triage.classifiers.v2.classifier_v2 import classifier_v2, settings
+from agents.triage.evaluation.evaluate import run_evaluation
 from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
-
-from ..dspy_modules.classifier_v2.classifier_v2 import classifier_v2, settings
-from ..dspy_modules.evaluation.evaluate import run_evaluation
 
 logger = get_console_logger("test_classifier_v2")
 

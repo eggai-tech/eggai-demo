@@ -1,10 +1,10 @@
 import pytest
 
 from agents.triage.agent import (
-    _CLASSIFIER_PATHS,
     build_conversation_string,
     get_current_classifier,
 )
+from agents.triage.classifiers import get_available_versions
 from agents.triage.config import settings
 
 
@@ -31,12 +31,14 @@ def test_build_conversation_string_filters_empty_content():
     assert build_conversation_string(msgs) == expected
 
 
-@pytest.mark.parametrize("version,module_fn", list(_CLASSIFIER_PATHS.items()))
-def test_get_current_classifier_valid(monkeypatch, version, module_fn):
+@pytest.mark.parametrize("version", get_available_versions())
+def test_get_current_classifier_valid(monkeypatch, version):
     # Ensure get_current_classifier returns a callable for each supported version
     monkeypatch.setattr(settings, "classifier_version", version)
-    fn = get_current_classifier()
-    assert callable(fn)
+    classifier = get_current_classifier()
+    # The registry returns a Classifier instance with a classify method
+    assert hasattr(classifier, "classify")
+    assert callable(classifier.classify)
 
 
 def test_get_current_classifier_invalid(monkeypatch):

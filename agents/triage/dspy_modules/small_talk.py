@@ -1,4 +1,4 @@
-from typing import AsyncIterable, Union
+from collections.abc import AsyncIterable
 
 import dspy
 from dotenv import load_dotenv
@@ -39,7 +39,7 @@ class ChattySignature(dspy.Signature):
     )
 
 
-def chatty(chat_history: str) -> AsyncIterable[Union[StreamResponse, Prediction]]:
+def chatty(chat_history: str) -> AsyncIterable[StreamResponse | Prediction]:
     return dspy.streamify(
         dspy.Predict(ChattySignature),
         stream_listeners=[

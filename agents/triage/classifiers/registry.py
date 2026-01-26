@@ -25,7 +25,7 @@ from agents.triage.models import ClassifierMetrics
 # Maps version -> (module_path, function_name, metadata)
 _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
     "v0": (
-        "agents.triage.dspy_modules.classifier_v0",
+        "agents.triage.classifiers.v0",
         "classifier_v0",
         ClassifierInfo(
             version="v0",
@@ -39,7 +39,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v1": (
-        "agents.triage.dspy_modules.classifier_v1",
+        "agents.triage.classifiers.v1",
         "classifier_v1",
         ClassifierInfo(
             version="v1",
@@ -53,7 +53,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v2": (
-        "agents.triage.dspy_modules.classifier_v2.classifier_v2",
+        "agents.triage.classifiers.v2.classifier_v2",
         "classifier_v2",
         ClassifierInfo(
             version="v2",
@@ -67,7 +67,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v3": (
-        "agents.triage.baseline_model.classifier_v3",
+        "agents.triage.classifiers.v3.classifier_v3",
         "classifier_v3",
         ClassifierInfo(
             version="v3",
@@ -81,7 +81,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v4": (
-        "agents.triage.dspy_modules.classifier_v4",
+        "agents.triage.classifiers.v4.classifier_v4",
         "classifier_v4",
         ClassifierInfo(
             version="v4",
@@ -95,7 +95,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v5": (
-        "agents.triage.attention_net.classifier_v5",
+        "agents.triage.classifiers.v5.classifier_v5",
         "classifier_v5",
         ClassifierInfo(
             version="v5",
@@ -109,7 +109,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v6": (
-        "agents.triage.classifier_v6.classifier_v6",
+        "agents.triage.classifiers.v6.classifier_v6",
         "classifier_v6",
         ClassifierInfo(
             version="v6",
@@ -123,7 +123,7 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
         ),
     ),
     "v7": (
-        "agents.triage.classifier_v7.classifier_v7",
+        "agents.triage.classifiers.v7.classifier_v7",
         "classifier_v7",
         ClassifierInfo(
             version="v7",
@@ -133,6 +133,20 @@ _CLASSIFIER_REGISTRY: dict[str, tuple[str, str, ClassifierInfo]] = {
             requires_training=True,
             trainable=True,
             estimated_latency_ms=(50.0, 200.0),
+            estimated_cost_per_request=0.0,
+        ),
+    ),
+    "v8": (
+        "agents.triage.classifiers.v8.classifier_v8",
+        "classifier_v8",
+        ClassifierInfo(
+            version="v8",
+            name="RoBERTa LoRA",
+            description="RoBERTa with LoRA fine-tuning. Memory efficient, local GPU training.",
+            requires_llm=False,
+            requires_training=True,
+            trainable=True,
+            estimated_latency_ms=(20.0, 80.0),
             estimated_cost_per_request=0.0,
         ),
     ),

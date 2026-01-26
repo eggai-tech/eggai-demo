@@ -31,7 +31,7 @@ class DatasetRow:
 
 def load_dataset(file_path: Path):
     dataset = []
-    with open(file_path, "r") as file:
+    with open(file_path) as file:
         for line in file:
             data = json.loads(line)
             if data.get("target_agent") is None:

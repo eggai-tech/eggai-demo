@@ -12,8 +12,8 @@ import pytest
 
 pytestmark = pytest.mark.requires_llm
 
-from agents.triage.classifier_v7.classifier_v7 import classifier_v7
-from agents.triage.classifier_v7.config import ClassifierV7Settings
+from agents.triage.classifiers.v7.classifier_v7 import classifier_v7
+from agents.triage.classifiers.v7.config import ClassifierV7Settings
 from agents.triage.data_sets.loader import load_dataset_triage_testing
 from libraries.observability.logger import get_console_logger
 
@@ -24,12 +24,12 @@ logger = get_console_logger("test_classifier_v7_evaluation")
 async def test_classifier_v7():
     """MLflow evaluation test for v7 - matches v3/v5 pattern for comparison."""
     from dotenv import load_dotenv
-    
+
     load_dotenv()
-    
+
     # MLflow experiment setup (matches v3/v5 pattern)
     mlflow.set_experiment("triage_classifier")
-    
+
     settings = ClassifierV7Settings()
     classifier_version = "classifier_v7"
     model_name_raw = settings.get_model_name()
@@ -38,7 +38,7 @@ async def test_classifier_v7():
     model = f"huggingface_{model_name_raw.replace('/', '_')}"
     model_name = f"{classifier_version}_{model}"
     run_name = f"test_{model_name}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-    
+
     with mlflow.start_run(run_name=run_name):
         # Log parameters (matches v3/v5 pattern)
         mlflow.log_param("model_name", model_name)
@@ -46,7 +46,7 @@ async def test_classifier_v7():
         mlflow.log_param("language_model", model)
         mlflow.log_param("use_qat_model", settings.use_qat_model)
         mlflow.log_param("use_4bit", settings.use_4bit)
-        
+
         # Use same test dataset approach as v3/v5 (reduce to 10 for testing speed)
         random.seed(42)
         full_dataset = load_dataset_triage_testing()
@@ -54,7 +54,7 @@ async def test_classifier_v7():
         test_dataset = random.sample(full_dataset, test_size)
         all_scores = []
         results = []
-        
+
         for case in test_dataset:
             try:
                 res = classifier_v7(chat_history=case.conversation)
@@ -83,20 +83,20 @@ async def test_classifier_v7():
                     "predicted_agent": TargetAgent.ChattyAgent,  # Fallback
                     "metrics": fallback_metrics,
                 })
-        
+
         # Calculate metrics (identical to v3/v5 pattern)
         def ms(vals):
             return statistics.mean(vals) * 1_000 if vals else 0
-        
+
         def p95(vals):
             return float(np.percentile(vals, 95)) if vals else 0
-        
+
         accuracy = sum(all_scores) / len(all_scores) if all_scores else 0
         latencies_sec = [res["metrics"].latency_ms / 1_000 for res in results]
         prompt_tok_counts = [res["metrics"].prompt_tokens for res in results]
         completion_tok_counts = [res["metrics"].completion_tokens for res in results]
         total_tok_counts = [res["metrics"].total_tokens for res in results]
-        
+
         metrics = {
             "accuracy": accuracy * 100,
             # latency
@@ -111,13 +111,13 @@ async def test_classifier_v7():
             "tokens_p95": p95(total_tok_counts),
         }
         mlflow.log_metrics(metrics)
-        
+
         # Log failing examples (matches v3/v5 error analysis)
         failing_indices = [i for i, is_correct in enumerate(all_scores) if not is_correct]
         if failing_indices:
             logger.error(f"Accuracy: '{accuracy:.3f}';")
             logger.error(f"Found {len(failing_indices)} failing tests:")
-            
+
             # Log first 5 failures for debugging
             for i in failing_indices[:5]:
                 if i < len(results):
@@ -126,9 +126,9 @@ async def test_classifier_v7():
                     logger.error(f"EXPECTED AGENT: {results[i]['expected_agent']}")
                     logger.error(f"PREDICTED AGENT: {results[i]['predicted_agent']}")
                     logger.error(f"{'=' * 80}")
-        
+
         logger.info(f"V7 MLflow evaluation completed: {accuracy:.1%} accuracy")
-        
+
         # Note: Don't assert accuracy threshold for v7 since it uses untrained base model
         # After fine-tuning, uncomment the line below:
         # assert accuracy > 0.8, f"V7 evaluation score {accuracy:.1%} is below 80% threshold."

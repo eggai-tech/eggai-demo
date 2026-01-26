@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -30,5 +29,5 @@ class ConversationExample(BaseModel):
     temperature: float
     index_batch: int
     total_batch: int
-    special_case: Optional[str] = None
+    special_case: str | None = None
     model: str

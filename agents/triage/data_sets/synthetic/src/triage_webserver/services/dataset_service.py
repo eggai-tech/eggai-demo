@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 from tqdm import tqdm
@@ -16,13 +15,13 @@ config = WebServerConfig()
 async def create_dataset(
     db: Session,
     name: str,
-    description: Optional[str] = None,
+    description: str | None = None,
     total_target: int = 100,
-    agent_distribution: Optional[Dict[str, float]] = None,
-    special_case_distribution: Optional[Dict[str, float]] = None,
-    temperatures: Optional[List[float]] = None,
-    turns: Optional[List[int]] = None,
-    model: Optional[str] = None,
+    agent_distribution: dict[str, float] | None = None,
+    special_case_distribution: dict[str, float] | None = None,
+    temperatures: list[float] | None = None,
+    turns: list[int] | None = None,
+    model: str | None = None,
 ) -> Dataset:
     """
     Create a new dataset with generated examples using the dataset generator
@@ -122,14 +121,14 @@ async def create_dataset(
     return dataset
 
 
-def get_dataset(db: Session, dataset_id: int) -> Optional[Dataset]:
+def get_dataset(db: Session, dataset_id: int) -> Dataset | None:
     """
     Get a dataset by ID
     """
     return db.query(Dataset).filter(Dataset.id == dataset_id).first()
 
 
-def get_datasets(db: Session, skip: int = 0, limit: int = 100) -> List[Dataset]:
+def get_datasets(db: Session, skip: int = 0, limit: int = 100) -> list[Dataset]:
     """
     Get all datasets
     """

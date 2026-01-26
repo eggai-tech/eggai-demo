@@ -41,7 +41,7 @@ formatted_registry = "\n".join(
 
 SYSTEM_PROMPT = f"""
 You are a dataset generator for an insurance support chatbot classifier. The Classifier is trained to route the conversation to the correct agent.
-This is the Agent Registry: 
+This is the Agent Registry:
 {formatted_registry}
 
 The goal is to generate a dataset of conversations that can be used to train the classifier with the related target agent.

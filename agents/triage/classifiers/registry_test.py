@@ -14,23 +14,23 @@ class TestRegistry:
     def test_list_classifiers(self):
         """Test listing all classifiers."""
         classifiers = list_classifiers()
-        assert len(classifiers) == 8  # v0 through v7
+        assert len(classifiers) == 9  # v0 through v8
 
         versions = {c.version for c in classifiers}
-        assert versions == {"v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7"}
+        assert versions == {"v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"}
 
     def test_get_available_versions(self):
         """Test getting available versions."""
         versions = get_available_versions()
-        assert versions == ["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7"]
+        assert versions == ["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"]
 
     def test_compare_classifiers_all(self):
         """Test comparing all classifiers."""
         comparison = compare_classifiers()
-        assert len(comparison) == 8
+        assert len(comparison) == 9
         assert "v0" in comparison
         assert "v4" in comparison
-        assert "v7" in comparison
+        assert "v8" in comparison
 
     def test_compare_classifiers_subset(self):
         """Test comparing a subset of classifiers."""
@@ -73,3 +73,4 @@ class TestRegistry:
         assert comparison["v3"].requires_llm is False
         assert comparison["v5"].requires_llm is False
         assert comparison["v7"].requires_llm is False
+        assert comparison["v8"].requires_llm is False

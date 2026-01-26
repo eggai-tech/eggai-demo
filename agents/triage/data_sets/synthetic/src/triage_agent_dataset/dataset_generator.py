@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 
 import litellm
 from tqdm import tqdm
@@ -44,8 +43,8 @@ async def generate_examples(
     num_examples: int,
     temperature: float,
     turns: int,
-    special_case: Optional[SpecialCaseType] = None,
-    progress: Optional[tqdm] = None,
+    special_case: SpecialCaseType | None = None,
+    progress: tqdm | None = None,
 ):
     """
     Asynchronously generate a batch of examples for the given target agent and combination.

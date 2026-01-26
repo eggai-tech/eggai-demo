@@ -3,7 +3,7 @@ import os
 import random
 import time
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -41,7 +41,7 @@ dspy_set_language_model(settings)
 # ---------------------------------------------------------------------------
 # Utility for formatting console tables
 # ---------------------------------------------------------------------------
-def _markdown_table(rows: List[List[str]], headers: List[str]) -> str:
+def _markdown_table(rows: list[list[str]], headers: list[str]) -> str:
     widths = [len(h) for h in headers]
     for row in rows:
         for i, cell in enumerate(row):
@@ -78,7 +78,7 @@ class TriageEvaluationSignature(dspy.Signature):
 # Report generation functions (embedded)
 # ---------------------------------------------------------------------------
 def write_html_report(
-    test_results: List[Dict[str, Any]], summary: Dict[str, Any], report_name: str
+    test_results: list[dict[str, Any]], summary: dict[str, Any], report_name: str
 ) -> str:
     abs_output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "reports"))
     os.makedirs(abs_output_dir, exist_ok=True)
@@ -252,8 +252,8 @@ async def test_triage_agent():
         test_dataset = random.sample(load_dataset_triage_testing(), 10)
         mlflow.log_param("test_count", len(test_dataset))
 
-        pending: Dict[str, Any] = {}
-        classification_results: List[Dict[str, Any]] = []
+        pending: dict[str, Any] = {}
+        classification_results: list[dict[str, Any]] = []
 
         for case in test_dataset:
             msg_id = str(uuid4())
@@ -282,11 +282,11 @@ async def test_triage_agent():
         await asyncio.sleep(1)
 
         # Phase 2: Collect classifications
-        classification_errors: List[str] = []
+        classification_errors: list[str] = []
         for i in range(len(pending)):
             try:
                 event = await asyncio.wait_for(_response_queue.get(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(f"Timeout waiting for response {i + 1}/{len(pending)}")
                 break
             mid = event.data.get("message_id")
@@ -334,7 +334,7 @@ async def test_triage_agent():
                 )
 
         # Phase 3: LLM judging (with error handling for connection issues)
-        judge_results: List[Dict[str, Any]] = []
+        judge_results: list[dict[str, Any]] = []
         try:
             eval_fn = dspy.asyncify(dspy.Predict(TriageEvaluationSignature))
             semaphore = asyncio.Semaphore(10)

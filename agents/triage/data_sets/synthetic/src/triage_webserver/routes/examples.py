@@ -1,4 +1,3 @@
-from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -27,11 +26,11 @@ def get_example(example_id: int, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=ExampleList)
 def get_examples(
-    dataset_id: Optional[int] = None,
-    target_agent: Optional[str] = None,
-    special_case: Optional[Union[str, None]] = None,
-    turns: Optional[int] = None,
-    search: Optional[str] = None,
+    dataset_id: int | None = None,
+    target_agent: str | None = None,
+    special_case: str | None | None = None,
+    turns: int | None = None,
+    search: str | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),

@@ -187,21 +187,21 @@ async def test_streaming_edge_cases(monkeypatch):
 def test_classifier_version_imports():
     """Test that main classifier versions can be imported."""
     try:
-        from agents.triage.dspy_modules.classifier_v0 import classifier_v0_program
+        from agents.triage.classifiers.v0.classifier import classifier_v0_program
 
         assert classifier_v0_program is not None
     except ImportError:
         pytest.skip("classifier_v0 not available")
 
     try:
-        from agents.triage.dspy_modules.classifier_v1 import classifier_v1_program
+        from agents.triage.classifiers.v1.classifier import classifier_v1_program
 
         assert classifier_v1_program is not None
     except ImportError:
         pytest.skip("classifier_v1 not available")
 
     try:
-        from agents.triage.dspy_modules.classifier_v2.classifier_v2 import (
+        from agents.triage.classifiers.v2.classifier_v2 import (
             classifier_v2_program,
         )
 
@@ -210,7 +210,7 @@ def test_classifier_version_imports():
         pytest.skip("classifier_v2 not available")
 
     try:
-        from agents.triage.dspy_modules.classifier_v4.classifier_v4 import (
+        from agents.triage.classifiers.v4.classifier_v4 import (
             classifier_v4_program,
         )
 

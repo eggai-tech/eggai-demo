@@ -1,6 +1,6 @@
 """Tests for triage small talk module."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import dspy
 import pytest
@@ -41,16 +41,15 @@ def test_chatty_signature():
     assert len(docstring) > 0
 
 
-@pytest.mark.asyncio
-async def test_chatty_function_basic(mock_dspy_streamify):
+def test_chatty_function_basic(mock_dspy_streamify):
     """Test basic chatty function call."""
-    # Mock the streamify return value
-    mock_async_gen = AsyncMock()
-    mock_dspy_streamify.return_value = mock_async_gen
+    # Mock the streamify return value - use MagicMock to avoid async warnings
+    mock_callable = MagicMock(return_value=iter([]))
+    mock_dspy_streamify.return_value = mock_callable
 
     chat_history = "User: Hello there!"
 
-    result = chatty(chat_history)
+    chatty(chat_history)
 
     # Verify streamify was called with correct parameters
     mock_dspy_streamify.assert_called_once()
@@ -228,11 +227,11 @@ async def test_chatty_multiple_chunks():
         assert isinstance(responses[4], Prediction)
 
 
-@pytest.mark.asyncio
-async def test_chatty_stream_listener_configuration():
+def test_chatty_stream_listener_configuration():
     """Test that stream listener is configured correctly."""
     with patch("dspy.streamify") as mock_streamify:
-        mock_streamify.return_value = AsyncMock()
+        # Use MagicMock to avoid async warnings - we only check call args
+        mock_streamify.return_value = MagicMock(return_value=iter([]))
 
         chatty("User: Test")
 
@@ -272,7 +271,7 @@ async def test_chatty_function_parameters():
         test_chat_history = "User: What's my policy number?"
 
         # Call chatty and then call the returned function
-        result_func = chatty(test_chat_history)
+        chatty(test_chat_history)
 
         # Verify streamify was called
         mock_streamify.assert_called_once()

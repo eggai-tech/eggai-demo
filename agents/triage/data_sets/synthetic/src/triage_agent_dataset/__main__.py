@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-from typing import List, Optional
 
 import dotenv
 from tqdm import tqdm
@@ -12,9 +11,9 @@ from triage_agent_dataset.models import Agents
 
 async def generate_dataset(
     output_file: str = "dataset.jsonl",
-    temperatures: Optional[List[float]] = None,
-    turns: Optional[List[int]] = None,
-    total_target: Optional[int] = None,
+    temperatures: list[float] | None = None,
+    turns: list[int] | None = None,
+    total_target: int | None = None,
 ) -> None:
     """
     Generate a dataset using the specified parameters

@@ -1,6 +1,5 @@
 """Shared data utilities for all triage classifiers."""
 
-from typing import List
 
 import dspy
 import numpy as np
@@ -11,14 +10,14 @@ from agents.triage.data_sets.loader import (
 )
 
 
-def create_examples(sample_size: int = -1, phase: str = "train", seed: int = 42) -> List[dspy.Example]:
+def create_examples(sample_size: int = -1, phase: str = "train", seed: int = 42) -> list[dspy.Example]:
     """Create training examples with deterministic sampling for reproducible results.
-    
+
     Args:
         sample_size: Number of examples to sample. Use -1 for all examples.
         phase: either "train" or "test". Determines which dataset to load.
         seed: Random seed for reproducible sampling.
-        
+
     Returns:
         List of DSPy examples for training.
     """

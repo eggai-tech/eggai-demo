@@ -1,10 +1,11 @@
-import importlib
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
 import dspy.streaming
 from eggai import Agent, Channel
 from opentelemetry import trace
 
+from agents.triage.classifiers import get_classifier
 from agents.triage.config import GROUP_ID, settings
 from agents.triage.dspy_modules.small_talk import chatty
 from agents.triage.models import AGENT_REGISTRY, TargetAgent
@@ -18,20 +19,10 @@ from libraries.observability.tracing import (
 )
 from libraries.observability.tracing.otel import safe_set_attribute
 
-_CLASSIFIER_PATHS = {
-    "v0": ("agents.triage.dspy_modules.classifier_v0", "classifier_v0"),
-    "v1": ("agents.triage.dspy_modules.classifier_v1", "classifier_v1"),
-    "v2": ("agents.triage.dspy_modules.classifier_v2.classifier_v2", "classifier_v2"),
-    "v3": ("agents.triage.baseline_model.classifier_v3", "classifier_v3"),
-    "v4": ("agents.triage.dspy_modules.classifier_v4", "classifier_v4"),
-    "v5": ("agents.triage.attention_net.classifier_v5", "classifier_v5"),
-    "v6": ("agents.triage.classifier_v6.classifier_v6", "classifier_v6"),
-    "v7": ("agents.triage.classifier_v7.classifier_v7", "classifier_v7"),
-}
 
-def build_conversation_string(chat_messages: List[Dict[str, str]]) -> str:
+def build_conversation_string(chat_messages: list[dict[str, str]]) -> str:
     """Build a conversation history string from a list of chat entries."""
-    lines: List[str] = []
+    lines: list[str] = []
     for chat in chat_messages:
         user = chat.get("agent", "User")
         content = chat.get("content", "")
@@ -138,13 +129,8 @@ logger = get_console_logger("triage_agent.handler")
 
 
 def get_current_classifier() -> Callable[..., Any]:
-    """Lazily import and return the classifier function based on the configured version."""
-    try:
-        module_path, fn_name = _CLASSIFIER_PATHS[settings.classifier_version]
-    except KeyError:
-        raise ValueError(f"Unknown classifier version: {settings.classifier_version}")
-    module = importlib.import_module(module_path)
-    return getattr(module, fn_name)
+    """Get the classifier based on the configured version using the unified registry."""
+    return get_classifier(settings.classifier_version)
 
 
 current_classifier = get_current_classifier()
@@ -160,7 +146,7 @@ current_classifier = get_current_classifier()
 @traced_handler("handle_user_message")
 async def handle_user_message(msg: TracedMessage) -> None:
     """Main handler for user messages: classify and route or stream chatty responses."""
-    chat_messages: List[Dict[str, Any]] = msg.data.get("chat_messages", [])
+    chat_messages: list[dict[str, Any]] = msg.data.get("chat_messages", [])
     connection_id: str = msg.data.get("connection_id", "unknown")
 
     span = trace.get_current_span()
