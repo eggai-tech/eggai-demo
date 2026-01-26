@@ -174,10 +174,10 @@ async def handle_user_message(msg: TracedMessage) -> None:
     safe_set_attribute(span, "conversation_length", len(conversation_string))
 
     try:
-        response = current_classifier(chat_history=conversation_string)
+        response = current_classifier.classify(chat_history=conversation_string)
         safe_set_attribute(span, "classifier_version", settings.classifier_version)
         safe_set_attribute(span, "target_agent", str(response.target_agent))
-        safe_set_attribute(span, "classification_latency_ms", response.metrics.latency_ms)
+        safe_set_attribute(span, "classification_latency_ms", response.latency_ms)
     except ValueError as e:
         safe_set_attribute(span, "error", str(e))
         logger.error("Classifier configuration error: %s", e)
@@ -211,7 +211,7 @@ async def handle_user_message(msg: TracedMessage) -> None:
 
     target_agent = response.target_agent
     logger.info(
-        f"Classification completed in {response.metrics.latency_ms:.2f} ms, "
+        f"Classification completed in {response.latency_ms:.2f} ms, "
         f"target agent: {target_agent}, classifier: {settings.classifier_version}"
     )
 
