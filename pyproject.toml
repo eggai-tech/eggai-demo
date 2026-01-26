@@ -1,10 +1,146 @@
-[tool.ruff]
-# Same as Black.
-line-length = 88
-# Assume Python 3.11
-target-version = "py311"
+[project]
+name = "eggai-demo"
+version = "1.0.0"
+description = "Multi-Agent Insurance Support System - A production-ready reference architecture"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [
+    { name = "EggAI", email = "info@eggai.tech" }
+]
+keywords = ["multi-agent", "ai", "insurance", "eggai", "dspy", "rag"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 
-# Exclude a variety of commonly ignored directories.
+dependencies = [
+    # Core framework
+    "eggai>=0.1.46",
+    "dspy>=2.6.24",
+    "fastapi>=0.115.6",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.4.0",
+    "python-dotenv>=1.0.1",
+
+    # Async & networking
+    "httpx>=0.28.1",
+    "websockets>=14.1",
+    "requests>=2.32.2",
+    "aiofiles>=24.1.0",
+    "tenacity>=9.0.0",
+
+    # Message queue & workflows
+    "temporalio>=1.8.0",
+
+    # Search & RAG
+    "pyvespa>=0.56.0",
+    "sentence-transformers>=4.0.2",
+
+    # ML & LLM
+    "litellm>=1.70.2",
+    "transformers[torch]>=4.51.3",
+    "peft>=0.14.0",
+    "datasets>=3.3.2",
+    "accelerate>=1.4.0",
+    "bitsandbytes>=0.42.0",
+    "trl>=0.15.2",
+    "scikit-learn>=1.6.1",
+    "numpy>=2.2.4",
+
+    # MLflow & experiment tracking
+    "mlflow>=2.21.3",
+    "aioboto3>=13.3.0",
+
+    # Observability
+    "openlit>=1.33.21",
+    "opentelemetry-sdk>=1.33.1",
+    "python-json-logger>=2.0.7",
+    "colorlog>=6.8.2",
+    "prometheus-client>=0.20.0",
+
+    # Data processing
+    "pandas>=2.2.3",
+    "jinja2>=3.1.3",
+    "tabulate>=0.9.0",
+
+    # Database
+    "sqlalchemy>=2.0.30",
+    "psycopg2-binary>=2.9.9",
+
+    # Document processing
+    "docling>=2.37.0",
+    "python-multipart>=0.0.9",
+
+    # Utilities
+    "psutil>=7.0.0",
+    "tqdm>=4.0.0",
+    "rich>=13.0.0",
+
+    # Optional: guardrails
+    "guardrails-ai>=0.6.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.1.1",
+    "pytest-html>=4.1.1",
+    "ruff>=0.11.11",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.1",
+    "seaborn>=0.13.2",
+]
+
+[project.scripts]
+eggai-start = "scripts.start:main"
+eggai-stop = "scripts.stop:main"
+eggai-health = "scripts.health_check:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agents", "libraries", "scripts"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.1.1",
+    "pytest-html>=4.1.1",
+    "ruff>=0.11.11",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["agents", "libraries", "tests"]
+python_files = ["*_test.py", "test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: tests requiring Docker infrastructure (Kafka, Vespa, etc.)",
+    "slow: tests that take > 5 seconds",
+    "requires_llm: tests requiring language model API",
+    "requires_kafka: tests requiring Kafka/Redpanda",
+    "requires_vespa: tests requiring Vespa search",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+addopts = "-m 'not integration and not slow and not requires_llm and not requires_kafka and not requires_vespa'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
 exclude = [
     ".bzr",
     ".direnv",
@@ -30,24 +166,37 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable flake8-bugbear (`B`) rules.
-select = ["E", "F", "B", "I"]
-
-# Ignore specific errors that are hard to fix in an existing codebase
-ignore = [
-    "E501",  # Line too long (handled by formatter)
-    "B904",  # Within an `except` clause, raise exceptions with `raise ... from err`
-    "F841",  # Local variable is assigned to but never used
-    "B008",  # Do not perform function call in argument defaults (FastAPI pattern)
-    "E402",  # Module level import not at top of file (common in DSPy modules)
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
 ]
-
-# Allow unused variables when underscore-prefixed.
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults (FastAPI pattern)
+    "B904",  # raise without from inside except
+    "E402",  # module level import not at top of file (common in DSPy modules)
+]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
 
 [tool.ruff.lint.isort]
+known-first-party = ["agents", "libraries"]
 known-third-party = ["dspy", "vespa", "mlflow", "eggai", "pytest", "opentelemetry"]
+
+[tool.coverage.run]
+source = ["agents", "libraries"]
+omit = ["*_test.py", "test_*.py", "*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]

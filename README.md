@@ -4,137 +4,197 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![EggAI SDK](https://img.shields.io/badge/Built%20with-EggAI-orange?style=for-the-badge)](https://github.com/eggai-tech/eggai)
 
-A production-ready multi-agent system built with [EggAI](https://github.com/eggai-tech/eggai) where AI agents collaborate to provide personalized insurance support. Features billing inquiries, claims processing, policy information retrieval (RAG), and intelligent routing.
+A production-ready reference architecture for building enterprise AI agent systems. Features 7 collaborating agents, 8 classifier strategies, RAG-powered document search, and full observability.
 
 ![Chat UI Screenshot](https://raw.githubusercontent.com/eggai-tech/EggAI/refs/heads/main/docs/docs/assets/support-chat.png)
 
-> **Note:** Runs completely locally with LM Studio - no cloud services or API keys required!
-
 ## Quick Start
 
-### Prerequisites
-
-- **Python** 3.11+
-- **Docker** and **Docker Compose**
-- **LM Studio** (for local models) or OpenAI API key (for cloud models)
-
-### 1. Setup
-
 ```bash
-# Clone the repository
+# Clone and start (one command!)
 git clone git@github.com:eggai-tech/eggai-demo.git
 cd eggai-demo
-
-# Create virtual environment and install dependencies
-make setup
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Copy environment configuration
-cp .env.example .env
-
-# (Optional) Configure Guardrails for content moderation
-# guardrails configure --token $GUARDRAILS_TOKEN
-# guardrails hub install hub://guardrails/toxic_language
+make start
 ```
 
-### 2. Configure Language Models
+Open **http://localhost:8000** and start chatting.
 
-#### Option A: Local Models (Default - No API Keys Required)
+> **Note:** Runs completely locally with LM Studio - no cloud services or API keys required!
 
-1. Download and install [LM Studio](https://lmstudio.ai/)
-2. Launch LM Studio and load a compatible model (e.g., `google/gemma-3-4b`)
-3. Start the local server (should run on http://localhost:1234)
+## What This Demo Shows
 
-#### Option B: OpenAI Models
+| Feature | Description |
+|---------|-------------|
+| **7 Collaborating Agents** | Triage, Billing, Claims, Policies, Escalation, Audit, Frontend |
+| **8 Classifier Strategies** | Compare LLM vs fine-tuned vs neural network approaches |
+| **RAG Document Search** | Vespa-powered hybrid search (70% semantic + 30% keyword) |
+| **Production Patterns** | Health checks, observability, message-driven architecture |
+| **Full Observability** | Grafana dashboards, distributed tracing, metrics |
 
-Edit `.env` and uncomment the OpenAI model lines for every agent:
+## Architecture at a Glance
 
+```
+User (WebSocket) → Frontend Agent → Triage Agent → Specialized Agent → Response
+                                         │
+                                    Classifier
+                                    (v0-v7: pick your strategy)
+```
+
+**Message Flow:**
+1. User sends message via WebSocket to **Frontend**
+2. **Triage** classifies intent using configurable classifier (v0-v7)
+3. Routes to specialized agent: **Billing**, **Claims**, **Policies**, or **Escalation**
+4. **Audit** monitors all interactions for compliance
+5. Response streams back to user
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `make start` | Start everything (infrastructure + agents) |
+| `make stop` | Stop agents |
+| `make health` | Check service health |
+| `make test` | Run tests |
+| `make help` | Show all commands |
+
+## Explore the Codebase
+
+### Entry Points
+
+| Want to... | Start here |
+|------------|------------|
+| Understand the system | [docs/system-architecture.md](docs/system-architecture.md) |
+| See how agents work | [agents/triage/agent.py](agents/triage/agent.py) |
+| Compare classifiers | [agents/triage/classifiers/](agents/triage/classifiers/) |
+| Add a new agent | [docs/building-agents-eggai.md](docs/building-agents-eggai.md) |
+| Configure RAG search | [docs/agentic-rag.md](docs/agentic-rag.md) |
+
+### Code Organization
+
+```
+├── agents/                    # AI agents (self-contained modules)
+│   ├── frontend/             # WebSocket gateway + chat UI
+│   ├── triage/               # Classification and routing
+│   │   ├── agent.py          # Message handler
+│   │   ├── classifiers/      # 8 classifier strategies (NEW!)
+│   │   └── dspy_modules/     # DSPy-based classifiers
+│   ├── billing/              # Payment inquiries
+│   ├── claims/               # Claim processing
+│   ├── policies/             # RAG-powered policy search
+│   ├── escalation/           # Complex issue handling
+│   └── audit/                # Compliance monitoring
+├── libraries/                 # Shared utilities
+│   ├── communication/        # Kafka channels
+│   ├── observability/        # Logging, tracing, metrics
+│   └── ml/                   # DSPy, MLflow integration
+├── config/                    # Configuration
+│   └── defaults.env          # Sensible defaults (works out of box)
+├── scripts/                   # Startup utilities
+│   ├── start.py              # One-command startup
+│   ├── stop.py               # Graceful shutdown
+│   └── health_check.py       # Service health checks
+└── docs/                      # Documentation
+```
+
+## Classifier Comparison
+
+The triage agent supports 8 classification strategies. Select via `TRIAGE_CLASSIFIER_VERSION`:
+
+| Version | Type | Latency | Cost | Training |
+|---------|------|---------|------|----------|
+| **v0** | Minimal prompt | ~500ms | $0.001 | No |
+| **v1** | Enhanced prompt | ~600ms | $0.002 | No |
+| **v2** | COPRO optimized | ~500ms | $0.001 | One-time |
+| **v3** | Few-shot MLflow | ~50ms | $0 | Yes |
+| **v4** | Zero-shot COPRO | ~400ms | $0.001 | One-time |
+| **v5** | Attention network | ~20ms | $0 | Yes |
+| **v6** | OpenAI fine-tuned | ~300ms | $0.01 | Yes |
+| **v7** | Gemma fine-tuned | ~100ms | $0 | Yes |
+
+**Default:** v4 (best balance of accuracy and simplicity)
+
+```python
+# Using the unified classifier interface
+from agents.triage.classifiers import get_classifier, list_classifiers
+
+classifier = get_classifier("v4")
+result = classifier.classify("User: What's my bill?")
+print(result.target_agent)  # BillingAgent
+
+# Compare all classifiers
+for info in list_classifiers():
+    print(f"{info.version}: {info.name}")
+```
+
+## Infrastructure Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Chat UI | http://localhost:8000 | Main application |
+| Redpanda Console | http://localhost:8082 | Message queue UI |
+| Vespa | http://localhost:8080 | Vector search |
+| Temporal UI | http://localhost:8088 | Workflow monitoring |
+| MLflow | http://localhost:5001 | Experiment tracking |
+| Grafana | http://localhost:3000 | Dashboards |
+| Prometheus | http://localhost:9090 | Metrics |
+
+## Configuration
+
+Configuration uses a 3-layer approach:
+
+1. **`config/defaults.env`** - Sensible defaults (committed, works out of box)
+2. **`.env`** - Local overrides (gitignored)
+3. **Environment variables** - Runtime overrides
+
+Key settings:
 ```bash
-# Uncomment these lines in .env
-# TRIAGE_LANGUAGE_MODEL_API_BASE=https://api.openai.com/v1
+# Classifier selection
+TRIAGE_CLASSIFIER_VERSION=v4
+
+# LLM provider (default: local LM Studio)
+TRIAGE_LANGUAGE_MODEL=lm_studio/gemma-3-12b-it-qat
+
+# Or use OpenAI
 # TRIAGE_LANGUAGE_MODEL=openai/gpt-4o-mini
-# OPENAI_API_KEY=your-api-key-here
-[...]
+# OPENAI_API_KEY=sk-...
 ```
 
-### 3. Start Platform Services
+## Requirements
+
+- **Python** 3.11+
+- **Docker** and Docker Compose
+- **uv** (recommended) or pip
+- **LM Studio** (for local models) or OpenAI API key
+
+## Development
 
 ```bash
-make docker-up  # Start all required services (Kafka, Vespa, Temporal, etc.)
+# Run tests
+make test
+
+# Run with coverage
+make test-coverage
+
+# Lint code
+make lint
+
+# Auto-fix lint issues
+make lint-fix
+
+# Full reset (removes all data)
+make full-reset
 ```
-
-All services are accessible directly from the chat UI header, or you can open them individually via their URLs:
-
-| Service     | Local URL                            | Description                            | Product URL                              |
-|-------------|--------------------------------------|----------------------------------------|-------------------------------------------|
-| Redpanda    | [http://localhost:9878](http://localhost:9878)   | Kafka-compatible message queue         | [redpanda.com](https://redpanda.com)       |
-| Vespa       | [http://localhost:9894](http://localhost:9894)   | Vector search engine and ranking       | [vespa.ai](https://vespa.ai)               |
-| Temporal    | [http://localhost:9892](http://localhost:9892)   | Orchestration engine for workflows     | [temporal.io](https://temporal.io)         |
-| MLflow      | [http://localhost:9889](http://localhost:9889)   | Machine learning experiment tracking   | [mlflow.org](https://mlflow.org)           |
-| Grafana     | [http://localhost:9884](http://localhost:9884)   | Visualization and dashboarding tool    | [grafana.com](https://grafana.com)         |
-| Prometheus  | [http://localhost:9883](http://localhost:9883)   | Metrics collection and time-series DB  | [prometheus.io](https://prometheus.io)     |
-
-## Run the System
-
-```bash
-make start-all
-```
-
-**Open http://localhost:9903 to start chatting!**
-
-The chat interface includes example questions to get started:
-
-- **Support categories** with clickable example questions
-- **Policy Inquiries** - Coverage and policy details
-- **Billing & Payments** - Premiums and payment info  
-- **Claims Support** - File claims and check status
-- **General Support** - Escalations and other help
-
-### Usage
-
-You can also interact with the system using free-form natural language.  
-Simply type your request into the chat input at the bottom of the interface.
-
-Here are some example prompts you can try:
-
-- _"What's my premium for policy B67890?"_
-- _"I want to file a claim"_
-- _"What does my home insurance cover?"_
-- _"I have a complaint about my service"_
-
-The system will automatically route your request to the appropriate agent.
 
 ## Documentation
 
 - [System Architecture](docs/system-architecture.md)
-- [Agent Capabilities Overview](docs/agents-overview.md)
+- [Agent Capabilities](docs/agents-overview.md)
 - [Multi-Agent Communication](docs/multi-agent-communication.md)
-- [Building Agents Guide](docs/building-agents-eggai.md)
-- [Document Ingestion with Temporal](docs/ingestion-pipeline.md)
+- [Building Agents](docs/building-agents-eggai.md)
 - [RAG with Vespa](docs/agentic-rag.md)
-- [Vespa Search Guide](docs/vespa-search-guide.md)
-- [Agent & Prompt Optimization](docs/advanced-topics/agent-optimization.md)
+- [Classifier Guide](docs/advanced-topics/agent-optimization.md)
 - [Deployment Guide](docs/advanced-topics/multi-environment-deployment.md)
 
-## Development
+## License
 
-### Testing
-
-```bash
-# Unit tests (no external dependencies - runs in CI)
-make test-ci
-
-# Integration tests (requires docker-compose infrastructure)
-docker compose up -d
-make test-integration
-
-# All tests
-make test-all
-```
-
-### Code Quality
-
-```bash
-make lint        # Check code quality
-make lint-fix    # Auto-fix lint issues
-```
+MIT

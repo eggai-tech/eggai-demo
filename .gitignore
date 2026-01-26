@@ -115,6 +115,8 @@ demo/temp
 site
 checkpoints/
 mlruns/
+mlflow.db
 outputs/
+.agent_pids
 tmp
 .claude
