@@ -79,6 +79,7 @@ async def test_chatty_stream_response():
         predict_name="chatty_predict",
         signature_field_name="response",
         chunk="Hello! I'm here to help",
+        is_last_chunk=False,
     )
     mock_prediction = Prediction(
         response="Hello! I'm here to help with your insurance needs. What can I assist you with today?"
@@ -183,21 +184,25 @@ async def test_chatty_multiple_chunks():
             predict_name="chatty_predict",
             signature_field_name="response",
             chunk="Hello! ",
+            is_last_chunk=False,
         ),
         StreamResponse(
             predict_name="chatty_predict",
             signature_field_name="response",
             chunk="I'm here ",
+            is_last_chunk=False,
         ),
         StreamResponse(
             predict_name="chatty_predict",
             signature_field_name="response",
             chunk="to help ",
+            is_last_chunk=False,
         ),
         StreamResponse(
             predict_name="chatty_predict",
             signature_field_name="response",
             chunk="with insurance.",
+            is_last_chunk=True,
         ),
         Prediction(response="Hello! I'm here to help with insurance."),
     ]
@@ -287,6 +292,7 @@ async def test_chatty_error_handling():
             predict_name="chatty_predict",
             signature_field_name="response",
             chunk="Hello",
+            is_last_chunk=False,
         )
         raise Exception("Test error")
 
