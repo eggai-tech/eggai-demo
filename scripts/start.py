@@ -183,9 +183,9 @@ def wait_for_infrastructure(timeout: float = 120.0) -> bool:
         import httpx
 
         services = [
-            ("Redpanda", "http://localhost:19644/health"),
+            ("Redpanda", "http://localhost:19644/v1/status/ready"),
             ("Vespa", "http://localhost:19071/state/v1/health"),
-            ("Temporal", "http://localhost:7233/health"),
+            ("Temporal UI", "http://localhost:8081"),
             ("MLflow", "http://localhost:5001/health"),
         ]
 
@@ -221,10 +221,18 @@ def start_agents() -> bool:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_ROOT)
 
+    # Use uv run to ensure correct virtual environment
+    use_uv = shutil.which("uv") is not None
+
     for name, module in AGENTS:
         try:
+            if use_uv:
+                cmd = ["uv", "run", "python", "-m", module]
+            else:
+                cmd = [sys.executable, "-m", module]
+
             proc = subprocess.Popen(
-                [sys.executable, "-m", module],
+                cmd,
                 cwd=PROJECT_ROOT,
                 env=env,
                 stdout=subprocess.DEVNULL,
