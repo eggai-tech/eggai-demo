@@ -262,7 +262,7 @@ def print_success():
 [bold]Infrastructure:[/]
   Redpanda:       http://localhost:8082
   Vespa:          http://localhost:8080
-  Temporal:       http://localhost:8088
+  Temporal:       http://localhost:8081
   MLflow:         http://localhost:5001
   Grafana:        http://localhost:3000
   Prometheus:     http://localhost:9090
