@@ -4,7 +4,7 @@ EggAI Libraries - Organized utilities for building AI agents.
 Structure:
 - core/: Core utilities and base classes
 - communication/: Messaging, channels, and transport
-- ml/: Machine learning utilities and DSPy integration  
+- ml/: Machine learning utilities and DSPy integration
 - observability/: Logging, tracing, and monitoring
 - integrations/: External service integrations
 - testing/: Test utilities and unit tests

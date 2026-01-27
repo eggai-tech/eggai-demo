@@ -8,16 +8,15 @@ from .types import ModelConfig
 
 load_dotenv()
 
-MESSAGE_TYPE_BILLING_REQUEST = "billing_request"
 
 class Settings(BaseAgentConfig):
     app_name: str = Field(default="billing_agent")
     prometheus_metrics_port: int = Field(
         default=9095, description="Port for Prometheus metrics server"
     )
-    
+
     billing_database_path: str = Field(default="")
-    
+
     model_name: str = Field(default="billing_react", description="Name of the model")
     max_iterations: int = Field(default=5, ge=1, le=10)
     use_tracing: bool = Field(default=True)

@@ -1,5 +1,4 @@
 from time import perf_counter
-from typing import Optional
 
 import dspy
 from dotenv import load_dotenv
@@ -116,7 +115,7 @@ class TrackingLM(dspy.LM):
         return forward_result
 
 
-def dspy_set_language_model(settings, overwrite_cache_enabled: Optional[bool] = None):
+def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = None):
     load_dotenv()
 
     cache_enabled = settings.cache_enabled

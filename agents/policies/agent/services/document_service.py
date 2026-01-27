@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
@@ -17,7 +17,7 @@ class DocumentService:
 
     def create_policy_document(self, doc_data: dict) -> PolicyDocument:
         from agents.policies.agent.api.models import PolicyDocument
-        
+
         # Generate citation
         citation = None
         if doc_data.get("page_range"):
@@ -45,10 +45,10 @@ class DocumentService:
 
     async def list_documents(
         self,
-        category: Optional[str] = None,
+        category: str | None = None,
         limit: int = 20,
         offset: int = 0
-    ) -> List[PolicyDocument]:
+    ) -> list[PolicyDocument]:
         try:
             # Use an empty query to get all documents
             query = ""  # Empty query will match all documents
@@ -65,7 +65,7 @@ class DocumentService:
 
             # Convert to PolicyDocument models
             documents = [
-                self.create_policy_document(result) 
+                self.create_policy_document(result)
                 for result in paginated_results
             ]
 
@@ -75,7 +75,7 @@ class DocumentService:
             logger.error(f"List documents error: {e}")
             raise
 
-    async def get_document_by_id(self, doc_id: str) -> Optional[PolicyDocument]:
+    async def get_document_by_id(self, doc_id: str) -> PolicyDocument | None:
         try:
             # Try to retrieve by document ID
             result = await self.vespa_client.get_document(
@@ -91,7 +91,7 @@ class DocumentService:
             logger.error(f"Get document error: {e}")
             raise
 
-    async def get_categories_stats(self) -> List[dict]:
+    async def get_categories_stats(self) -> list[dict]:
         try:
             # Get all documents to count by category
             all_results = await self.vespa_client.search_documents(

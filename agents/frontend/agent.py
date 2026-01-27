@@ -8,8 +8,10 @@ from fastapi import FastAPI, Query
 from opentelemetry import trace
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+from libraries.communication.channels import channels
+from libraries.communication.protocol import AgentName, MessageType
 from libraries.observability.logger import get_console_logger
-from libraries.observability.tracing import TracedMessage
+from libraries.observability.tracing import TracedMessage, create_tracer
 from libraries.observability.tracing.init_metrics import init_token_metrics
 from libraries.observability.tracing.otel import (
     extract_span_context,
@@ -18,7 +20,6 @@ from libraries.observability.tracing.otel import (
 )
 
 from .config import settings
-from .types import MessageType
 from .websocket_manager import WebSocketManager
 
 logger = get_console_logger("frontend_agent")
@@ -36,11 +37,12 @@ else:
     toxic_language_guard = None
 
 
-frontend_agent = Agent("Frontend")
-human_channel = Channel("human")
-human_stream_channel = Channel("human_stream")
+AGENT_NAME = AgentName.FRONTEND
+frontend_agent = Agent(AGENT_NAME)
+human_channel = Channel(channels.human)
+human_stream_channel = Channel(channels.human_stream)
 websocket_manager = WebSocketManager()
-tracer = trace.get_tracer("frontend_agent")
+tracer = create_tracer("frontend_agent")
 init_token_metrics(
     port=settings.prometheus_metrics_port, application_name=settings.app_name
 )
@@ -75,7 +77,7 @@ async def _process_user_messages(
     while True:
         try:
             data = await asyncio.wait_for(websocket.receive_json(), timeout=1)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             if server.should_exit:
                 await websocket_manager.disconnect(connection_id)
                 for conn in server.server_state.connections or []:
@@ -93,12 +95,12 @@ async def _process_user_messages(
                 await human_channel.publish(
                     TracedMessage(
                         id=message_id,
-                        source="Frontend",
+                        source=AGENT_NAME,
                         type=MessageType.AGENT_MESSAGE.value,
                         data={
                             "message": "Sorry, I can't help you with that.",
                             "connection_id": connection_id,
-                            "agent": "Triage",
+                            "agent": AgentName.TRIAGE,
                         },
                         traceparent=traceparent,
                         tracestate=tracestate,
@@ -115,7 +117,7 @@ async def _process_user_messages(
         await human_channel.publish(
             TracedMessage(
                 id=message_id,
-                source="FrontendAgent",
+                source=AGENT_NAME,
                 type=MessageType.USER_MESSAGE.value,
                 data={
                     "chat_messages": websocket_manager.chat_messages[connection_id],
@@ -231,7 +233,7 @@ async def handle_human_messages(message: TracedMessage):
     connection_id = message.data.get("connection_id")
     message_id = message.id
 
-    if message_type == "agent_message":
+    if message_type == MessageType.AGENT_MESSAGE.value:
         content = message.data.get("message")
         websocket_manager.chat_messages[connection_id].append(
             {

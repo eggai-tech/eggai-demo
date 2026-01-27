@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -16,13 +16,13 @@ class PolicyDocument(BaseModel):
     source_file: str = Field(..., description="Original source file name")
 
     # Enhanced metadata fields
-    page_numbers: List[int] = Field(
+    page_numbers: list[int] = Field(
         default_factory=list, description="List of page numbers this chunk spans"
     )
-    page_range: Optional[str] = Field(
+    page_range: str | None = Field(
         None, description="Page range as string (e.g., '1-3')"
     )
-    headings: List[str] = Field(
+    headings: list[str] = Field(
         default_factory=list, description="Section headings hierarchy"
     )
     char_count: int = Field(0, description="Character count of the chunk")
@@ -30,23 +30,23 @@ class PolicyDocument(BaseModel):
 
     # Relationship fields
     document_id: str = Field(..., description="Parent document identifier")
-    previous_chunk_id: Optional[str] = Field(
+    previous_chunk_id: str | None = Field(
         None, description="ID of the previous chunk"
     )
-    next_chunk_id: Optional[str] = Field(None, description="ID of the next chunk")
+    next_chunk_id: str | None = Field(None, description="ID of the next chunk")
     chunk_position: float = Field(
         0.0, description="Relative position in document (0.0-1.0)"
     )
 
     # Additional context
-    section_path: List[str] = Field(
+    section_path: list[str] = Field(
         default_factory=list, description="Path of sections/subsections"
     )
 
     # Vector embedding for semantic search
-    embedding: Optional[List[float]] = Field(None, description="Text embedding vector")
+    embedding: list[float] | None = Field(None, description="Text embedding vector")
 
-    def to_vespa_dict(self) -> Dict[str, Any]:
+    def to_vespa_dict(self) -> dict[str, Any]:
         """Convert to dictionary format for Vespa indexing."""
         data = {
             "id": self.id,
@@ -99,19 +99,19 @@ class DocumentMetadata(BaseModel):
     created_at: datetime = Field(
         default_factory=datetime.utcnow, description="Ingestion timestamp"
     )
-    last_modified: Optional[datetime] = Field(
+    last_modified: datetime | None = Field(
         None, description="Document last modified time"
     )
 
     # Document structure
-    outline: List[Dict[str, Any]] = Field(
+    outline: list[dict[str, Any]] = Field(
         default_factory=list, description="Document outline/TOC"
     )
-    key_sections: List[str] = Field(
+    key_sections: list[str] = Field(
         default_factory=list, description="Important section identifiers"
     )
 
-    def to_vespa_dict(self) -> Dict[str, Any]:
+    def to_vespa_dict(self) -> dict[str, Any]:
         """Convert to dictionary format for Vespa indexing."""
         return {
             "id": self.id,
@@ -133,7 +133,7 @@ class DocumentMetadata(BaseModel):
         }
 
 
-def create_vespa_schema_definition() -> Dict[str, Any]:
+def create_vespa_schema_definition() -> dict[str, Any]:
     """Create Vespa schema definition for the enhanced policy documents."""
     return {
         "schema": "policy_document",
@@ -234,7 +234,7 @@ def create_vespa_schema_definition() -> Dict[str, Any]:
     }
 
 
-def create_document_metadata_schema() -> Dict[str, Any]:
+def create_document_metadata_schema() -> dict[str, Any]:
     """Create Vespa schema for document-level metadata."""
     return {
         "schema": "document_metadata",

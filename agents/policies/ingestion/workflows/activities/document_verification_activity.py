@@ -1,6 +1,5 @@
 import os
-from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from temporalio import activity
 
@@ -13,7 +12,7 @@ logger = get_console_logger("ingestion.document_verification")
 @activity.defn
 async def verify_document_activity(
     file_path: str, index_name: str = "policies_index", force_rebuild: bool = False
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     logger.info(f"Verifying document existence in Vespa: {file_path}")
 
     try:
@@ -29,7 +28,6 @@ async def verify_document_activity(
 
         # Get document ID from file path
         filename = os.path.basename(file_path)
-        document_id = Path(file_path).stem
 
         # Create Vespa client
         vespa_client = VespaClient()

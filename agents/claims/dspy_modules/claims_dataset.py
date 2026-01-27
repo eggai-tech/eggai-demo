@@ -3,7 +3,6 @@ import os
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 import dspy
 
@@ -20,7 +19,7 @@ class ClaimsExample:
     expected_response: str
 
 
-def create_claims_dataset() -> List[ClaimsExample]:
+def create_claims_dataset() -> list[ClaimsExample]:
     """Create a dataset of claims examples.
 
     Returns:
@@ -162,7 +161,7 @@ User: I need to change the {field}."""
     return examples
 
 
-def as_dspy_examples(examples: List[ClaimsExample]) -> List[dspy.Example]:
+def as_dspy_examples(examples: list[ClaimsExample]) -> list[dspy.Example]:
     """Convert ClaimsExample objects to dspy.Example objects.
 
     Args:
@@ -183,7 +182,7 @@ def as_dspy_examples(examples: List[ClaimsExample]) -> List[dspy.Example]:
     return dspy_examples
 
 
-def export_dataset(examples: List[ClaimsExample], output_path: str = None):
+def export_dataset(examples: list[ClaimsExample], output_path: str = None):
     """Export dataset to a JSON file.
 
     Args:
@@ -206,7 +205,7 @@ def export_dataset(examples: List[ClaimsExample], output_path: str = None):
         logger.error(f"Error exporting dataset: {e}")
 
 
-def load_dataset(input_path: str = None) -> List[ClaimsExample]:
+def load_dataset(input_path: str = None) -> list[ClaimsExample]:
     """Load dataset from a JSON file.
 
     Args:
@@ -223,7 +222,7 @@ def load_dataset(input_path: str = None) -> List[ClaimsExample]:
         return create_claims_dataset()
 
     try:
-        with open(input_path, "r") as f:
+        with open(input_path) as f:
             data = json.load(f)
 
         examples = [

@@ -13,7 +13,7 @@ def test_get_all_policies():
     policies = get_all_policies()
     assert isinstance(policies, list)
     assert len(policies) == len(EXAMPLE_POLICIES)
-    
+
     # Check structure of first policy
     if policies:
         first_policy = policies[0]
@@ -28,7 +28,7 @@ def test_get_personal_policy_details_exists():
     # Test with a known policy
     result = get_personal_policy_details("A12345")
     assert result != "Policy not found."
-    
+
     # Parse the JSON result
     policy_data = json.loads(result)
     assert policy_data["policy_number"] == "A12345"
@@ -53,6 +53,6 @@ def test_get_personal_policy_details_strips_whitespace():
     # Add spaces around valid policy number
     result = get_personal_policy_details("  A12345  ")
     assert result != "Policy not found."
-    
+
     policy_data = json.loads(result)
     assert policy_data["policy_number"] == "A12345"

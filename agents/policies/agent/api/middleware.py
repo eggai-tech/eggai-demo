@@ -1,5 +1,5 @@
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -23,7 +23,7 @@ async def catch_exceptions_middleware(request: Request, call_next: Callable) -> 
     except Exception as e:
         # Log the error with full traceback
         logger.error(f"Unhandled exception: {e}", exc_info=True)
-        
+
         # Return generic error response to avoid exposing internals
         return JSONResponse(
             status_code=500,
@@ -33,11 +33,11 @@ async def catch_exceptions_middleware(request: Request, call_next: Callable) -> 
 
 async def add_security_headers(request: Request, call_next: Callable) -> Response:
     response = await call_next(request)
-    
+
     # Add security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
+
     return response

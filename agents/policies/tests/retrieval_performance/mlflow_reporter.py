@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 import mlflow
 
@@ -19,8 +18,8 @@ class MLflowReporter:
 
     def report_results(
         self,
-        retrieval_results: List[RetrievalResult],
-        evaluation_results: List[EvaluationResult],
+        retrieval_results: list[RetrievalResult],
+        evaluation_results: list[EvaluationResult],
         config=None,
     ) -> None:
         """Report results with one run per parameter combination."""
@@ -51,8 +50,8 @@ class MLflowReporter:
 
     def _group_by_combination(
         self,
-        retrieval_results: List[RetrievalResult],
-        evaluation_results: List[EvaluationResult],
+        retrieval_results: list[RetrievalResult],
+        evaluation_results: list[EvaluationResult],
     ) -> dict:
         """Group results by parameter combination."""
         combination_groups = {}
@@ -138,30 +137,30 @@ class MLflowReporter:
         mlflow.log_param("search_type", retrieval_sample.combination.search_type)
         mlflow.log_param("max_hits", retrieval_sample.combination.max_hits)
         mlflow.log_param("test_run_timestamp", datetime.now().isoformat())
-        
+
         # Log LLM judge configuration if provided
         if config and hasattr(config, "enable_llm_judge"):
             mlflow.log_param("llm_judge_enabled", config.enable_llm_judge)
 
-    def _log_retrieval_only_metrics(self, retrievals: List[RetrievalResult]) -> None:
+    def _log_retrieval_only_metrics(self, retrievals: list[RetrievalResult]) -> None:
         """Log metrics when only retrieval results are available."""
         mlflow.log_param("num_test_cases", len(retrievals))
-        
+
         # Filter out failed retrievals
         successful_retrievals = [r for r in retrievals if r.error is None]
-        
+
         if successful_retrievals:
             # Retrieval performance metrics
             avg_retrieval_time = sum(r.retrieval_time_ms for r in successful_retrievals) / len(successful_retrievals)
             avg_total_hits = sum(r.total_hits for r in successful_retrievals) / len(successful_retrievals)
             success_rate = len(successful_retrievals) / len(retrievals)
-            
+
             mlflow.log_metric("avg_retrieval_time_ms", avg_retrieval_time)
             mlflow.log_metric("avg_total_hits", avg_total_hits)
             mlflow.log_metric("success_rate", success_rate)
             mlflow.log_metric("total_retrievals", len(retrievals))
             mlflow.log_metric("successful_retrievals", len(successful_retrievals))
-            
+
             # Log individual retrieval metrics
             for retrieval in successful_retrievals:
                 test_case_id = retrieval.combination.test_case_id
@@ -169,7 +168,7 @@ class MLflowReporter:
                 mlflow.log_metric(f"total_hits_{test_case_id}", retrieval.total_hits)
 
     def _log_aggregate_metrics(
-        self, evaluations: List[EvaluationResult], retrievals: List[RetrievalResult]
+        self, evaluations: list[EvaluationResult], retrievals: list[RetrievalResult]
     ) -> None:
         """Log aggregate metrics."""
         mlflow.log_param("num_test_cases", len(evaluations))
@@ -241,7 +240,7 @@ class MLflowReporter:
             mlflow.log_metric("error_rate", error_rate)
 
     def _log_individual_metrics(
-        self, evaluations: List[EvaluationResult], retrievals: List[RetrievalResult]
+        self, evaluations: list[EvaluationResult], retrievals: list[RetrievalResult]
     ) -> None:
         """Log individual test case metrics."""
         for eval_result in evaluations:

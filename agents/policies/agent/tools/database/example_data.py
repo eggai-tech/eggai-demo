@@ -1,7 +1,5 @@
-from typing import Dict, List
-
 # Sample policies for testing and demonstration
-EXAMPLE_POLICIES: List[Dict] = [
+EXAMPLE_POLICIES: list[dict] = [
     {
         "policy_number": "A12345",
         "name": "John Doe",

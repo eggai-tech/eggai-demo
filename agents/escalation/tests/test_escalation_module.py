@@ -62,7 +62,7 @@ async def test_escalation_optimized_dspy_basic():
 
     with patch(
         "agents.escalation.dspy_modules.escalation.escalation_model"
-    ) as mock_escalation:
+    ):
         with patch("dspy.streamify") as mock_streamify:
             mock_streamify.return_value = mock_generator
 

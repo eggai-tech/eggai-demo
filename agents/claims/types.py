@@ -1,7 +1,8 @@
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypedDict
+from typing import Any, Literal, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -20,17 +21,15 @@ from libraries.core import (
 
 
 class ClaimsRequestMessage(TypedDict):
-
     id: str
     type: Literal["claim_request"]
     source: str
     data: MessageData
-    traceparent: Optional[str]
-    tracestate: Optional[str]
+    traceparent: str | None
+    tracestate: str | None
 
 
-
-ValidatorResult = Tuple[bool, Any]
+ValidatorResult = tuple[bool, Any]
 ValidatorFunction = Callable[[str], ValidatorResult]
 
 
@@ -39,7 +38,6 @@ class ModelConfig(BaseModelConfig):
 
 
 class OptimizationConfig(BaseModel):
-
     json_path: Path = Field(..., description="Path to optimization JSON file")
     fallback_to_base: bool = Field(
         True, description="Whether to fall back to base model if optimization fails"
@@ -47,29 +45,28 @@ class OptimizationConfig(BaseModel):
 
 
 class ClaimRecord(BaseModel):
-
     claim_number: str = Field(..., description="Unique identifier for the claim")
     policy_number: str = Field(
         ..., description="Policy number associated with the claim"
     )
     status: str = Field(..., description="Current status of the claim")
     next_steps: str = Field(..., description="Next steps required for claim processing")
-    outstanding_items: List[str] = Field(
+    outstanding_items: list[str] = Field(
         default_factory=list, description="Items pending for claim processing"
     )
-    estimate: Optional[float] = Field(None, description="Estimated payout amount", gt=0)
-    estimate_date: Optional[str] = Field(
+    estimate: float | None = Field(None, description="Estimated payout amount", gt=0)
+    estimate_date: str | None = Field(
         None, description="Estimated date for payout (YYYY-MM-DD)"
     )
-    details: Optional[str] = Field(
+    details: str | None = Field(
         None, description="Detailed description of the claim"
     )
-    address: Optional[str] = Field(None, description="Address related to the claim")
-    phone: Optional[str] = Field(None, description="Contact phone number")
-    damage_description: Optional[str] = Field(
+    address: str | None = Field(None, description="Address related to the claim")
+    phone: str | None = Field(None, description="Contact phone number")
+    damage_description: str | None = Field(
         None, description="Description of damage or loss"
     )
-    contact_email: Optional[str] = Field(None, description="Contact email address")
+    contact_email: str | None = Field(None, description="Contact email address")
 
     model_config = {"extra": "forbid"}
 
@@ -91,7 +88,7 @@ class ClaimRecord(BaseModel):
             raise ValueError("Invalid phone number format")
         return v
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {k: v for k, v in self.model_dump().items() if v is not None}
 
     def to_json(self) -> str:
@@ -99,7 +96,6 @@ class ClaimRecord(BaseModel):
 
 
 class TruncationResult(TypedDict):
-
     history: str
     truncated: bool
     original_length: int

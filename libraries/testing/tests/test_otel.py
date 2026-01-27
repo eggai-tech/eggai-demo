@@ -37,7 +37,7 @@ class TestSafeSetAttribute:
     def test_safe_set_attribute_basic(self):
         """Test basic attribute setting."""
         mock_span = Mock()
-        
+
         safe_set_attribute(mock_span, "key", "value")
         mock_span.set_attribute.assert_called_once_with("key", "value")
 
@@ -50,9 +50,9 @@ class TestSafeSetAttribute:
         """Test attribute setting with complex values."""
         mock_span = Mock()
         complex_value = {"nested": {"data": [1, 2, 3]}}
-        
+
         safe_set_attribute(mock_span, "complex", complex_value)
-        
+
         # Should call set_attribute with the complex value
         # The actual serialization might happen inside safe_set_attribute
         mock_span.set_attribute.assert_called_once()
@@ -63,7 +63,7 @@ class TestSafeSetAttribute:
         """Test error handling in attribute setting."""
         mock_span = Mock()
         mock_span.set_attribute.side_effect = Exception("Span error")
-        
+
         # Should not raise error
         safe_set_attribute(mock_span, "key", "value")
 
@@ -71,9 +71,9 @@ class TestSafeSetAttribute:
         """Test handling of large attribute values."""
         mock_span = Mock()
         large_value = "x" * 10000  # Very large string
-        
+
         safe_set_attribute(mock_span, "large", large_value)
-        
+
         # Should truncate or handle appropriately
         call_args = mock_span.set_attribute.call_args[0]
         assert call_args[0] == "large"
@@ -88,13 +88,13 @@ class TestGetTracer:
         """Test getting a tracer."""
         mock_tracer = Mock()
         mock_get_tracer.return_value = mock_tracer
-        
+
         # Clear cache for test
         from libraries.observability.tracing.otel import _TRACERS
         _TRACERS.clear()
-        
+
         tracer = get_tracer("test-tracer")
-        
+
         assert tracer is mock_tracer
         mock_get_tracer.assert_called_once_with("test-tracer")
 
@@ -103,15 +103,15 @@ class TestGetTracer:
         with patch("libraries.observability.tracing.otel.trace.get_tracer") as mock_get_tracer:
             mock_tracer = Mock()
             mock_get_tracer.return_value = mock_tracer
-            
+
             # Clear cache
             from libraries.observability.tracing.otel import _TRACERS
             _TRACERS.clear()
-            
+
             # Get tracer twice
             tracer1 = get_tracer("cached-tracer")
             tracer2 = get_tracer("cached-tracer")
-            
+
             # Should only create once
             assert mock_get_tracer.call_count == 1
             assert tracer1 is tracer2
@@ -121,13 +121,13 @@ class TestGetTracer:
         with patch("libraries.observability.tracing.otel.get_tracer") as mock_get_tracer:
             mock_tracer = Mock()
             mock_get_tracer.return_value = mock_tracer
-            
+
             # Test without component
-            tracer = create_tracer("MyService")
+            create_tracer("MyService")
             mock_get_tracer.assert_called_with("myservice")
-            
+
             # Test with component
-            tracer = create_tracer("MyService", "Database")
+            create_tracer("MyService", "Database")
             mock_get_tracer.assert_called_with("myservice.database")
 
 
@@ -137,9 +137,9 @@ class TestExtractSpanContext:
     def test_extract_valid_span_context(self):
         """Test extracting valid span context."""
         traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
-        
+
         context = extract_span_context(traceparent)
-        
+
         assert context is not None
         assert context.trace_id == 0x4bf92f3577b34da6a3ce929d0e0e4736
         assert context.span_id == 0x00f067aa0ba902b7
@@ -155,7 +155,7 @@ class TestExtractSpanContext:
             "00",  # Too short
             "00-toolong",  # Wrong format
         ]
-        
+
         for header in invalid_headers:
             context = extract_span_context(header)
             # Should return None for clearly invalid headers
@@ -165,9 +165,9 @@ class TestExtractSpanContext:
         """Test extracting span context with tracestate."""
         traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
         tracestate = "congo=t61rcWkgMzE"
-        
+
         context = extract_span_context(traceparent, tracestate)
-        
+
         assert context is not None
         assert context.trace_state is not None
 
@@ -180,16 +180,16 @@ class TestFormatSpanAsTraceparent:
         # Create mock span context
         mock_span = Mock()
         mock_context = Mock()
-        
+
         mock_context.trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736
         mock_context.span_id = 0x00f067aa0ba902b7
         mock_context.trace_flags = 0x01
         mock_context.trace_state = Mock()
-        
+
         mock_span.get_span_context.return_value = mock_context
-        
+
         traceparent, tracestate = format_span_as_traceparent(mock_span)
-        
+
         assert traceparent == "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
         # tracestate will be string representation of the mock
 
@@ -197,20 +197,20 @@ class TestFormatSpanAsTraceparent:
         """Test formatting with actual tracestate."""
         mock_span = Mock()
         mock_context = Mock()
-        
+
         mock_context.trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736
         mock_context.span_id = 0x00f067aa0ba902b7
         mock_context.trace_flags = 0x01
-        
+
         # Create a mock trace_state that converts to string properly
         mock_trace_state = Mock()
         mock_trace_state.__str__ = Mock(return_value="congo=t61rcWkgMzE")
         mock_context.trace_state = mock_trace_state
-        
+
         mock_span.get_span_context.return_value = mock_context
-        
+
         traceparent, tracestate = format_span_as_traceparent(mock_span)
-        
+
         assert traceparent == "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
         assert isinstance(tracestate, str)
 
@@ -254,7 +254,7 @@ class TestTracedHandler:
         @traced_handler()
         def sync_handler(message):
             return "sync_handled"
-        
+
         # The decorator should create a wrapper function
         assert callable(sync_handler)
         assert hasattr(sync_handler, '__wrapped__')
@@ -266,13 +266,13 @@ class TestGetTraceparentFromConnectionId:
     def test_get_traceparent_from_connection_id(self):
         """Test generating traceparent from connection UUID."""
         connection_id = "550e8400-e29b-41d4-a716-446655440000"
-        
+
         traceparent = get_traceparent_from_connection_id(connection_id)
-        
+
         # Should be valid traceparent format
         assert traceparent.startswith("00-")
         assert len(traceparent.split("-")) == 4
-        
+
         # Trace ID should be the hex of the UUID
         parts = traceparent.split("-")
         assert parts[1] == "550e8400e29b41d4a716446655440000"
@@ -282,9 +282,9 @@ class TestGetTraceparentFromConnectionId:
     def test_get_traceparent_span_id_generation(self, mock_getrandbits):
         """Test span ID generation."""
         mock_getrandbits.return_value = 0x1234567890abcdef
-        
+
         connection_id = "550e8400-e29b-41d4-a716-446655440000"
         traceparent = get_traceparent_from_connection_id(connection_id)
-        
+
         parts = traceparent.split("-")
         assert parts[2] == "1234567890abcdef"

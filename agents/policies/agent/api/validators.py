@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import HTTPException
 
 # Valid policy categories
@@ -13,16 +11,16 @@ MAX_QUERY_LENGTH = 500
 MAX_DOCUMENT_ID_LENGTH = 200
 
 
-def validate_category(category: Optional[str]) -> Optional[str]:
+def validate_category(category: str | None) -> str | None:
     if category is None:
         return None
-        
+
     if category.lower() not in VALID_CATEGORIES:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid category '{category}'. Valid categories are: {', '.join(sorted(VALID_CATEGORIES))}"
         )
-    
+
     return category.lower()
 
 
@@ -32,36 +30,36 @@ def validate_query(query: str) -> str:
             status_code=400,
             detail="Query cannot be empty"
         )
-    
+
     if len(query) > MAX_QUERY_LENGTH:
         raise HTTPException(
             status_code=400,
             detail=f"Query too long (max {MAX_QUERY_LENGTH} characters)"
         )
-    
+
     return query.strip()
 
 
-def validate_policy_number(policy_number: Optional[str]) -> Optional[str]:
+def validate_policy_number(policy_number: str | None) -> str | None:
     if policy_number is None:
         return None
-    
+
     import re
-    
+
     # Check basic format
     if not re.match(POLICY_NUMBER_PATTERN, policy_number.upper()):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid policy number format '{policy_number}'. Expected format: letter followed by numbers (e.g., A12345)"
         )
-    
+
     # Check length (1 letter + at least 3 digits, max 6 digits)
     if len(policy_number) < 4 or len(policy_number) > 7:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid policy number length '{policy_number}'. Must be 4-7 characters"
         )
-    
+
     return policy_number.upper()
 
 
@@ -71,19 +69,19 @@ def validate_document_id(doc_id: str) -> str:
             status_code=400,
             detail="Document ID cannot be empty"
         )
-    
+
     # Check length
     if len(doc_id) > MAX_DOCUMENT_ID_LENGTH:
         raise HTTPException(
             status_code=400,
             detail=f"Document ID too long (max {MAX_DOCUMENT_ID_LENGTH} characters)"
         )
-    
+
     # Basic sanitization to prevent injection
     if any(char in doc_id for char in ['<', '>', '"', "'", '&', '@', '#', '!']):
         raise HTTPException(
             status_code=400,
             detail="Document ID contains invalid characters"
         )
-    
+
     return doc_id.strip()

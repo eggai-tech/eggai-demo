@@ -5,7 +5,8 @@ import os
 import random
 import uuid
 from asyncio import iscoroutine
-from typing import Any, Awaitable, Callable, Dict, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import SpanLimits
@@ -48,7 +49,6 @@ def safe_set_attribute(span, key: str, value: Any) -> None:
                 logger.debug(
                     f"Failed to set attribute {key} even after string conversion"
                 )
-                pass
 
     # Handle lists of basic types
     elif isinstance(value, list) and all(
@@ -62,7 +62,6 @@ def safe_set_attribute(span, key: str, value: Any) -> None:
                 span.set_attribute(key, str(value))
             except Exception:
                 logger.debug(f"Failed to set list attribute {key}")
-                pass
 
     # Convert other types to string representation
     else:
@@ -73,10 +72,9 @@ def safe_set_attribute(span, key: str, value: Any) -> None:
             logger.debug(
                 f"Skipping attribute {key} with invalid value type: {type(value)}"
             )
-            pass
 
 
-def init_telemetry(app_name: str, endpoint: Optional[str] = None) -> None:
+def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
     # Initialize OpenTelemetry directly
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -169,7 +167,7 @@ def init_telemetry(app_name: str, endpoint: Optional[str] = None) -> None:
         )
 
 
-_TRACERS: Dict[str, Tracer] = {}
+_TRACERS: dict[str, Tracer] = {}
 
 
 def get_tracer(name: str) -> Tracer:
@@ -182,7 +180,7 @@ def _normalize_name(name: str) -> str:
     return name.lower().replace(" ", "_").replace("-", "_")
 
 
-def create_tracer(name: str, component: Optional[str] = None) -> Tracer:
+def create_tracer(name: str, component: str | None = None) -> Tracer:
     normalized = _normalize_name(name)
     tracer_name = (
         f"{normalized}.{_normalize_name(component)}" if component else normalized
@@ -193,8 +191,8 @@ def create_tracer(name: str, component: Optional[str] = None) -> Tracer:
 
 
 def extract_span_context(
-    traceparent: str, tracestate: str = None
-) -> Optional[SpanContext]:
+    traceparent: str, tracestate: str | None = None
+) -> SpanContext | None:
     parts = traceparent.split("-")
     if len(parts) != 4 or parts[0] != "00":
         return None
@@ -222,7 +220,7 @@ def format_span_as_traceparent(span) -> tuple:
 
 
 def traced_handler(span_name: str = None):
-    def decorator(handler_func: Callable[[Dict], Awaitable[None]]):
+    def decorator(handler_func: Callable[[dict], Awaitable[None]]):
         @functools.wraps(handler_func)
         async def wrapper(*args, **kwargs):
             from libraries.observability.tracing.schemas import TracedMessage

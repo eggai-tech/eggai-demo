@@ -1,4 +1,3 @@
-from typing import Dict, Optional, Union
 from uuid import uuid4
 
 from libraries.observability.logger import get_console_logger
@@ -7,7 +6,7 @@ from libraries.observability.tracing import TracedMessage
 logger = get_console_logger("audit_agent")
 
 def get_message_metadata(
-    message: Optional[Union[TracedMessage, Dict]]
+    message: TracedMessage | dict | None
 ) -> tuple[str, str]:
     """Return (type, source) from a message, defaulting to 'unknown'."""
     if message is None:
@@ -25,7 +24,7 @@ def get_message_metadata(
         return "unknown", "unknown"
 
 
-def get_message_content(message: Optional[Union[TracedMessage, Dict]]) -> Optional[str]:
+def get_message_content(message: TracedMessage | dict | None) -> str | None:
     """Extract the primary message text or last chat history content."""
     data = getattr(message, "data", None)
     if not isinstance(data, dict):
@@ -44,7 +43,7 @@ def get_message_content(message: Optional[Union[TracedMessage, Dict]]) -> Option
     return None
 
 
-def get_message_id(message: Optional[Union[TracedMessage, Dict]]) -> str:
+def get_message_id(message: TracedMessage | dict | None) -> str:
     if message is None:
         return f"null_message_{uuid4()}"
 
@@ -53,7 +52,7 @@ def get_message_id(message: Optional[Union[TracedMessage, Dict]]) -> str:
 
 
 def propagate_trace_context(
-    source_message: Optional[Union[TracedMessage, Dict]], target_message: TracedMessage
+    source_message: TracedMessage | dict | None, target_message: TracedMessage
 ) -> None:
     if source_message is None:
         return

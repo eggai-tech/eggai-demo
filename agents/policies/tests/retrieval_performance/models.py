@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class RetrievalTestCase(BaseModel):
     question: str
     expected_answer: str
     expected_context: str
-    category: Optional[str] = None
+    category: str | None = None
     description: str = ""
 
 
@@ -26,7 +26,7 @@ class ParameterCombination:
     def to_experiment_name(self) -> str:
         return f"retrieval_{self.test_case_id}_{self.search_type}_hits{self.max_hits}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_case_id": self.test_case_id,
             "search_type": self.search_type,
@@ -39,10 +39,10 @@ class RetrievalResult:
     """Stage 1 query results."""
 
     combination: ParameterCombination
-    retrieved_chunks: List[Dict[str, Any]]
+    retrieved_chunks: list[dict[str, Any]]
     retrieval_time_ms: float
     total_hits: int
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -61,18 +61,18 @@ class EvaluationResult:
     mrr_score: float  # Mean Reciprocal Rank
     ndcg_score: float  # Normalized Discounted Cumulative Gain
     context_coverage: float  # How much of expected context is covered
-    best_match_position: Optional[int] = (
+    best_match_position: int | None = (
         None  # Position of best matching chunk (1-indexed)
     )
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
 class RetrievalTestConfiguration:
     """Test configuration."""
 
-    search_types: List[str] = None
-    max_hits_values: List[int] = None
+    search_types: list[str] = None
+    max_hits_values: list[int] = None
     parallel_queries: bool = True
     parallel_evaluations: bool = True
     max_query_workers: int = 5

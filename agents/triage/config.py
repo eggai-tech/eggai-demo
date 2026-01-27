@@ -1,4 +1,3 @@
-
 from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
@@ -7,7 +6,6 @@ from libraries.core import BaseAgentConfig
 
 load_dotenv()
 
-MESSAGE_TYPE_USER_MESSAGE = "user_message"
 GROUP_ID = "triage_agent_group"
 
 

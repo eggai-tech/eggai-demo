@@ -2,7 +2,7 @@ import asyncio
 import re
 import time
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 from uuid import uuid4
 
 import dspy
@@ -189,7 +189,7 @@ human_stream_channel = Channel(channels.human_stream)
 _response_queue: asyncio.Queue[TracedMessage] = asyncio.Queue()
 
 
-def validate_response_for_test_case(case_id: str, response: str) -> Dict[str, bool]:
+def validate_response_for_test_case(case_id: str, response: str) -> dict[str, bool]:
     """
     Perform content validation focused on essential information.
 
@@ -291,7 +291,7 @@ def validate_response_for_test_case(case_id: str, response: str) -> Dict[str, bo
     return results
 
 
-def _markdown_table(rows: List[List[str]], headers: List[str]) -> str:
+def _markdown_table(rows: list[list[str]], headers: list[str]) -> str:
     """Generate a markdown table from rows and headers."""
     widths = [len(h) for h in headers]
     for row in rows:
@@ -402,8 +402,8 @@ async def test_policies_agent_single():
             logger.info(f"Received final response: {agent_response}")
         if msg_id in _stream_chunks:
             chunks = _stream_chunks[msg_id]
-            full_response = "".join(chunks)
-    except asyncio.TimeoutError:
+            "".join(chunks)
+    except TimeoutError:
         pass
 
     finally:
@@ -440,8 +440,8 @@ async def test_policies_agent():
         await policies_agent.start()
         await test_agent.start()
 
-        pending: Dict[str, Any] = {}
-        policy_results: List[Dict[str, Any]] = []
+        pending: dict[str, Any] = {}
+        policy_results: list[dict[str, Any]] = []
 
         for i, case in enumerate(test_cases):
             msg_id = str(uuid4())
@@ -470,7 +470,6 @@ async def test_policies_agent():
         await asyncio.sleep(1.0)
 
         collected_responses = 0
-        timeout_count = 0
         max_wait_time = 60.0  # Maximum time to wait for all responses
         start_wait = time.perf_counter()
 
@@ -514,7 +513,7 @@ async def test_policies_agent():
 
                 mlflow.log_metric(f"latency_case_{collected_responses}", latency_ms)
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Continue waiting for more responses
                 pass
 

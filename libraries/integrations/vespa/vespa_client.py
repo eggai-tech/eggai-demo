@@ -1,5 +1,5 @@
 from asyncio import Semaphore, gather
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from tenacity import RetryError, retry, stop_after_attempt, wait_exponential
@@ -19,9 +19,9 @@ tracer = create_tracer("vespa", "client")
 class VespaClient:
     """Client for interacting with Vespa search engine."""
 
-    def __init__(self, config: Optional[VespaConfig] = None):
+    def __init__(self, config: VespaConfig | None = None):
         self.config = config or VespaConfig()
-        self._vespa_app: Optional[Vespa] = None
+        self._vespa_app: Vespa | None = None
 
     @property
     def vespa_app(self) -> Vespa:
@@ -38,7 +38,7 @@ class VespaClient:
                 connections=1, timeout=httpx.Timeout(5.0)
             ) as session:
                 # Try a simple query to test connectivity
-                response = await session.query(
+                await session.query(
                     yql=f"select * from {self.config.schema_name} where true limit 1"
                 )
                 logger.info("Vespa connectivity check successful")
@@ -74,7 +74,7 @@ class VespaClient:
             raise
 
     @tracer.start_as_current_span("index_documents")
-    async def index_documents(self, documents: List[PolicyDocument]) -> Dict[str, Any]:
+    async def index_documents(self, documents: list[PolicyDocument]) -> dict[str, Any]:
         """Index multiple documents to Vespa."""
         logger.info(f"Starting indexing of {len(documents)} documents")
 
@@ -131,10 +131,10 @@ class VespaClient:
     async def search_documents(
         self,
         query: str,
-        category: Optional[str] = None,
-        max_hits: Optional[int] = None,
-        ranking_profile: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        category: str | None = None,
+        max_hits: int | None = None,
+        ranking_profile: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Search for documents in Vespa."""
         max_hits = max_hits or self.config.max_hits
         ranking_profile = ranking_profile or self.config.ranking_profile
@@ -250,11 +250,11 @@ class VespaClient:
     @tracer.start_as_current_span("vector_search")
     async def vector_search(
         self,
-        query_embedding: List[float],
-        category: Optional[str] = None,
-        max_hits: Optional[int] = None,
+        query_embedding: list[float],
+        category: str | None = None,
+        max_hits: int | None = None,
         ranking_profile: str = "semantic",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Perform vector similarity search using embeddings.
 
         Args:
@@ -350,11 +350,11 @@ class VespaClient:
     async def hybrid_search(
         self,
         query: str,
-        query_embedding: List[float],
-        category: Optional[str] = None,
-        max_hits: Optional[int] = None,
+        query_embedding: list[float],
+        category: str | None = None,
+        max_hits: int | None = None,
         alpha: float = 0.7,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Perform hybrid search combining keyword and vector search.
 
         Args:
@@ -457,7 +457,7 @@ class VespaClient:
 
     def _extract_search_results(
         self, response: VespaQueryResponse
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract search results from Vespa response."""
         results = []
         root_data = response.json.get("root", {})

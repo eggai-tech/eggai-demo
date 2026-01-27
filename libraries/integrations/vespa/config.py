@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,9 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class VespaConfig(BaseSettings):
     """Configuration settings for Vespa integration."""
-    
+
     # Deployment configuration
-    deployment_namespace: Optional[str] = Field(
+    deployment_namespace: str | None = Field(
         default=None,
         description="Namespace for deployment (e.g., pr-123, staging, prod)"
     )
@@ -17,7 +16,7 @@ class VespaConfig(BaseSettings):
     # Vespa connection settings
     vespa_url: str = Field(default="http://localhost:8080")
     vespa_app_name_base: str = Field(
-        default="policies", 
+        default="policies",
         description="Base Vespa app name (will be prefixed with namespace if provided)"
     )
     vespa_timeout: int = Field(default=120)
@@ -37,13 +36,13 @@ class VespaConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="VESPA_", env_file=".env", env_ignore_empty=True, extra="ignore"
     )
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # If deployment namespace not set in VESPA_ vars, check DEPLOYMENT_NAMESPACE
         if not self.deployment_namespace:
             self.deployment_namespace = os.getenv("DEPLOYMENT_NAMESPACE")
-    
+
     @property
     def vespa_app_name(self) -> str:
         """Get the Vespa app name with namespace prefix if configured."""

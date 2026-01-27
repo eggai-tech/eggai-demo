@@ -1,16 +1,15 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import mlflow
 
 
 class MLflowTracker:
-
     def __init__(
         self,
         experiment_name: str,
-        run_name: Optional[str] = None,
-        params: Optional[Dict[str, Any]] = None
+        run_name: str | None = None,
+        params: dict[str, Any] | None = None
     ):
         self.experiment_name = experiment_name
         self.run_name = run_name
@@ -38,7 +37,7 @@ class MLflowTracker:
 
 def setup_mlflow_tracking(
     experiment_name: str,
-    run_name: Optional[str] = None,
-    params: Optional[Dict[str, Any]] = None
+    run_name: str | None = None,
+    params: dict[str, Any] | None = None
 ) -> MLflowTracker:
     return MLflowTracker(experiment_name, run_name, params)

@@ -1,7 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional
-
-from opentelemetry import trace
+from typing import Any
 
 from agents.policies.agent.services.embeddings import (
     generate_embedding_async,
@@ -9,16 +7,17 @@ from agents.policies.agent.services.embeddings import (
 from agents.policies.agent.utils import run_async_safe
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
+from libraries.observability.tracing import create_tracer
 
 logger = get_console_logger("policies_agent.tools.retrieval")
-tracer = trace.get_tracer("policies_agent_tools_retrieval")
+tracer = create_tracer("policies_agent_tools_retrieval")
 
 # Global Vespa client instance to reuse connections
 _VESPA_CLIENT = None
 
 
 @tracer.start_as_current_span("search_policy_documentation")
-def search_policy_documentation(query: str, category: Optional[str] = None) -> str:
+def search_policy_documentation(query: str, category: str | None = None) -> str:
     """
     Search policy documentation and coverage information using RAG.
     Use this for general policy questions that don't require personal policy data.
@@ -88,7 +87,7 @@ def _get_vespa_client() -> VespaClient:
     return _VESPA_CLIENT
 
 
-def format_citation(result: Dict[str, Any]) -> str:
+def format_citation(result: dict[str, Any]) -> str:
     """Format a citation with page numbers."""
     source_file = result.get("source_file", "Unknown")
     page_range = result.get("page_range", "")
@@ -99,23 +98,23 @@ def format_citation(result: Dict[str, Any]) -> str:
 
 
 async def _hybrid_search_with_embedding(
-    vespa_client: VespaClient, 
-    query: str, 
-    category: Optional[str] = None
-) -> List[Dict[str, Any]]:
+    vespa_client: VespaClient,
+    query: str,
+    category: str | None = None
+) -> list[dict[str, Any]]:
     """Perform hybrid search with async embedding generation.
-    
+
     Args:
         vespa_client: Vespa client instance
         query: Search query
         category: Optional category filter
-        
+
     Returns:
         List of search results
     """
     # Generate embedding asynchronously
     query_embedding = await generate_embedding_async(query)
-    
+
     # Perform hybrid search
     results = await vespa_client.hybrid_search(
         query=query,
@@ -123,14 +122,14 @@ async def _hybrid_search_with_embedding(
         category=category,
         alpha=0.7  # Default weight for vector search (70% vector, 30% keyword)
     )
-    
+
     return results
 
 
 @tracer.start_as_current_span("retrieve_policies")
 def retrieve_policies(
-    query: str, category: Optional[str] = None, include_metadata: bool = True
-) -> List[Dict[str, Any]]:
+    query: str, category: str | None = None, include_metadata: bool = True
+) -> list[dict[str, Any]]:
     """Retrieve policy information using Vespa search with enhanced metadata.
 
     Args:

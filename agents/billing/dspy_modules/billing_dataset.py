@@ -1,6 +1,5 @@
 import random
 from dataclasses import dataclass
-from typing import List
 
 import dspy
 
@@ -12,7 +11,7 @@ class BillingExample:
     expected_response: str
 
 
-def create_billing_dataset() -> List[BillingExample]:
+def create_billing_dataset() -> list[BillingExample]:
     """Create a dataset of billing examples.
 
     Returns:
@@ -91,7 +90,7 @@ User: {policy["policy_number"]}"""
     return examples
 
 
-def as_dspy_examples(examples: List[BillingExample]) -> List[dspy.Example]:
+def as_dspy_examples(examples: list[BillingExample]) -> list[dspy.Example]:
     """Convert BillingExample objects to dspy.Example objects.
 
     Args:

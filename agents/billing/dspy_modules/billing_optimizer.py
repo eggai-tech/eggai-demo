@@ -10,10 +10,10 @@ import dspy
 import litellm
 import mlflow
 from dspy.evaluate import Evaluate
-from libraries.dspy_copro import SimpleCOPRO, save_and_log_optimized_instructions
 from sklearn.model_selection import train_test_split
 
 from agents.billing.config import settings
+from libraries.dspy_copro import SimpleCOPRO, save_and_log_optimized_instructions
 from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedReAct

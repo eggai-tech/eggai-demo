@@ -25,21 +25,21 @@ def check_schema_exists(config_server_url: str, query_url: str, expected_generat
     try:
         app_status_url = f"{config_server_url}/application/v2/tenant/default/application/default/environment/prod/region/default/instance/default"
         response = httpx.get(app_status_url, timeout=10.0)
-        
+
         if response.status_code != 200:
             return False
-            
+
         generation = response.json().get("generation", 0)
         if generation == 0:
             return False
-        
+
         if expected_generation is not None and generation < expected_generation:
             return False
-        
+
         # Check schema accessibility
         policy_doc_url = f"{query_url}/document/v1/policies/policy_document/docid/test?cluster=policies_content"
         response = httpx.get(policy_doc_url, timeout=10.0)
-        
+
         if response.status_code in [404, 200]:
             logger.info(f"Schema ready (generation {generation})")
             return True
@@ -57,7 +57,7 @@ def deploy_package_from_zip(config_server_url: str, zip_path: Path) -> tuple[boo
     # Prepare application
     prepare_url = f"{config_server_url}/application/v2/tenant/default/session"
     response = httpx.post(prepare_url, content=zip_content, headers={"Content-Type": "application/zip"}, timeout=60.0)
-    
+
     if response.status_code != 200:
         logger.error(f"Prepare failed: {response.status_code} - {response.text}")
         return False, ""
@@ -166,7 +166,7 @@ def deploy_to_vespa(
             if check_schema_exists(config_server_url, query_url, expected_generation):
                 logger.info("✅ Deployment verified successfully")
                 return True
-            
+
             if attempt < 20:
                 logger.info(f"Schema not ready yet, waiting 5 seconds... (attempt {attempt}/20)")
                 time.sleep(5)
@@ -177,7 +177,7 @@ def deploy_to_vespa(
                     if response.status_code == 200:
                         app_data = response.json()
                         current_gen = app_data.get("generation", 0)
-                        
+
                         # Only consider successful if generation increased AND we have model versions
                         if current_gen >= expected_generation and app_data.get("modelVersions"):
                             # Try to check service convergence as additional validation
@@ -192,7 +192,7 @@ def deploy_to_vespa(
                                         logger.warning(f"Generation {current_gen} deployed but services not converged yet")
                             except Exception as _:
                                 pass
-                            
+
                             logger.warning(f"Generation {current_gen} deployed but full verification failed - may need manual check")
                             return False
                 except Exception as _:

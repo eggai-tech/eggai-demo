@@ -1,8 +1,7 @@
 import re
-from typing import Tuple
 
 
-def get_amount_score(expected: str, actual: str) -> Tuple[float, bool]:
+def get_amount_score(expected: str, actual: str) -> tuple[float, bool]:
     """Evaluate money amount matching between expected and actual responses."""
     try:
         # Extract amount in various formats ($300.00, $300, etc.)
@@ -39,7 +38,7 @@ def get_amount_score(expected: str, actual: str) -> Tuple[float, bool]:
         return (0.0, True)
 
 
-def get_date_score(expected: str, actual: str) -> Tuple[float, bool]:
+def get_date_score(expected: str, actual: str) -> tuple[float, bool]:
     """Evaluate date matching between expected and actual responses."""
     # Look for dates in YYYY-MM-DD format
     expected_dates = re.findall(r"(\d{4}-\d{2}-\d{2})", expected)
@@ -47,7 +46,7 @@ def get_date_score(expected: str, actual: str) -> Tuple[float, bool]:
     if not expected_dates:
         return (0.0, False)
 
-    actual_dates = re.findall(r"(\d{4}-\d{2}-\d{2})", actual)
+    re.findall(r"(\d{4}-\d{2}-\d{2})", actual)
 
     for expected_date in expected_dates:
         # Check for exact match
@@ -93,7 +92,7 @@ def get_date_score(expected: str, actual: str) -> Tuple[float, bool]:
     return (0.0, True)
 
 
-def get_status_score(expected: str, actual: str) -> Tuple[float, bool]:
+def get_status_score(expected: str, actual: str) -> tuple[float, bool]:
     """Evaluate status matching between expected and actual responses."""
     # Look for status patterns
     status_patterns = [
@@ -153,7 +152,7 @@ def get_status_score(expected: str, actual: str) -> Tuple[float, bool]:
         return (0.0, True)
 
 
-def get_billing_cycle_score(expected: str, actual: str) -> Tuple[float, bool]:
+def get_billing_cycle_score(expected: str, actual: str) -> tuple[float, bool]:
     """Evaluate billing cycle matching between expected and actual responses."""
     if "billing cycle" not in expected.lower():
         return (0.0, False)
@@ -206,7 +205,7 @@ def get_billing_cycle_score(expected: str, actual: str) -> Tuple[float, bool]:
     return (0.0, True)
 
 
-def get_format_score(expected: str, actual: str) -> Tuple[float, bool]:
+def get_format_score(expected: str, actual: str) -> tuple[float, bool]:
     """Evaluate format consistency between expected and actual responses."""
     format_score = 0.0
     format_checks = 0

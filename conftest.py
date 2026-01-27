@@ -5,7 +5,7 @@ This file provides shared fixtures used across all tests in the project.
 """
 
 import asyncio
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import mlflow
 import pytest
@@ -30,10 +30,10 @@ def mock_language_model(monkeypatch) -> None:
             self.model = model
             self.history = []
             self.kwargs = {"temperature": 0.7}
-            
+
         def __call__(self, prompt=None, messages=None, **kwargs):
             return ["Mocked response for testing"]
-    
+
     monkeypatch.setattr("dspy.LM", MockLM)
 
 
@@ -41,10 +41,10 @@ def mock_language_model(monkeypatch) -> None:
 async def mock_publish_channel(monkeypatch) -> AsyncGenerator[list, None]:
     """Mock channel publish method to capture published messages."""
     published_messages = []
-    
+
     async def mock_publish(self, message):
         published_messages.append(message)
-    
+
     monkeypatch.setattr("eggai.Channel.publish", mock_publish)
     yield published_messages
     published_messages.clear()
@@ -70,20 +70,20 @@ def check_mlflow_model_exists(model_name: str, version: str) -> bool:
 def pytest_collection_modifyitems(config, items):
     """Skip tests that require MLflow models if the models are not available."""
     skip_mlflow = pytest.mark.skip(reason="Required MLflow models not available")
-    
+
     # Check if specific models exist
     v3_model_exists = check_mlflow_model_exists("fewshot_baseline_n_all", "15")
     v5_model_exists = check_mlflow_model_exists("attention_net_0.25_0.0002", "1")
-    
+
     for item in items:
         # Skip classifier v3 tests if model is missing
         if "test_classifier_v3" in item.nodeid and not v3_model_exists:
             item.add_marker(skip_mlflow)
-        
+
         # Skip classifier v5 tests if model is missing
         if "test_classifier_v5" in item.nodeid and not v5_model_exists:
             item.add_marker(skip_mlflow)
-        
+
         # Also check for the marker
         if "requires_mlflow_models" in item.keywords:
             if not (v3_model_exists and v5_model_exists):

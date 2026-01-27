@@ -11,7 +11,7 @@ class TestChannels:
     def test_channels_initialization(self):
         """Test that channels object has all required attributes."""
         # channels is already instantiated in the module
-        
+
         # Verify all channel attributes exist
         assert hasattr(channels, "agents")
         assert hasattr(channels, "human")
@@ -19,7 +19,7 @@ class TestChannels:
         assert hasattr(channels, "audit_logs")
         assert hasattr(channels, "metrics")
         assert hasattr(channels, "debug")
-        
+
         # Verify channel names
         assert channels.agents == "agents"
         assert channels.human == "human"
@@ -29,7 +29,7 @@ class TestChannels:
     def test_channel_config_class(self):
         """Test that ChannelConfig can be instantiated."""
         config = ChannelConfig()
-        
+
         # Verify default values
         assert config.agents == "agents"
         assert config.human == "human"
@@ -48,7 +48,7 @@ class TestChannels:
         """Test that clear_channels is importable and callable."""
         # This just verifies the function exists and is callable
         assert callable(clear_channels)
-        
+
         # We can't test the actual clearing without a real Kafka setup,
         # but we can verify it doesn't crash when called
         try:
@@ -78,7 +78,7 @@ class TestChannels:
             channels.metrics,
             channels.debug
         ]
-        
+
         # Convert to set to check uniqueness
         assert len(channel_names) == len(set(channel_names))
 
@@ -90,15 +90,15 @@ class TestChannels:
             channels,
             clear_channels,
         )
-        
+
         # Verify they exist
         assert ChannelConfig is not None
         assert channels is not None
         assert clear_channels is not None
-        
+
         # Verify channels is an instance of ChannelConfig
         assert isinstance(channels, ChannelConfig)
-        
+
         # Verify clear_channels is a function
         import inspect
         assert inspect.iscoroutinefunction(clear_channels)
@@ -110,41 +110,41 @@ class TestChannelsIntegration:
     def test_channels_usage_pattern(self):
         """Test the typical usage pattern of channels."""
         from libraries.communication.channels import channels
-        
+
         # Simulate how channels are used in the codebase
         agent_channel = channels.agents
         human_channel = channels.human
-        
+
         # Verify we can use these as channel names
         assert isinstance(agent_channel, str)
         assert isinstance(human_channel, str)
-        
+
         # Simulate passing to a messaging system
         mock_publish_data = {
             "channel": agent_channel,
             "message": "test message"
         }
-        
+
         assert mock_publish_data["channel"] == "agents"
 
     def test_channels_in_different_contexts(self):
         """Test channels work correctly in different contexts."""
         from libraries.communication.channels import channels
-        
+
         # Test in agent context
         class MockAgent:
             def __init__(self):
                 self.channel = channels.agents
-        
+
         agent = MockAgent()
         assert agent.channel == "agents"
-        
+
         # Test in service context
         class MockService:
             def __init__(self):
                 self.human_channel = channels.human
                 self.stream_channel = channels.human_stream
-        
+
         service = MockService()
         assert service.human_channel == "human"
         assert service.stream_channel == "human_stream"

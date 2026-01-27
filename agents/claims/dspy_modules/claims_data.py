@@ -1,5 +1,4 @@
 import json
-from typing import Optional, Tuple
 
 from agents.claims.types import ClaimRecord
 
@@ -55,7 +54,7 @@ class ClaimDataException(Exception):
         super().__init__(message)
 
 
-def get_claim_record(claim_number: str) -> Optional[ClaimRecord]:
+def get_claim_record(claim_number: str) -> ClaimRecord | None:
     """Find a claim record by claim number."""
     with tracer.start_as_current_span("get_claim_record") as span:
         safe_set_attribute(span, "claim_number", claim_number)
@@ -163,7 +162,7 @@ def file_claim(policy_number: str, claim_details: str) -> str:
 @tracer.start_as_current_span("update_field_value")
 def update_field_value(
     record: ClaimRecord, field: str, new_value: str
-) -> Tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """Update a field in a claim record with validation and type conversion."""
     # Security check - only allow specific fields
     if field not in ALLOWED_FIELDS:

@@ -1,4 +1,4 @@
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -22,25 +22,20 @@ WorkflowStep = Literal["ask_additional_data", "ask_confirmation", "create_ticket
 ConfirmationResponse = Literal["yes", "no"]
 
 
-
 class TicketingRequestMessage(TypedDict):
-
     id: str
     type: Literal["ticketing_request"]
     source: str
     data: MessageData
-    traceparent: Optional[str]
-    tracestate: Optional[str]
+    traceparent: str | None
+    tracestate: str | None
 
 
 class ModelConfig(BaseModelConfig):
-
     name: str = Field("ticketing_agent", description="Name of the DSPy ticketing model")
 
 
-
 class TicketInfo(BaseModel):
-
     id: str = Field(..., description="Unique identifier for the ticket")
     policy_number: str = Field(description="Policy number associated with the ticket")
     department: TicketDepartment = Field(..., description="Department for the ticket")
@@ -49,6 +44,3 @@ class TicketInfo(BaseModel):
     created_at: str = Field(..., description="Creation timestamp")
 
     model_config = {"extra": "forbid"}
-
-
-DspyModelConfig = ModelConfig

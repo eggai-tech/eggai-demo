@@ -1,7 +1,6 @@
 import asyncio
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
 from uuid import uuid4
 
 import mlflow
@@ -72,18 +71,18 @@ async def setup_agents():
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
-async def wait_for_audit_response(timeout=10.0) -> Optional[TracedMessage]:
+async def wait_for_audit_response(timeout=10.0) -> TracedMessage | None:
     start_time = time.time()
     while (time.time() - start_time) < timeout:
         if not response_queue.empty():
             return await response_queue.get()
         await asyncio.sleep(0.5)
-    raise asyncio.TimeoutError(f"No message received after {timeout} seconds")
+    raise TimeoutError(f"No message received after {timeout} seconds")
 
 
 async def send_message_and_wait(
     message: TracedMessage, channel: Channel, timeout=10.0
-) -> tuple[Dict, Optional[TracedMessage], float]:
+) -> tuple[dict, TracedMessage | None, float]:
     case_start = time.perf_counter()
 
     while not response_queue.empty():
@@ -123,7 +122,7 @@ async def send_message_and_wait(
 
         return result, audit_response, case_time
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         case_time = (time.perf_counter() - case_start) * 1000
         channel_id = (
             "human"
@@ -147,7 +146,7 @@ async def send_message_and_wait(
 
 
 def log_metrics(
-    results: List[Dict], test_cases: Dict[str, AuditCategory], total_time: float
+    results: list[dict], test_cases: dict[str, AuditCategory], total_time: float
 ) -> None:
     mlflow.log_metric("messages_processed", len(results))
     mlflow.log_metric("total_time_ms", total_time)

@@ -1,11 +1,8 @@
-from typing import List, Optional, Tuple, Union
-
-
 class FieldValidators:
     """Validation functions for claim fields."""
 
     @staticmethod
-    def validate_estimate(value: str) -> Tuple[bool, Optional[Union[str, float]]]:
+    def validate_estimate(value: str) -> tuple[bool, str | float | None]:
         """Validate estimate field value."""
         try:
             amount = float(value)
@@ -16,7 +13,7 @@ class FieldValidators:
             return False, "Estimate must be a valid number"
 
     @staticmethod
-    def validate_date(value: str) -> Tuple[bool, Optional[str]]:
+    def validate_date(value: str) -> tuple[bool, str | None]:
         """Validate date field value."""
         if not (value.count("-") == 2 and len(value) >= 8):
             return False, "Date must be in YYYY-MM-DD format"
@@ -33,7 +30,7 @@ class FieldValidators:
             return False, "Invalid date format, use YYYY-MM-DD"
 
     @staticmethod
-    def validate_items_list(value: str) -> Tuple[bool, Optional[List[str]]]:
+    def validate_items_list(value: str) -> tuple[bool, list[str] | None]:
         """Validate a comma-separated list of items."""
         if not value or not value.strip():
             return False, "Please provide at least one item"
@@ -43,7 +40,7 @@ class FieldValidators:
         return True, items
 
     @staticmethod
-    def validate_text(value: str) -> Tuple[bool, Optional[str]]:
+    def validate_text(value: str) -> tuple[bool, str | None]:
         """Validate and sanitize text fields."""
         clean_value = value.strip()
         if not clean_value:

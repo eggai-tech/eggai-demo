@@ -18,7 +18,7 @@ eggai_set_default_transport(
     )
 )
 
-from .agent import ticketing_agent
+from .agent import escalation_agent
 
 configure_logging()
 logger = get_console_logger(AGENT_NAME)
@@ -37,7 +37,7 @@ async def main() -> None:
     dspy_set_language_model(settings)
     logger.info(f"Using language model: {settings.language_model}")
 
-    await ticketing_agent.start()
+    await escalation_agent.start()
     logger.info(f"{settings.app_name} started successfully")
 
     try:

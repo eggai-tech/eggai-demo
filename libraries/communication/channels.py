@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,17 +6,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class ChannelConfig(BaseSettings):
     """Configuration for channel names used throughout the system.
-    
+
     Supports deployment namespacing via DEPLOYMENT_NAMESPACE env var
     to allow multiple deployments on the same infrastructure.
     """
-    
+
     # Deployment namespace (e.g., "pr-123", "staging", "prod")
-    deployment_namespace: Optional[str] = Field(
+    deployment_namespace: str | None = Field(
         default=None,
         description="Namespace prefix for all channels (e.g., pr-123, staging)"
     )
-    
+
     # Base channel names (will be prefixed with namespace if provided)
     agents_base: str = Field(
         default="agents", description="Base name for inter-agent communication channel"
@@ -42,39 +41,39 @@ class ChannelConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="CHANNEL_", env_file=".env", env_ignore_empty=True, extra="ignore"
     )
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # If deployment namespace not set in CHANNEL_ vars, check DEPLOYMENT_NAMESPACE
         if not self.deployment_namespace:
             self.deployment_namespace = os.getenv("DEPLOYMENT_NAMESPACE")
-    
+
     def _apply_namespace(self, base_name: str) -> str:
         """Apply deployment namespace to channel name if configured."""
         if self.deployment_namespace:
             return f"{self.deployment_namespace}-{base_name}"
         return base_name
-    
+
     @property
     def agents(self) -> str:
         return self._apply_namespace(self.agents_base)
-    
+
     @property
     def human(self) -> str:
         return self._apply_namespace(self.human_base)
-    
+
     @property
     def human_stream(self) -> str:
         return self._apply_namespace(self.human_stream_base)
-    
+
     @property
     def audit_logs(self) -> str:
         return self._apply_namespace(self.audit_logs_base)
-    
+
     @property
     def metrics(self) -> str:
         return self._apply_namespace(self.metrics_base)
-    
+
     @property
     def debug(self) -> str:
         return self._apply_namespace(self.debug_base)

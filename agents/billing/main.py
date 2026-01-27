@@ -29,17 +29,17 @@ logger = get_console_logger("billing_agent")
 async def lifespan(app: FastAPI):
     """Handle application lifecycle events."""
     logger.info(f"Starting {settings.app_name}...")
-    
+
     init_telemetry(app_name=settings.app_name, endpoint=settings.otel_endpoint)
     dspy_set_language_model(settings)
-    
+
     logger.info("Starting agent...")
     await billing_agent.start()
-    
+
     logger.info(f"{settings.app_name} started successfully")
-    
+
     yield
-    
+
     logger.info(f"Shutting down {settings.app_name}...")
     billing_agent.stop()
     await eggai_cleanup()
@@ -76,7 +76,6 @@ app.add_api_route("/health", health_check, methods=["GET"])
 app.add_api_route("/api/v1/billing", list_billing_records, methods=["GET"])
 app.add_api_route("/api/v1/billing/stats", get_billing_statistics, methods=["GET"])
 app.add_api_route("/api/v1/billing/{policy_number}", get_billing_record, methods=["GET"])
-
 
 
 if __name__ == "__main__":

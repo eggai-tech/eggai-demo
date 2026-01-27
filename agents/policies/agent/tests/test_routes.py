@@ -68,12 +68,12 @@ def test_pagination(client):
     response1 = client.get("/api/v1/policies?limit=2&offset=0")
     assert response1.status_code == 200
     page1 = response1.json()
-    
+
     # Get second page
     response2 = client.get("/api/v1/policies?limit=2&offset=2")
     assert response2.status_code == 200
     page2 = response2.json()
-    
+
     # Should have different policies
     if page1["policies"] and page2["policies"]:
         assert page1["policies"][0]["policy_number"] != page2["policies"][0]["policy_number"]

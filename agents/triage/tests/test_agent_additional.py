@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 pytestmark = pytest.mark.integration
 
-from agents.triage.agent import handle_others, handle_user_message
+from agents.triage.agent import handle_other_messages, handle_user_message
 from agents.triage.models import TargetAgent
 from libraries.observability.tracing import TracedMessage
 
@@ -80,7 +80,7 @@ async def test_triage_agent_missing_data(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_triage_handle_other_messages():
-    """Test the handle_others function for non-user messages."""
+    """Test the handle_other_messages function for non-user messages."""
     test_message = TracedMessage(
         id=str(uuid4()),
         type="debug_message",
@@ -88,7 +88,7 @@ async def test_triage_handle_other_messages():
         data={"content": "debug info"},
     )
 
-    await handle_others(test_message)
+    await handle_other_messages(test_message)
 
 
 @pytest.mark.asyncio

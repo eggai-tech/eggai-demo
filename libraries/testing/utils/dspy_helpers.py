@@ -4,13 +4,13 @@ DSPy-specific test helpers.
 These utilities help with testing DSPy modules and signatures.
 """
 
-from typing import Callable, Type
+from collections.abc import Callable
 from unittest.mock import patch
 
 import pytest
 
 
-def test_truncate_long_history_edge_cases(truncate_func: Callable, model_config_class: Type) -> None:
+def test_truncate_long_history_edge_cases(truncate_func: Callable, model_config_class: type) -> None:
     """Shared test for truncate_long_history edge cases."""
     result = truncate_func("")
     assert result["history"] == ""
@@ -35,7 +35,7 @@ def test_truncate_long_history_edge_cases(truncate_func: Callable, model_config_
     assert "line 99" in result["history"]
 
 
-def test_signature_structure(signature_class: Type, test_data: str = "test") -> None:
+def test_signature_structure(signature_class: type, test_data: str = "test") -> None:
     """Shared test for signature structure."""
     signature = signature_class(chat_history=test_data, final_response=test_data)
 
@@ -46,7 +46,7 @@ def test_signature_structure(signature_class: Type, test_data: str = "test") -> 
     assert signature.final_response == test_data
 
 
-def test_signature_fields(signature_class: Type) -> None:
+def test_signature_fields(signature_class: type) -> None:
     """Shared test for signature fields."""
     fields = signature_class.fields
     field_names = set(fields.keys())
@@ -104,7 +104,7 @@ async def test_optimized_dspy_empty_conversation(dspy_func: Callable, expected_r
         assert len(responses) > 0
 
 
-def test_model_config_validation(model_config_class: Type) -> None:
+def test_model_config_validation(model_config_class: type) -> None:
     """Shared test for ModelConfig validation."""
     config = model_config_class()
     assert config.truncation_length >= 1000
@@ -122,7 +122,7 @@ def test_model_config_validation(model_config_class: Type) -> None:
 
 
 def test_truncate_long_history_with_config(
-    truncate_func: Callable, model_config_class: Type, agent_name: str
+    truncate_func: Callable, model_config_class: type, agent_name: str
 ) -> None:
     """Shared test for truncate_long_history with custom config."""
     long_conversation = "\n".join(

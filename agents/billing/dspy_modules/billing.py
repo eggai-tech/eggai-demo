@@ -1,5 +1,6 @@
+from collections.abc import AsyncIterable
 from pathlib import Path
-from typing import Any, AsyncIterable, Dict, Optional, Union
+from typing import Any
 
 import dspy
 from dspy import Prediction
@@ -47,7 +48,7 @@ class BillingSignature(dspy.Signature):
 import json
 
 
-def load_optimized_instructions(path: Path) -> Optional[str]:
+def load_optimized_instructions(path: Path) -> str | None:
     """
     Load optimized instructions from a JSON file and return them if valid.
     """
@@ -86,12 +87,12 @@ _initialized = False
 def _initialize_billing_model():
     """Lazy initialization of billing model to avoid hanging during imports."""
     global tracer, _billing_model, _initialized
-    
+
     if _initialized:
         return _billing_model
-    
+
     tracer = create_tracer("billing_agent")
-    
+
     # Load optimized instructions if available
     optimized_path = Path(__file__).resolve().parent / "optimized_billing_simba.json"
     instructions = load_optimized_instructions(optimized_path)
@@ -99,7 +100,7 @@ def _initialize_billing_model():
     if instructions:
         BillingSignature.__doc__ = instructions
         using_optimized_prompts = True
-    
+
     _billing_model = TracedReAct(
         BillingSignature,
         tools=[get_billing_info, update_billing_info],
@@ -107,18 +108,18 @@ def _initialize_billing_model():
         tracer=tracer,
         max_iters=5,
     )
-    
+
     logger.info(
         f"Using {'optimized' if using_optimized_prompts else 'standard'} prompts with tracer"
     )
-    
+
     _initialized = True
     return _billing_model
 
 
 def truncate_long_history(
-    chat_history: str, config: Optional[ModelConfig] = None
-) -> Dict[str, Any]:
+    chat_history: str, config: ModelConfig | None = None
+) -> dict[str, Any]:
     """Truncate conversation history if it exceeds maximum length."""
     config = config or ModelConfig()
     max_length = config.truncation_length
@@ -145,8 +146,8 @@ def truncate_long_history(
 
 
 async def process_billing(
-    chat_history: str, config: Optional[ModelConfig] = None
-) -> AsyncIterable[Union[StreamResponse, Prediction]]:
+    chat_history: str, config: ModelConfig | None = None
+) -> AsyncIterable[StreamResponse | Prediction]:
     """Process a billing inquiry using the DSPy model with streaming output."""
     config = config or ModelConfig()
 

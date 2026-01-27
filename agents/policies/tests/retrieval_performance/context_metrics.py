@@ -1,6 +1,5 @@
 import math
 from difflib import SequenceMatcher
-from typing import List, Optional, Tuple
 
 
 class ContextMetrics:
@@ -31,8 +30,8 @@ class ContextMetrics:
         return matcher.ratio()
 
     def calculate_context_coverage(
-        self, expected_context: str, retrieved_chunks: List[dict]
-    ) -> Tuple[float, List[float]]:
+        self, expected_context: str, retrieved_chunks: list[dict]
+    ) -> tuple[float, list[float]]:
         """Calculate how much of the expected context is covered by retrieved chunks.
 
         Args:
@@ -56,7 +55,7 @@ class ContextMetrics:
 
         return best_coverage, chunk_similarities
 
-    def calculate_recall_score(self, similarities: List[float]) -> float:
+    def calculate_recall_score(self, similarities: list[float]) -> float:
         """Calculate recall score - whether relevant context was found.
 
         Args:
@@ -71,7 +70,7 @@ class ContextMetrics:
             else 0.0
         )
 
-    def calculate_precision_at_k(self, similarities: List[float], k: int = 5) -> float:
+    def calculate_precision_at_k(self, similarities: list[float], k: int = 5) -> float:
         """Calculate Precision@k score.
 
         Args:
@@ -88,7 +87,7 @@ class ContextMetrics:
         relevant_in_top_k = sum(1 for sim in top_k if sim >= self.similarity_threshold)
         return relevant_in_top_k / len(top_k)
 
-    def calculate_mrr(self, similarities: List[float]) -> float:
+    def calculate_mrr(self, similarities: list[float]) -> float:
         """Calculate Mean Reciprocal Rank.
 
         Args:
@@ -102,7 +101,7 @@ class ContextMetrics:
                 return 1.0 / (i + 1)
         return 0.0
 
-    def calculate_ndcg(self, similarities: List[float], k: int = 10) -> float:
+    def calculate_ndcg(self, similarities: list[float], k: int = 10) -> float:
         """Calculate Normalized Discounted Cumulative Gain.
 
         Args:
@@ -134,7 +133,7 @@ class ContextMetrics:
 
         return dcg / idcg if idcg > 0 else 0.0
 
-    def find_best_match_position(self, similarities: List[float]) -> Optional[int]:
+    def find_best_match_position(self, similarities: list[float]) -> int | None:
         """Find the position (1-indexed) of the best matching chunk.
 
         Args:
@@ -154,7 +153,7 @@ class ContextMetrics:
         return best_pos
 
     def calculate_all_metrics(
-        self, expected_context: str, retrieved_chunks: List[dict]
+        self, expected_context: str, retrieved_chunks: list[dict]
     ) -> dict:
         """Calculate all context-based metrics in one call.
 

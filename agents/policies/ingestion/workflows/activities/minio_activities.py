@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List
 
 from temporalio import activity
 
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 @activity.defn
-async def scan_minio_inbox_activity() -> List[Dict]:
+async def scan_minio_inbox_activity() -> list[dict]:
     async with MinIOClient() as client:
         files = await client.list_inbox_files()
         logger.info(f"Found {len(files)} files in MinIO inbox")
@@ -24,22 +23,22 @@ async def check_document_exists_activity(document_id: str) -> bool:
         if await client.file_exists_in_processed(document_id):
             logger.info(f"Document {document_id} found in MinIO processed folder")
             return True
-            
+
     # Then check Vespa
     vespa_client = VespaClient()
-    
+
     try:
         # Search for document by document_id
         existing_docs = await vespa_client.search_documents(
             query=f'document_id:"{document_id}"',
             max_hits=1
         )
-        
+
         exists = len(existing_docs) > 0
         if exists:
             logger.info(f"Document {document_id} found in Vespa")
         return exists
-        
+
     except Exception as e:
         logger.error(f"Error checking document existence: {e}")
         # If we can't check, assume it doesn't exist to avoid data loss
@@ -64,10 +63,10 @@ async def move_to_failed_activity(source_key: str, error: str) -> str:
 
 
 @activity.defn
-async def download_from_minio_activity(key: str) -> Dict:
+async def download_from_minio_activity(key: str) -> dict:
     async with MinIOClient() as client:
         content, metadata = await client.download_file(key)
-        
+
         return {
             "content": content,
             "metadata": metadata,

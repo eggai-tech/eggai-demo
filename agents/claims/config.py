@@ -8,13 +8,11 @@ from .types import ModelConfig
 
 load_dotenv()
 
-MESSAGE_TYPE_CLAIM_REQUEST = "claim_request"
-
 
 class Settings(BaseAgentConfig):
     app_name: str = Field(default="claims_agent")
     prometheus_metrics_port: int = Field(default=9092)
-    
+
     model_name: str = Field(default="claims_react", description="Name of the model")
     max_iterations: int = Field(default=5, ge=1, le=10)
     use_tracing: bool = Field(default=True)

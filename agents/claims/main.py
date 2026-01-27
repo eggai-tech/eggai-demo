@@ -29,20 +29,20 @@ logger = get_console_logger("claims_agent")
 async def lifespan(app: FastAPI):
     """Handle application lifecycle events."""
     logger.info(f"Starting {settings.app_name}...")
-    
+
     init_telemetry(app_name=settings.app_name, endpoint=settings.otel_endpoint)
     dspy_set_language_model(settings)
-    
+
     from agents.claims.dspy_modules.claims import load_optimized_prompts
     load_optimized_prompts()
-    
+
     logger.info("Starting agent...")
     await claims_agent.start()
-    
+
     logger.info(f"{settings.app_name} started successfully")
-    
+
     yield
-    
+
     logger.info(f"Shutting down {settings.app_name}...")
     claims_agent.stop()
     await eggai_cleanup()

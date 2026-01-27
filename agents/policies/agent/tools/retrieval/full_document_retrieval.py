@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -15,13 +15,13 @@ class DocumentChunk(BaseModel):
     id: str
     text: str
     chunk_index: int
-    char_count: Optional[int] = 0
-    token_count: Optional[int] = 0
-    page_numbers: List[int] = []
-    headings: List[str] = []
-    title: Optional[str] = None
-    source_file: Optional[str] = None
-    category: Optional[str] = None
+    char_count: int | None = 0
+    token_count: int | None = 0
+    page_numbers: list[int] = []
+    headings: list[str] = []
+    title: str | None = None
+    source_file: str | None = None
+    category: str | None = None
 
 
 class DocumentMetadata(BaseModel):
@@ -30,9 +30,9 @@ class DocumentMetadata(BaseModel):
     title: str
     source_file: str
     category: str
-    page_numbers: List[int]
-    page_range: Optional[str]
-    all_headings: List[str]
+    page_numbers: list[int]
+    page_range: str | None
+    all_headings: list[str]
     first_chunk_id: str
     last_chunk_id: str
 
@@ -45,15 +45,15 @@ class FullDocument(BaseModel):
     total_chunks: int
     total_characters: int
     total_tokens: int
-    chunks: List[Dict[str, Any]]
+    chunks: list[dict[str, Any]]
     metadata: DocumentMetadata
-    chunk_ids: List[str]
+    chunk_ids: list[str]
     # Legacy fields for backward compatibility
     category: str
     source_file: str
-    headings: List[str]
-    page_numbers: List[int]
-    page_range: Optional[str]
+    headings: list[str]
+    page_numbers: list[int]
+    page_range: str | None
 
 
 class DocumentError(BaseModel):
@@ -69,7 +69,7 @@ class DocumentChunkRange(BaseModel):
     document_id: str
     chunk_range: str
     text: str
-    chunks: List[Dict[str, Any]]
+    chunks: list[dict[str, Any]]
     total_chunks_in_range: int
 
 
@@ -77,7 +77,7 @@ class DocumentRetrievalError(Exception):
     """Custom exception for document retrieval errors."""
 
     def __init__(
-        self, document_id: str, message: str, original_error: Optional[Exception] = None
+        self, document_id: str, message: str, original_error: Exception | None = None
     ):
         self.document_id = document_id
         self.message = message
@@ -85,26 +85,26 @@ class DocumentRetrievalError(Exception):
         super().__init__(f"Document {document_id}: {message}")
 
 
-def _get_vespa_client(vespa_client: Optional[VespaClient] = None) -> VespaClient:
+def _get_vespa_client(vespa_client: VespaClient | None = None) -> VespaClient:
     """Get or create Vespa client."""
     return vespa_client or VespaClient()
 
 
-def _sort_chunks_by_index(chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _sort_chunks_by_index(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Sort chunks by their chunk_index."""
     return sorted(chunks, key=lambda x: x.get("chunk_index", 0))
 
 
-def _extract_unique_page_numbers(chunks: List[Dict[str, Any]]) -> List[int]:
+def _extract_unique_page_numbers(chunks: list[dict[str, Any]]) -> list[int]:
     """Extract unique page numbers from chunks and return sorted list."""
-    all_page_numbers: Set[int] = set()
+    all_page_numbers: set[int] = set()
     for chunk in chunks:
         page_nums = chunk.get("page_numbers", [])
         all_page_numbers.update(page_nums)
-    return sorted(list(all_page_numbers))
+    return sorted(all_page_numbers)
 
 
-def _create_page_range(page_numbers: List[int]) -> Optional[str]:
+def _create_page_range(page_numbers: list[int]) -> str | None:
     """Create page range string from page numbers."""
     if not page_numbers:
         return None
@@ -115,10 +115,10 @@ def _create_page_range(page_numbers: List[int]) -> Optional[str]:
         return f"pp. {page_numbers[0]}-{page_numbers[-1]}"
 
 
-def _extract_unique_headings(chunks: List[Dict[str, Any]]) -> List[str]:
+def _extract_unique_headings(chunks: list[dict[str, Any]]) -> list[str]:
     """Extract unique headings from chunks in order."""
     all_headings = []
-    seen_headings: Set[str] = set()
+    seen_headings: set[str] = set()
 
     for chunk in chunks:
         headings = chunk.get("headings", [])
@@ -130,7 +130,7 @@ def _extract_unique_headings(chunks: List[Dict[str, Any]]) -> List[str]:
     return all_headings
 
 
-def _calculate_total_stats(chunks: List[Dict[str, Any]]) -> Tuple[int, int]:
+def _calculate_total_stats(chunks: list[dict[str, Any]]) -> tuple[int, int]:
     """Calculate total character and token counts from chunks."""
     total_chars = sum(
         chunk.get("char_count", len(chunk.get("text", ""))) for chunk in chunks
@@ -139,7 +139,7 @@ def _calculate_total_stats(chunks: List[Dict[str, Any]]) -> Tuple[int, int]:
     return total_chars, total_tokens
 
 
-def _create_document_metadata(chunks: List[Dict[str, Any]]) -> DocumentMetadata:
+def _create_document_metadata(chunks: list[dict[str, Any]]) -> DocumentMetadata:
     """Create document metadata from chunks."""
     if not chunks:
         raise ValueError("Cannot create metadata from empty chunks list")
@@ -165,7 +165,7 @@ def _create_document_metadata(chunks: List[Dict[str, Any]]) -> DocumentMetadata:
 
 async def _search_document_chunks(
     document_id: str, vespa_client: VespaClient
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Search for all chunks of a document."""
     chunks = await vespa_client.search_documents(
         query=f'document_id:"{document_id}"',
@@ -182,8 +182,8 @@ async def _search_document_chunks(
 
 
 async def retrieve_full_document_async(
-    document_id: str, vespa_client: Optional[VespaClient] = None
-) -> Dict[str, Any]:
+    document_id: str, vespa_client: VespaClient | None = None
+) -> dict[str, Any]:
     """
     Retrieve and reconstruct a full document from all its chunks.
 
@@ -248,8 +248,8 @@ async def retrieve_full_document_async(
 
 
 def retrieve_full_document(
-    document_id: str, vespa_client: Optional[VespaClient] = None
-) -> Dict[str, Any]:
+    document_id: str, vespa_client: VespaClient | None = None
+) -> dict[str, Any]:
     """
     Synchronous wrapper for retrieve_full_document_async.
 
@@ -267,9 +267,9 @@ def retrieve_full_document(
 def get_document_chunk_range(
     document_id: str,
     start_chunk: int,
-    end_chunk: Optional[int] = None,
-    vespa_client: Optional[VespaClient] = None,
-) -> Dict[str, Any]:
+    end_chunk: int | None = None,
+    vespa_client: VespaClient | None = None,
+) -> dict[str, Any]:
     """
     Retrieve a specific range of chunks from a document.
 

@@ -2,7 +2,6 @@
 Claims Agent API for Admin UI
 Provides REST endpoints for claims management and monitoring
 """
-from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,15 +37,15 @@ class ClaimSummary(BaseModel):
     claim_number: str
     policy_number: str
     status: str
-    estimate: Optional[float] = None
-    estimate_date: Optional[str] = None
+    estimate: float | None = None
+    estimate_date: str | None = None
     next_steps: str
-    outstanding_items: List[str] = []
+    outstanding_items: list[str] = []
 
 
 class ClaimsListResponse(BaseModel):
     """Response model for claims list"""
-    claims: List[ClaimSummary]
+    claims: list[ClaimSummary]
     total: int
     by_status: dict
 
@@ -57,7 +56,7 @@ class ClaimStats(BaseModel):
     total_estimated: float
     by_status: dict
     by_policy: dict
-    average_estimate: Optional[float]
+    average_estimate: float | None
 
 
 @app.get("/health")
@@ -68,8 +67,8 @@ async def health_check():
 
 @app.get("/api/v1/claims", response_model=ClaimsListResponse)
 async def list_claims(
-    status: Optional[str] = Query(None, description="Filter by status"),
-    policy_number: Optional[str] = Query(None, description="Filter by policy number"),
+    status: str | None = Query(None, description="Filter by status"),
+    policy_number: str | None = Query(None, description="Filter by policy number"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -77,21 +76,21 @@ async def list_claims(
     try:
         # Filter claims
         filtered_claims = CLAIMS_DATABASE
-        
+
         if status:
             filtered_claims = [c for c in filtered_claims if c.status.lower() == status.lower()]
-        
+
         if policy_number:
             filtered_claims = [c for c in filtered_claims if c.policy_number == policy_number]
-        
+
         # Calculate statistics
         by_status = {}
         for claim in filtered_claims:
             by_status[claim.status] = by_status.get(claim.status, 0) + 1
-        
+
         # Apply pagination
         paginated_claims = filtered_claims[offset:offset + limit]
-        
+
         # Convert to summary format
         claim_summaries = [
             ClaimSummary(
@@ -105,7 +104,7 @@ async def list_claims(
             )
             for claim in paginated_claims
         ]
-        
+
         return ClaimsListResponse(
             claims=claim_summaries,
             total=len(filtered_claims),
@@ -124,21 +123,21 @@ async def get_claims_statistics():
         count_with_estimate = 0
         by_status = {}
         by_policy = {}
-        
+
         for claim in CLAIMS_DATABASE:
             # Status counts
             by_status[claim.status] = by_status.get(claim.status, 0) + 1
-            
+
             # Policy counts
             by_policy[claim.policy_number] = by_policy.get(claim.policy_number, 0) + 1
-            
+
             # Sum estimates
             if claim.estimate:
                 total_estimated += claim.estimate
                 count_with_estimate += 1
-        
+
         avg_estimate = total_estimated / count_with_estimate if count_with_estimate > 0 else None
-        
+
         return ClaimStats(
             total_claims=len(CLAIMS_DATABASE),
             total_estimated=total_estimated,

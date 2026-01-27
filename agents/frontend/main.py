@@ -52,7 +52,7 @@ async def read_root():
             logger.error(f"File not found: {html_file_path}")
             raise FileNotFoundError(f"File not found: {html_file_path}")
 
-        async with aiofiles.open(html_file_path, "r", encoding="utf-8") as file:
+        async with aiofiles.open(html_file_path, encoding="utf-8") as file:
             file_content = await file.read()
 
         return HTMLResponse(content=file_content, status_code=200)
@@ -76,7 +76,7 @@ async def read_admin():
             logger.error(f"File not found: {html_file_path}")
             raise FileNotFoundError(f"File not found: {html_file_path}")
 
-        async with aiofiles.open(html_file_path, "r", encoding="utf-8") as file:
+        async with aiofiles.open(html_file_path, encoding="utf-8") as file:
             file_content = await file.read()
 
         return HTMLResponse(content=file_content, status_code=200)

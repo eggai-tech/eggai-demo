@@ -187,7 +187,7 @@ def test_export_dataset():
         # Verify file was created and contains correct data
         assert os.path.exists(tmp_path)
 
-        with open(tmp_path, "r") as f:
+        with open(tmp_path) as f:
             data = json.load(f)
 
         assert len(data) == 2

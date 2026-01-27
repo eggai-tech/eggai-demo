@@ -7,11 +7,11 @@ import pytest
 from dotenv import load_dotenv
 
 from agents.claims.agent import (
-    get_conversation_string,
     handle_claim_request,
     handle_other_messages,
     process_claims_request,
 )
+from libraries.communication.streaming import get_conversation_string
 from libraries.observability.tracing import TracedMessage
 
 
@@ -137,10 +137,11 @@ def test_get_conversation_string_empty():
 
 
 def test_get_conversation_string_missing_content():
-    """Test get_conversation_string raises error when content is missing."""
+    """Test get_conversation_string skips messages without content."""
     messages = [{"role": "user"}, {"role": "assistant", "content": "Hello"}]
-    with pytest.raises(ValueError, match="missing 'content'"):
-        get_conversation_string(messages)
+    result = get_conversation_string(messages)
+    # Messages without content are skipped, only valid messages included
+    assert "assistant: Hello" in result
 
 
 def test_get_conversation_string_normal():
@@ -156,7 +157,7 @@ def test_get_conversation_string_normal():
 
 def test_claims_specific_functionality():
     """Test claims-specific functionality."""
-    from agents.claims.agent import get_conversation_string
+    from libraries.communication.streaming import get_conversation_string
 
     messages = [
         {"role": "user", "content": "I need to file a claim"},

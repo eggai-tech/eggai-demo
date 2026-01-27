@@ -1,169 +1,61 @@
-import asyncio
-from typing import List
-
-from dspy import Prediction
-from dspy.streaming import StreamResponse
 from eggai import Agent, Channel
-from opentelemetry import trace
 
-from libraries.communication.channels import channels, clear_channels
+from libraries.communication.channels import channels
 from libraries.communication.messaging import MessageType, subscribe
+from libraries.communication.streaming import (
+    get_conversation_string,
+    stream_dspy_response,
+    validate_conversation,
+)
 from libraries.observability.logger import get_console_logger
-from libraries.observability.tracing import (
-    TracedMessage,
-    format_span_as_traceparent,
-    traced_handler,
-)
-from libraries.observability.tracing.otel import safe_set_attribute
+from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
+from libraries.observability.tracing.init_metrics import init_token_metrics
 
-from .config import (
-    AGENT_NAME,
-    GROUP_ID,
-    MSG_TYPE_STREAM_CHUNK,
-    MSG_TYPE_STREAM_END,
-    MSG_TYPE_STREAM_START,
-    dspy_model_config,
-    settings,
-)
-
-logger = get_console_logger(AGENT_NAME)
+from .config import AGENT_NAME, GROUP_ID, settings
 from .dspy_modules.escalation import process_escalation
 from .types import ChatMessage
 
-ticketing_agent = Agent(name=AGENT_NAME)
+escalation_agent = Agent(name=AGENT_NAME)
+logger = get_console_logger(AGENT_NAME)
 agents_channel = Channel(channels.agents)
+human_channel = Channel(channels.human)
 human_stream_channel = Channel(channels.human_stream)
-tracer = trace.get_tracer(AGENT_NAME)
+tracer = create_tracer(AGENT_NAME)
 
-
-
-def get_conversation_string(chat_messages: List[ChatMessage]) -> str:
-    with tracer.start_as_current_span("get_conversation_string") as span:
-        safe_set_attribute(
-            span, "chat_messages_count", len(chat_messages) if chat_messages else 0
-        )
-
-        if not chat_messages:
-            safe_set_attribute(span, "empty_messages", True)
-            return ""
-
-        conversation_parts = []
-        for chat in chat_messages:
-            if "content" not in chat:
-                safe_set_attribute(span, "invalid_message", True)
-                logger.warning("Message missing content field")
-                continue
-
-            role = chat.get("role", "User")
-            conversation_parts.append(f"{role}: {chat['content']}")
-
-        conversation = "\n".join(conversation_parts) + "\n"
-        safe_set_attribute(span, "conversation_length", len(conversation))
-        return conversation
+init_token_metrics(
+    port=settings.prometheus_metrics_port, application_name=settings.app_name
+)
 
 
 async def process_escalation_request(
     conversation_string: str,
     connection_id: str,
     message_id: str,
-    timeout_seconds: float = None,
+    timeout_seconds: float | None = None,
 ) -> None:
-    config = dspy_model_config
+    """Generate a response to an escalation request with streaming output."""
+    from .config import model_config
+
+    config = model_config
     if timeout_seconds:
-        config = dspy_model_config.model_copy(update={"timeout_seconds": timeout_seconds})
+        config = model_config.model_copy(update={"timeout_seconds": timeout_seconds})
 
     with tracer.start_as_current_span("process_escalation_request") as span:
-        child_traceparent, child_tracestate = format_span_as_traceparent(span)
-        safe_set_attribute(span, "connection_id", connection_id)
-        safe_set_attribute(span, "message_id", message_id)
-        safe_set_attribute(span, "conversation_length", len(conversation_string))
-        safe_set_attribute(span, "timeout_seconds", config.timeout_seconds)
+        validate_conversation(conversation_string, tracer, span)
 
-        if not conversation_string or len(conversation_string.strip()) < 5:
-            safe_set_attribute(span, "error", "Empty or too short conversation")
-            span.set_status(1, "Invalid input")
-            raise ValueError("Conversation history is too short to process")
-
-        await human_stream_channel.publish(
-            TracedMessage(
-                type=MSG_TYPE_STREAM_START,
-                source=AGENT_NAME,
-                data={
-                    "message_id": message_id,
-                    "connection_id": connection_id,
-                },
-                traceparent=child_traceparent,
-                tracestate=child_tracestate,
-            )
+        chunks = process_escalation(chat_history=conversation_string, config=config)
+        await stream_dspy_response(
+            chunks=chunks,
+            agent_name=AGENT_NAME,
+            connection_id=connection_id,
+            message_id=message_id,
+            stream_channel=human_stream_channel,
+            tracer=tracer,
         )
-        logger.info(f"Stream started for message {message_id}")
-
-        logger.info("Calling escalation model with streaming")
-        chunk_count = 0
-
-        try:
-            async for chunk in process_escalation(
-                chat_history=conversation_string, config=config
-            ):
-                if isinstance(chunk, StreamResponse):
-                    chunk_count += 1
-                    await human_stream_channel.publish(
-                        TracedMessage(
-                            type=MSG_TYPE_STREAM_CHUNK,
-                            source=AGENT_NAME,
-                            data={
-                                "message_chunk": chunk.chunk,
-                                "message_id": message_id,
-                                "chunk_index": chunk_count,
-                                "connection_id": connection_id,
-                            },
-                            traceparent=child_traceparent,
-                            tracestate=child_tracestate,
-                        )
-                    )
-                elif isinstance(chunk, Prediction):
-                    response = chunk.final_response
-                    if response:
-                        response = response.replace(" [[ ## completed ## ]]", "")
-
-                    logger.info(
-                        f"Sending stream end with response: {response[:100] if response else 'EMPTY'}"
-                    )
-                    await human_stream_channel.publish(
-                        TracedMessage(
-                            type=MSG_TYPE_STREAM_END,
-                            source=AGENT_NAME,
-                            data={
-                                "message_id": message_id,
-                                "message": response,
-                                "agent": AGENT_NAME,
-                                "connection_id": connection_id,
-                            },
-                            traceparent=child_traceparent,
-                            tracestate=child_tracestate,
-                        )
-                    )
-                    logger.info(f"Stream ended for message {message_id}")
-        except Exception as e:
-            logger.error(f"Error in streaming response: {e}", exc_info=True)
-            await human_stream_channel.publish(
-                TracedMessage(
-                    type=MSG_TYPE_STREAM_END,
-                    source=AGENT_NAME,
-                    data={
-                        "message_id": message_id,
-                        "message": "I'm sorry, I encountered an error while processing your request.",
-                        "agent": AGENT_NAME,
-                        "connection_id": connection_id,
-                    },
-                    traceparent=child_traceparent,
-                    tracestate=child_tracestate,
-                )
-            )
 
 
 @subscribe(
-    agent=ticketing_agent,
+    agent=escalation_agent,
     channel=agents_channel,
     message_type=MessageType.ESCALATION_REQUEST,
     group_id=GROUP_ID,
@@ -172,7 +64,7 @@ async def process_escalation_request(
 async def handle_ticketing_request(msg: TracedMessage) -> None:
     """Handle incoming ticketing request messages with intelligent streaming."""
     try:
-        chat_messages: List[ChatMessage] = msg.data.get("chat_messages", [])
+        chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id: str = msg.data.get("connection_id", "unknown")
 
         if not chat_messages:
@@ -185,7 +77,7 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
             )
             return
 
-        conversation_string = get_conversation_string(chat_messages)
+        conversation_string = get_conversation_string(chat_messages, tracer=tracer)
         logger.info(f"Processing ticketing request for connection {connection_id}")
 
         await process_escalation_request(
@@ -193,7 +85,7 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
         )
 
     except Exception as e:
-        logger.error(f"Error in TicketingAgent: {e}", exc_info=True)
+        logger.error(f"Error in {AGENT_NAME}: {e}", exc_info=True)
         try:
             connection_id = locals().get("connection_id", "unknown")
             message_id = str(msg.id) if msg else "unknown"
@@ -207,18 +99,21 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
             logger.error("Failed to send error response", exc_info=True)
 
 
-@ticketing_agent.subscribe(channel=agents_channel)
+@escalation_agent.subscribe(channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
     """Handle non-ticketing messages received on the agent channel."""
     logger.debug("Received non-ticketing message: %s", msg)
 
 
 if __name__ == "__main__":
+    import asyncio
+
+    from libraries.ml.dspy.language_model import dspy_set_language_model
 
     async def run():
-        from libraries.ml.dspy.language_model import dspy_set_language_model
-
         dspy_set_language_model(settings)
+
+        from libraries.communication.channels import clear_channels
         await clear_channels()
 
         test_conversation = (

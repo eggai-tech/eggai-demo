@@ -1,5 +1,4 @@
 import time
-from typing import List
 
 from libraries.observability.logger import get_console_logger
 
@@ -108,7 +107,7 @@ class RetrievalEvaluator:
             retrieved_chunks=chunks_text,
         )
 
-    def _format_chunks(self, chunks: List[dict]) -> str:
+    def _format_chunks(self, chunks: list[dict]) -> str:
         """Format retrieved chunks for LLM evaluation.
 
         Args:

@@ -30,20 +30,20 @@ class TestLazyInitialization:
                 }
             }
         }
-        
+
         mock_path = MagicMock()
         mock_path.exists.return_value = True
         # Create a proper context manager mock
         mock_file = mock_open(read_data=json.dumps(valid_json))()
         mock_path.open.return_value = mock_file
-        
+
         result = load_optimized_instructions(mock_path)
         assert result == "Test optimized instructions"
 
     def test_load_optimized_instructions_invalid_structure(self):
         """Test load_optimized_instructions with invalid JSON structure."""
         invalid_json = {"wrong": "structure"}
-        
+
         with patch("pathlib.Path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data=json.dumps(invalid_json))):
                 result = load_optimized_instructions(Path("test.json"))
@@ -58,7 +58,7 @@ class TestLazyInitialization:
                 }
             }
         }
-        
+
         with patch("pathlib.Path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data=json.dumps(json_no_instructions))):
                 result = load_optimized_instructions(Path("test.json"))
@@ -83,14 +83,14 @@ class TestLazyInitialization:
                     mock_load.return_value = None
                     mock_model = MagicMock()
                     mock_traced_react.return_value = mock_model
-                    
+
                     # Reset the module-level variables
                     import agents.billing.dspy_modules.billing as billing_module
                     billing_module._initialized = False
                     billing_module._billing_model = None
-                    
+
                     result = _initialize_billing_model()
-                    
+
                     assert result == mock_model
                     mock_tracer.assert_called_once_with("billing_agent")
                     mock_traced_react.assert_called_once()
@@ -101,14 +101,14 @@ class TestLazyInitialization:
         """Test _initialize_billing_model when already initialized."""
         # Set up a mock model
         mock_model = MagicMock()
-        
+
         import agents.billing.dspy_modules.billing as billing_module
         billing_module._initialized = True
         billing_module._billing_model = mock_model
-        
+
         with patch("agents.billing.dspy_modules.billing.create_tracer") as mock_tracer:
             result = _initialize_billing_model()
-            
+
             assert result == mock_model
             mock_tracer.assert_not_called()  # Should not create tracer again
 
@@ -119,14 +119,14 @@ class TestLazyInitialization:
                 with patch("agents.billing.dspy_modules.billing.TracedReAct"):
                     with patch("agents.billing.dspy_modules.billing.BillingSignature") as mock_signature:
                         mock_load.return_value = "Optimized instructions"
-                        
+
                         # Reset the module-level variables
                         import agents.billing.dspy_modules.billing as billing_module
                         billing_module._initialized = False
                         billing_module._billing_model = None
-                        
+
                         _initialize_billing_model()
-                        
+
                         # Check that the signature's __doc__ was updated
                         assert mock_signature.__doc__ == "Optimized instructions"
                         assert billing_module._initialized is True
@@ -141,10 +141,10 @@ class TestBillingModelFunctionality:
             ModelConfig,
             truncate_long_history,
         )
-        
+
         config = ModelConfig(truncation_length=1000)
         history = "x" * 1000  # Exactly at limit
-        
+
         result = truncate_long_history(history, config)
         assert result["history"] == history
         assert result["truncated"] is False
@@ -157,14 +157,14 @@ class TestBillingModelFunctionality:
             ModelConfig,
             truncate_long_history,
         )
-        
+
         config = ModelConfig(truncation_length=1000)
         # Create history with many lines
         lines = ["Line " + str(i) for i in range(50)]
         history = "\n".join(lines)
         # Make it exceed the length limit
         history = history + "x" * 900  # This will make it exceed 1000 chars
-        
+
         result = truncate_long_history(history, config)
         assert result["truncated"] is True
         assert result["original_length"] > 1000
@@ -180,24 +180,24 @@ class TestBillingModelFunctionality:
             ModelConfig,
             process_billing,
         )
-        
+
         config = ModelConfig(truncation_length=1000)
         history = "User: Test\nAgent: Response"
-        
+
         # Mock the dependencies
         with patch("agents.billing.dspy_modules.billing._initialize_billing_model") as mock_init:
             with patch("agents.billing.dspy_modules.billing.dspy.streamify") as mock_streamify:
                 # Create a mock async generator
                 async def mock_generator(**kwargs):
                     yield Prediction(final_response="Test response")
-                
+
                 mock_streamify.return_value = mock_generator
                 mock_init.return_value = MagicMock()
-                
+
                 chunks = []
                 async for chunk in process_billing(history, config):
                     chunks.append(chunk)
-                
+
                 assert len(chunks) == 1
                 assert isinstance(chunks[0], Prediction)
                 assert chunks[0].final_response == "Test response"

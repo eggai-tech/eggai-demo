@@ -9,7 +9,7 @@ from eggai.transport import eggai_set_default_transport
 
 pytestmark = pytest.mark.integration
 
-from agents.billing.config import MESSAGE_TYPE_BILLING_REQUEST, settings
+from agents.billing.config import settings
 from agents.billing.dspy_modules.evaluation.metrics import precision_metric
 from agents.billing.tests.utils import (
     get_test_cases,
@@ -42,17 +42,17 @@ def setup_kafka_transport():
 def test_components(setup_kafka_transport):
     """Set up test components after Kafka transport is initialized."""
     from agents.billing.agent import billing_agent
-    
+
     # Create test channels and response queue
     test_agent = Agent("TestBillingAgent")
     test_channel = Channel("agents")
     human_channel = Channel("human")
     human_stream_channel = Channel("human_stream")
     response_queue = asyncio.Queue()
-    
+
     # Configure language model for billing agent
     dspy_lm = dspy_set_language_model(settings, overwrite_cache_enabled=False)
-    
+
     @subscribe(
         agent=test_agent,
         channel=human_stream_channel,
@@ -63,7 +63,7 @@ def test_components(setup_kafka_transport):
     async def _handle_response(event):
         """Handler for capturing agent responses."""
         await response_queue.put(event)
-    
+
     return {
         "billing_agent": billing_agent,
         "test_agent": test_agent,
@@ -119,7 +119,7 @@ async def test_billing_agent(test_components):
                 await test_channel.publish(
                     TracedMessage(
                         id=message_id,
-                        type=MESSAGE_TYPE_BILLING_REQUEST,
+                        type=MessageType.BILLING_REQUEST,
                         source="TestBillingAgent",
                         data={
                             "chat_messages": case["chat_messages"],
@@ -175,7 +175,7 @@ async def test_billing_agent(test_components):
                     f"Test case {i + 1} precision score {precision_score} is negative"
                 )
 
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 logger.error(f"Timeout waiting for response in test case {i + 1}: {e}")
                 mlflow.log_metric(f"timeout_case_{i + 1}", 1)
                 test_results.append(

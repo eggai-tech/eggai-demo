@@ -1,5 +1,4 @@
 import ssl
-from typing import Optional
 
 from eggai.transport import KafkaTransport
 from faststream.kafka import KafkaBroker
@@ -7,7 +6,7 @@ from faststream.security import BaseSecurity
 
 
 def create_kafka_transport(
-    bootstrap_servers: str, ssl_cert: Optional[str] = None
+    bootstrap_servers: str, ssl_cert: str | None = None
 ) -> KafkaTransport:
     """
     Create a KafkaTransport instance with SSL support when certificate is provided.

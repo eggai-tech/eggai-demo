@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 
 class ErrorCategory(Enum):
@@ -38,7 +37,7 @@ class ErrorResponse:
 def get_user_friendly_error(
     error: Exception,
     category: ErrorCategory = ErrorCategory.SYSTEM,
-    fallback_message: Optional[str] = None,
+    fallback_message: str | None = None,
 ) -> str:
     """Convert exceptions to user-friendly error messages based on category."""
     error_str = str(error).lower()

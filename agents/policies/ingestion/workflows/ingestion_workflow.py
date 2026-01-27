@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel
 from temporalio import workflow
@@ -21,27 +21,27 @@ with workflow.unsafe.imports_passed_through():
 
 class DocumentIngestionWorkflowInput(BaseModel):
     file_path: str
-    category: Optional[str] = "general"
-    index_name: Optional[str] = "policies_index"
+    category: str | None = "general"
+    index_name: str | None = "policies_index"
     force_rebuild: bool = False
-    request_id: Optional[str] = None
-    source: Optional[str] = "filesystem"  # "filesystem" or "minio"
-    metadata: Optional[Dict[str, Any]] = None  # Additional metadata for MinIO documents
+    request_id: str | None = None
+    source: str | None = "filesystem"  # "filesystem" or "minio"
+    metadata: dict[str, Any] | None = None  # Additional metadata for MinIO documents
 
 
 class DocumentIngestionResult(BaseModel):
-    request_id: Optional[str]
+    request_id: str | None
     success: bool
     file_path: str
     documents_processed: int
     total_documents_indexed: int
-    total_chunks: Optional[int] = None
+    total_chunks: int | None = None
     index_name: str
-    index_path: Optional[str] = None
-    document_metadata: Optional[Dict[str, Any]] = None
+    index_path: str | None = None
+    document_metadata: dict[str, Any] | None = None
     skipped: bool = False
-    skip_reason: Optional[str] = None
-    error_message: Optional[str] = None
+    skip_reason: str | None = None
+    error_message: str | None = None
 
 
 @workflow.defn
@@ -53,7 +53,7 @@ class DocumentIngestionWorkflow:
         # Handle both dict and object inputs for backward compatibility
         if isinstance(input_data, dict):
             input_data = DocumentIngestionWorkflowInput(**input_data)
-            
+
         workflow.logger.info(
             f"Starting document ingestion workflow for file: {input_data.file_path}, "
             f"category: {input_data.category}, "
@@ -137,7 +137,7 @@ class DocumentIngestionWorkflow:
         workflow.logger.info(
             f"Starting indexing of {len(chunk_result['chunks'])} chunks"
         )
-        
+
         # Auto-generate category from filename if using default "general" category
         # This ensures consistency with test expectations and categorization logic
         from pathlib import Path
@@ -145,7 +145,7 @@ class DocumentIngestionWorkflow:
         if category == "general":
             category = Path(input_data.file_path).stem  # Gets "life" from "life.md"
             workflow.logger.info(f"Auto-generated category '{category}' from filename")
-        
+
         indexing_result = await workflow.execute_activity(
             index_document_activity,
             args=[

@@ -1,6 +1,5 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional
 
 from sentence_transformers import SentenceTransformer
 
@@ -9,8 +8,8 @@ from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("policies_agent.embeddings")
 
-_EMBEDDING_MODEL: Optional[SentenceTransformer] = None
-_EXECUTOR: Optional[ThreadPoolExecutor] = None
+_EMBEDDING_MODEL: SentenceTransformer | None = None
+_EXECUTOR: ThreadPoolExecutor | None = None
 
 
 def get_embedding_model() -> SentenceTransformer:
@@ -34,16 +33,16 @@ def get_embedding_model() -> SentenceTransformer:
 
 def get_executor() -> ThreadPoolExecutor:
     global _EXECUTOR
-    
+
     if _EXECUTOR is None:
         # Use a small thread pool since embedding is CPU-intensive
         _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embedding")
         logger.info("Thread pool executor initialized for embedding operations")
-    
+
     return _EXECUTOR
 
 
-def generate_embedding(text: str) -> List[float]:
+def generate_embedding(text: str) -> list[float]:
     if not text or not text.strip():
         logger.warning("Empty text provided for embedding generation")
         return []
@@ -58,8 +57,8 @@ def generate_embedding(text: str) -> List[float]:
 
 
 def generate_embeddings_batch(
-    texts: List[str], batch_size: int = 32
-) -> List[List[float]]:
+    texts: list[str], batch_size: int = 32
+) -> list[list[float]]:
     if not texts:
         return []
 
@@ -100,9 +99,9 @@ def generate_embeddings_batch(
 
 def combine_text_for_embedding(
     text: str,
-    title: Optional[str] = None,
-    headings: Optional[List[str]] = None,
-    category: Optional[str] = None,
+    title: str | None = None,
+    headings: list[str] | None = None,
+    category: str | None = None,
 ) -> str:
     parts = []
 
@@ -120,22 +119,22 @@ def combine_text_for_embedding(
     return " ".join(parts)
 
 
-async def generate_embedding_async(text: str) -> List[float]:
+async def generate_embedding_async(text: str) -> list[float]:
     if not text or not text.strip():
         logger.warning("Empty text provided for embedding generation")
         return []
-    
+
     try:
         loop = asyncio.get_event_loop()
         executor = get_executor()
-        
+
         # Run the CPU-intensive operation in a thread pool
         embedding = await loop.run_in_executor(
             executor,
             generate_embedding,
             text
         )
-        
+
         return embedding
     except Exception as e:
         logger.error(f"Error generating embedding asynchronously: {e}")
@@ -143,15 +142,15 @@ async def generate_embedding_async(text: str) -> List[float]:
 
 
 async def generate_embeddings_batch_async(
-    texts: List[str], batch_size: int = 32
-) -> List[List[float]]:
+    texts: list[str], batch_size: int = 32
+) -> list[list[float]]:
     if not texts:
         return []
-    
+
     try:
         loop = asyncio.get_event_loop()
         executor = get_executor()
-        
+
         # Run the CPU-intensive operation in a thread pool
         embeddings = await loop.run_in_executor(
             executor,
@@ -159,7 +158,7 @@ async def generate_embeddings_batch_async(
             texts,
             batch_size
         )
-        
+
         return embeddings
     except Exception as e:
         logger.error(f"Error generating batch embeddings asynchronously: {e}")

@@ -78,7 +78,7 @@ def test_create_ticket_success():
 def test_create_ticket_valid_departments():
     """Test creating tickets with all valid departments."""
     valid_departments = ["Technical Support", "Billing", "Sales"]
-    original_count = len(ticket_database)
+    len(ticket_database)
 
     for i, dept in enumerate(valid_departments):
         result = create_ticket(

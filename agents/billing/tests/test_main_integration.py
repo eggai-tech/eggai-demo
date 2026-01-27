@@ -11,7 +11,7 @@ with patch('agents.billing.main.create_kafka_transport'):
             # Setup mock agent
             mock_agent.start = AsyncMock()
             mock_agent.stop = MagicMock()
-            
+
             with patch('agents.billing.main.init_telemetry'):
                 with patch('agents.billing.main.dspy_set_language_model'):
                     from agents.billing.main import app

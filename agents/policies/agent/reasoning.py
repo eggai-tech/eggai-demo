@@ -1,7 +1,8 @@
 import json
 import os
+from collections.abc import AsyncIterable
 from pathlib import Path
-from typing import Any, AsyncIterable, Dict, Optional, Union
+from typing import Any
 
 import dspy
 from dspy import Prediction
@@ -82,13 +83,13 @@ class PolicyAgentSignature(dspy.Signature):
 
     chat_history: str = dspy.InputField(desc="Full conversation context.")
 
-    policy_category: Optional[PolicyCategory] = dspy.OutputField(
+    policy_category: PolicyCategory | None = dspy.OutputField(
         desc="Policy category if identified."
     )
-    policy_number: Optional[str] = dspy.OutputField(
+    policy_number: str | None = dspy.OutputField(
         desc="Policy number if provided by user."
     )
-    documentation_reference: Optional[str] = dspy.OutputField(
+    documentation_reference: str | None = dspy.OutputField(
         desc="Reference on the documentation if found (e.g. Section 3.1)."
     )
 
@@ -118,7 +119,7 @@ if (
 ):
     try:
         logger.info(f"Loading optimized prompts from {optimized_model_path}")
-        with open(optimized_model_path, "r") as f:
+        with open(optimized_model_path) as f:
             optimized_data = json.load(f)
 
             # Check if the JSON has the expected structure
@@ -149,8 +150,8 @@ logger.info(
 
 
 def truncate_long_history(
-    chat_history: str, config: Optional[ModelConfig] = None
-) -> Dict[str, Any]:
+    chat_history: str, config: ModelConfig | None = None
+) -> dict[str, Any]:
     """Truncate conversation history if it exceeds maximum length."""
     config = config or ModelConfig()
     max_length = config.truncation_length
@@ -165,7 +166,7 @@ def truncate_long_history(
     # Check if truncation needed based on both character count and line count
     lines = chat_history.split("\n")
     max_lines = 30
-    
+
     if len(chat_history) <= max_length and len(lines) <= max_lines:
         return result
 
@@ -182,8 +183,8 @@ def truncate_long_history(
 
 @traced_dspy_function(name="process_policies")
 def process_policies(
-    chat_history: str, config: Optional[ModelConfig] = None
-) -> AsyncIterable[Union[StreamResponse, Prediction]]:
+    chat_history: str, config: ModelConfig | None = None
+) -> AsyncIterable[StreamResponse | Prediction]:
     """Process a policies inquiry using the DSPy ReAct model with streaming output."""
     config = config or ModelConfig()
 

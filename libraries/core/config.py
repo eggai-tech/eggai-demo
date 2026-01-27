@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,19 +8,19 @@ class BaseAgentConfig(BaseSettings):
         ...,
         description="Unique application name for the agent"
     )
-    
+
     # Deployment configuration
-    deployment_namespace: Optional[str] = Field(
+    deployment_namespace: str | None = Field(
         default=None,
         description="Namespace for deployment (e.g., pr-123, staging, prod)"
     )
-    
+
     # Language model settings
     language_model: str = Field(
         default="openai/gpt-4o-mini",
         description="Language model to use for agent reasoning"
     )
-    language_model_api_base: Optional[str] = Field(
+    language_model_api_base: str | None = Field(
         default=None,
         description="Optional API base URL for the language model"
     )
@@ -30,7 +28,7 @@ class BaseAgentConfig(BaseSettings):
         default=False,
         description="Whether to enable model result caching"
     )
-    
+
     # Kafka settings
     kafka_bootstrap_servers: str = Field(
         default="localhost:19092",
@@ -48,7 +46,7 @@ class BaseAgentConfig(BaseSettings):
         default=20000,
         description="Kafka consumer rebalance timeout in milliseconds"
     )
-    
+
     # Observability settings
     otel_endpoint: str = Field(
         default="http://localhost:4318",
@@ -62,24 +60,24 @@ class BaseAgentConfig(BaseSettings):
         ...,
         description="Port for Prometheus metrics endpoint (must be unique per agent)"
     )
-    
+
     # Temporal configuration (for agents that use it)
-    temporal_namespace: Optional[str] = Field(
+    temporal_namespace: str | None = Field(
         default=None,
         description="Temporal namespace (uses deployment_namespace if not set)"
     )
-    temporal_task_queue: Optional[str] = Field(
+    temporal_task_queue: str | None = Field(
         default=None,
         description="Temporal task queue (uses agent-specific default if not set)"
     )
-    
+
     # Base configuration - to be overridden by each agent
     model_config = SettingsConfigDict(
         env_file=".env",
         env_ignore_empty=True,
         extra="ignore"
     )
-    
+
     def get_temporal_namespace(self) -> str:
         """Get the Temporal namespace, using deployment namespace as fallback."""
         if self.temporal_namespace:
@@ -87,7 +85,7 @@ class BaseAgentConfig(BaseSettings):
         if self.deployment_namespace:
             return self.deployment_namespace
         return "default"
-    
+
     def get_temporal_task_queue(self, default_queue: str) -> str:
         """Get the Temporal task queue with deployment namespace prefix if configured."""
         base_queue = self.temporal_task_queue or default_queue

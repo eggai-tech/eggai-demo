@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -14,7 +14,7 @@ AuditCategory = Literal[
 ]
 
 class AuditConfig(BaseModel):
-    message_categories: Dict[str, AuditCategory] = Field(default_factory=dict)
+    message_categories: dict[str, AuditCategory] = Field(default_factory=dict)
     default_category: AuditCategory = Field(default="Other")
     enable_debug_logging: bool = Field(default=False)
     audit_channel_name: str = Field(default="audit_logs")
@@ -28,10 +28,10 @@ class AuditEvent(BaseModel):
     channel: str = Field(...)
     category: AuditCategory = Field(...)
     audit_timestamp: datetime = Field(default_factory=datetime.now)
-    content: Optional[str] = Field(default=None)
-    error: Optional[Dict[str, str]] = Field(default=None)
+    content: str | None = Field(default=None)
+    error: dict[str, str] | None = Field(default=None)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = self.model_dump()
         result["audit_timestamp"] = self.audit_timestamp.isoformat()
         return result

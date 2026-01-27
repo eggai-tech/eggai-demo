@@ -1,7 +1,6 @@
 import asyncio
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
 from uuid import uuid4
 
 import dspy
@@ -22,16 +21,13 @@ eggai_set_default_transport(
     )
 )
 
-from agents.escalation.config import (
-    AGENT_NAME,
-    MSG_TYPE_TICKETING_REQUEST,
-)
+from agents.escalation.config import AGENT_NAME
 from libraries.communication.messaging import MessageType, OffsetReset, subscribe
 from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage
 
-from ..agent import ticketing_agent as escalation_agent
+from ..agent import escalation_agent
 from ..types import ChatMessage
 
 # Configure logger
@@ -49,7 +45,7 @@ human_stream_channel = Channel("human_stream")
 _response_queue = asyncio.Queue()
 
 
-def create_test_cases() -> List[Dict]:
+def create_test_cases() -> list[dict]:
     """Create test cases for the escalation agent."""
     return [
         {
@@ -119,7 +115,7 @@ class EscalationEvaluationSignature(dspy.Signature):
     precision_score: float = dspy.OutputField(desc="Precision score (0.0 to 1.0).")
 
 
-def generate_report(test_results: List[Dict], headers: List[str]) -> str:
+def generate_report(test_results: list[dict], headers: list[str]) -> str:
     """Generate a markdown table report from test results."""
     widths = [len(h) for h in headers]
     for row in test_results:
@@ -144,7 +140,7 @@ def generate_report(test_results: List[Dict], headers: List[str]) -> str:
     return "\n".join(lines)
 
 
-def get_conversation_string(chat_messages: List[ChatMessage]) -> str:
+def get_conversation_string(chat_messages: list[ChatMessage]) -> str:
     """Convert chat messages to conversation string."""
     return "\n".join([f"{m['role']}: {m['content']}" for m in chat_messages])
 
@@ -164,7 +160,7 @@ async def handle_agent_response(event):
 
 async def wait_for_agent_response(
     connection_id: str, timeout: float = 60.0
-) -> Optional[Dict]:
+) -> dict | None:
     """Wait for a response from the agent with the specified connection ID."""
     # Clear existing messages
     while not _response_queue.empty():
@@ -190,7 +186,7 @@ async def wait_for_agent_response(
             else:
                 source = event.get("source", "unknown")
                 logger.info(f"Received non-matching response from {source}")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await asyncio.sleep(0.5)
 
     return None
@@ -198,7 +194,7 @@ async def wait_for_agent_response(
 
 async def evaluate_response(
     chat_history: str, agent_response: str, expected_meaning: str
-) -> Dict:
+) -> dict:
     """Evaluate agent response against expected meaning."""
     eval_model = dspy.asyncify(dspy.Predict(EscalationEvaluationSignature))
     return await eval_model(
@@ -258,7 +254,7 @@ async def test_escalation_agent():
             await test_channel.publish(
                 TracedMessage(
                     id=message_id,
-                    type=MSG_TYPE_TICKETING_REQUEST,
+                    type=MessageType.ESCALATION_REQUEST,
                     source="TestEscalationAgent",
                     data={
                         "chat_messages": case["chat_messages"],
@@ -273,7 +269,7 @@ async def test_escalation_agent():
                 # Wait for response
                 event = await wait_for_agent_response(connection_id)
                 if not event:
-                    raise asyncio.TimeoutError(
+                    raise TimeoutError(
                         f"Timeout waiting for response for test {i + 1}"
                     )
 
@@ -325,7 +321,7 @@ async def test_escalation_agent():
                 # Only assert that we got a response
                 assert agent_response, f"Test case {i + 1} got no response from agent"
 
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 logger.error(f"Timeout: {str(e)}")
                 # Record timeout as a failed test case but continue
                 test_result = {

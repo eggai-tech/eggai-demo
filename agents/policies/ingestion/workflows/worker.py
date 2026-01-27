@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 
 from temporalio.client import Client
 from temporalio.worker import Worker
@@ -44,7 +43,7 @@ def _get_logger():
 
 
 async def run_policy_documentation_worker(
-    client: Optional[Client] = None,
+    client: Client | None = None,
 ) -> Worker:
     from agents.policies.ingestion.config import settings
 
@@ -84,7 +83,7 @@ async def run_policy_documentation_worker(
 
 async def main():
     try:
-        worker = await run_policy_documentation_worker()
+        await run_policy_documentation_worker()
 
         # Keep the worker running
         await asyncio.Event().wait()

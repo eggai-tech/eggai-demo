@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
@@ -115,7 +115,7 @@ class ReindexService:
             logger.error(f"Get indexing status error: {e}")
             raise
 
-    def _get_document_configs(self, policy_ids: Optional[List[str]] = None) -> List[dict]:
+    def _get_document_configs(self, policy_ids: list[str] | None = None) -> list[dict]:
         # Define document configurations
         all_configs = [
             {"file": "auto.md", "category": "auto"},
@@ -123,7 +123,7 @@ class ReindexService:
             {"file": "life.md", "category": "life"},
             {"file": "health.md", "category": "health"},
         ]
-        
+
         # Filter by policy IDs if specified
         if policy_ids:
             return [
@@ -131,22 +131,22 @@ class ReindexService:
                 for config in all_configs
                 if config["category"] in policy_ids
             ]
-        
+
         return all_configs
-    
+
     async def _queue_document_for_ingestion(
-        self, 
+        self,
         temporal_client: TemporalClient,
         config: dict,
         force_rebuild: bool
-    ) -> tuple[bool, str, Optional[str]]:
+    ) -> tuple[bool, str, str | None]:
         file_path = self.base_path / config["file"]
-        
+
         if not file_path.exists():
             error_msg = f"Document not found: {file_path}"
             logger.warning(error_msg)
             return False, config["category"], error_msg
-        
+
         try:
             # Start ingestion workflow
             result = await temporal_client.ingest_document_async(
@@ -155,7 +155,7 @@ class ReindexService:
                 index_name="policies_index",
                 force_rebuild=force_rebuild,
             )
-            
+
             if result.success:
                 logger.info(
                     f"Queued {config['category']} policy for ingestion, "
@@ -166,17 +166,17 @@ class ReindexService:
                 error_msg = f"Failed to queue {config['category']}: {result.error_message}"
                 logger.error(error_msg)
                 return False, config["category"], error_msg
-                
+
         except Exception as e:
             error_msg = f"Error queuing {config['category']}: {str(e)}"
             logger.error(error_msg)
             return False, config["category"], error_msg
-    
+
     def _create_reindex_response(
-        self, documents_queued: int, queued_policy_ids: List[str], errors: List[str]
+        self, documents_queued: int, queued_policy_ids: list[str], errors: list[str]
     ) -> ReindexResponse:
         from agents.policies.agent.api.models import ReindexResponse
-        
+
         if documents_queued == 0 and errors:
             return ReindexResponse(
                 status="failed",
@@ -201,15 +201,14 @@ class ReindexService:
 
     async def reindex_documents(self, request: ReindexRequest) -> ReindexResponse:
         from agents.policies.agent.api.models import ReindexResponse
-        
+
         errors = []
-        documents_cleared = 0
 
         try:
             # Step 1: Clear existing documents if requested
             if request.force_rebuild:
                 try:
-                    documents_cleared = await self.clear_existing_documents()
+                    await self.clear_existing_documents()
                 except Exception as e:
                     error_msg = f"Failed to clear existing documents: {str(e)}"
                     logger.error(error_msg)
@@ -219,7 +218,7 @@ class ReindexService:
             from agents.policies.ingestion.temporal_client import TemporalClient
             temporal_client = TemporalClient()
             document_configs = self._get_document_configs(request.policy_ids)
-            
+
             # Queue each document for ingestion
             documents_queued = 0
             queued_policy_ids = []
@@ -228,7 +227,7 @@ class ReindexService:
                 success, policy_id, error_msg = await self._queue_document_for_ingestion(
                     temporal_client, config, request.force_rebuild
                 )
-                
+
                 if success:
                     documents_queued += 1
                     queued_policy_ids.append(policy_id)

@@ -11,7 +11,7 @@ with patch('agents.claims.main.create_kafka_transport'):
             # Setup mock agent
             mock_agent.start = AsyncMock()
             mock_agent.stop = MagicMock()
-            
+
             with patch('agents.claims.main.init_telemetry'):
                 with patch('agents.claims.main.dspy_set_language_model'):
                     with patch('agents.claims.dspy_modules.claims.load_optimized_prompts'):

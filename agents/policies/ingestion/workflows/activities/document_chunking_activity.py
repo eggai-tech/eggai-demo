@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set
+from typing import Any
 
 from docling.chunking import HierarchicalChunker
 from docling_core.types import DoclingDocument
@@ -10,7 +10,7 @@ from libraries.observability.logger import get_console_logger
 logger = get_console_logger("ingestion.document_chunking")
 
 
-def extract_page_numbers(chunk: Any) -> List[int]:
+def extract_page_numbers(chunk: Any) -> list[int]:
     page_numbers = set()
 
     try:
@@ -24,10 +24,10 @@ def extract_page_numbers(chunk: Any) -> List[int]:
     except Exception as e:
         logger.warning(f"Error extracting page numbers: {e}")
 
-    return sorted(list(page_numbers))
+    return sorted(page_numbers)
 
 
-def extract_headings(chunk: Any) -> List[str]:
+def extract_headings(chunk: Any) -> list[str]:
     headings = []
 
     try:
@@ -66,7 +66,7 @@ def extract_headings(chunk: Any) -> List[str]:
     return headings
 
 
-def extract_section_path(chunk: Any, document: DoclingDocument) -> List[str]:
+def extract_section_path(chunk: Any, document: DoclingDocument) -> list[str]:
     section_path = []
 
     try:
@@ -84,7 +84,7 @@ def extract_section_path(chunk: Any, document: DoclingDocument) -> List[str]:
 
 
 @activity.defn
-async def chunk_document_activity(load_result: Dict[str, Any]) -> Dict[str, Any]:
+async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]:
     logger.info("Starting enhanced document chunking with metadata extraction")
 
     try:
@@ -118,7 +118,7 @@ async def chunk_document_activity(load_result: Dict[str, Any]) -> Dict[str, Any]
         # Document-level statistics
         total_characters = 0
         total_tokens = 0
-        all_page_numbers: Set[int] = set()
+        all_page_numbers: set[int] = set()
         document_outline = []
 
         chunk_data = []
@@ -200,7 +200,7 @@ async def chunk_document_activity(load_result: Dict[str, Any]) -> Dict[str, Any]
                 "total_pages": max(all_page_numbers) if all_page_numbers else 0,
                 "total_characters": total_characters,
                 "total_tokens": total_tokens,
-                "page_numbers": sorted(list(all_page_numbers)),
+                "page_numbers": sorted(all_page_numbers),
                 "outline": document_outline,
             },
         }

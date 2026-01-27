@@ -1,7 +1,7 @@
 import json
+from collections.abc import AsyncIterable
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncIterable, Dict, List, Optional, Union
 
 import dspy
 from dspy import Prediction
@@ -14,11 +14,11 @@ from libraries.observability.tracing import (
     traced_dspy_function,
 )
 
-from ..types import DspyModelConfig, TicketDepartment, TicketInfo
+from ..types import ModelConfig, TicketDepartment, TicketInfo
 
 logger = get_console_logger("escalation_agent.dspy")
 
-tracer = create_tracer("ticketing_agent")
+tracer = create_tracer("escalation_agent")
 
 
 class TicketingSignature(dspy.Signature):
@@ -70,7 +70,7 @@ using_optimized_prompts = False
 if optimized_model_path.exists():
     try:
         logger.info(f"Loading optimized prompts from {optimized_model_path}")
-        with open(optimized_model_path, "r") as f:
+        with open(optimized_model_path) as f:
             optimized_data = json.load(f)
 
             if "react" in optimized_data and "signature" in optimized_data["react"]:
@@ -155,7 +155,7 @@ escalation_model = TracedReAct(
     max_iters=5,
 )
 
-ticket_database: List[Dict] = [
+ticket_database: list[dict] = [
     {
         "id": "TICKET-001",
         "policy_number": "A12345",
@@ -169,10 +169,10 @@ ticket_database: List[Dict] = [
 
 @traced_dspy_function(name="escalation_dspy")
 async def process_escalation(
-    chat_history: str, config: Optional[DspyModelConfig] = None
-) -> AsyncIterable[Union[StreamResponse, Prediction]]:
+    chat_history: str, config: ModelConfig | None = None
+) -> AsyncIterable[StreamResponse | Prediction]:
     """Process an escalation inquiry using the DSPy model with streaming output."""
-    config = config or DspyModelConfig()
+    config = config or ModelConfig()
 
     streamify_func = dspy.streamify(
         escalation_model,

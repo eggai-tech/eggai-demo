@@ -1,12 +1,8 @@
-import asyncio
-from typing import List
-
-from dspy import Prediction
-from dspy.streaming import StreamResponse
 from eggai import Agent, Channel
 
-from libraries.communication.channels import channels, clear_channels
-from libraries.communication.messaging import MessageType, subscribe
+from libraries.communication.channels import channels
+from libraries.communication.messaging import AgentName, MessageType, subscribe
+from libraries.communication.streaming import publish_error_message
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
 from libraries.observability.tracing.init_metrics import init_token_metrics
@@ -15,7 +11,8 @@ from .config import settings
 from .types import ChatMessage
 from .utils import get_conversation_string, process_billing_request
 
-billing_agent = Agent(name="Billing")
+AGENT_NAME = AgentName.BILLING
+billing_agent = Agent(name=AGENT_NAME)
 logger = get_console_logger("billing_agent.handler")
 agents_channel = Channel(channels.agents)
 human_channel = Channel(channels.human)
@@ -36,27 +33,19 @@ init_token_metrics(
 async def handle_billing_request(msg: TracedMessage) -> None:
     """Handle incoming billing request messages from the agents channel."""
     try:
-        chat_messages: List[ChatMessage] = msg.data.get("chat_messages", [])
+        chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id: str = msg.data.get("connection_id", "unknown")
 
         if not chat_messages:
             logger.warning(f"Empty chat history for connection: {connection_id}")
-            await human_channel.publish(
-                TracedMessage(
-                    type="agent_message",
-                    source="Billing",
-                    data={
-                    "message": "I apologize, but I didn't receive any message content to process.",  # noqa: E501
-                        "connection_id": connection_id,
-                        "agent": "Billing",
-                    },
-                    traceparent=msg.traceparent,
-                    tracestate=msg.tracestate,
-                )
+            await publish_error_message(
+                human_channel, AGENT_NAME, connection_id,
+                message="I apologize, but I didn't receive any message content to process.",
+                traceparent=msg.traceparent, tracestate=msg.tracestate,
             )
             return
 
-        conversation_string = get_conversation_string(chat_messages)
+        conversation_string = get_conversation_string(chat_messages, tracer=tracer)
         logger.info(f"Processing billing request for connection {connection_id}")
 
         await process_billing_request(
@@ -68,19 +57,12 @@ async def handle_billing_request(msg: TracedMessage) -> None:
         )
 
     except Exception as e:
-        logger.error(f"Error in BillingAgent: {e}", exc_info=True)
-        await human_channel.publish(
-            TracedMessage(
-                type="agent_message",
-                source="BillingAgent",
-                data={
-                    "message": "I apologize, but I'm having trouble processing your request right now. Please try again.",  # noqa: E501
-                    "connection_id": locals().get("connection_id", "unknown"),
-                    "agent": "BillingAgent",
-                },
-                traceparent=msg.traceparent if "msg" in locals() else None,
-                tracestate=msg.tracestate if "msg" in locals() else None,
-            )
+        logger.error(f"Error in {AGENT_NAME}: {e}", exc_info=True)
+        await publish_error_message(
+            human_channel, AGENT_NAME,
+            connection_id=locals().get("connection_id", "unknown"),
+            traceparent=msg.traceparent if "msg" in locals() else None,
+            tracestate=msg.tracestate if "msg" in locals() else None,
         )
 
 
@@ -90,14 +72,19 @@ async def handle_other_messages(msg: TracedMessage) -> None:
     logger.debug("Received non-billing message: %s", msg)
 
 if __name__ == "__main__":
+    import asyncio
+
+    from dspy import Prediction
+    from dspy.streaming import StreamResponse
+
+    from libraries.ml.dspy.language_model import dspy_set_language_model
+
+    from .dspy_modules.billing import process_billing
 
     async def run():
-        from libraries.ml.dspy.language_model import dspy_set_language_model
-
-        from .dspy_modules.billing import process_billing
-
         dspy_set_language_model(settings)
 
+        from libraries.communication.channels import clear_channels
         await clear_channels()
 
         test_conversation = (

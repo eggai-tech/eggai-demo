@@ -24,7 +24,7 @@ class TestMainConfig:
         assert isinstance(settings.api_port, int)
         assert settings.api_host is not None
         assert isinstance(settings.prometheus_metrics_port, int)
-    
+
     def test_env_override(self):
         """Test environment variable override."""
         with patch.dict(os.environ, {
@@ -39,7 +39,7 @@ class TestMainConfig:
             assert settings.embedding_model == "all-mpnet-base-v2"
             assert settings.api_port == 8003
             assert settings.cache_enabled is True
-    
+
     def test_kafka_settings(self):
         """Test Kafka configuration."""
         with patch.dict(os.environ, {
@@ -48,11 +48,11 @@ class TestMainConfig:
             "POLICIES_KAFKA_REBALANCE_TIMEOUT_MS": "30000"
         }):
             settings = MainSettings()
-            
+
             assert settings.kafka_bootstrap_servers == "kafka:9092"
             assert settings.kafka_topic_prefix == "test"
             assert settings.kafka_rebalance_timeout_ms == 30000
-    
+
     def test_optional_fields(self):
         """Test optional field handling."""
         settings = MainSettings()
@@ -61,11 +61,11 @@ class TestMainConfig:
         # Just verify they can be accessed without error
         _ = settings.language_model_api_base
         _ = settings.max_context_window
-    
+
     def test_model_config(self):
         """Test model configuration settings."""
-        settings = MainSettings()
-        
+        MainSettings()
+
         # Check that extra fields are ignored
         with patch.dict(os.environ, {"POLICIES_UNKNOWN_FIELD": "value"}):
             settings2 = MainSettings()
@@ -106,7 +106,7 @@ class TestIngestionConfig:
             assert settings.vespa_services_xml is None
             assert settings.vespa_app_name == "policies"  # Property returns base value without prefix
             assert settings.vespa_app_name_base == "policies"  # Base value
-    
+
     def test_vespa_deployment_settings(self):
         """Test Vespa deployment configuration."""
         with patch.dict(os.environ, {
@@ -117,19 +117,19 @@ class TestIngestionConfig:
             "POLICIES_DOCUMENT_INGESTION_VESPA_SERVICES_XML": "/tmp/services.xml"
         }):
             settings = IngestionSettings()
-            
+
             assert settings.vespa_deployment_mode == "local"
             assert settings.vespa_node_count == 1
             assert settings.vespa_artifacts_dir == Path("/tmp/artifacts")
             assert settings.vespa_hosts_config == Path("/tmp/hosts.json")
             assert settings.vespa_services_xml == Path("/tmp/services.xml")
-    
+
     def test_path_type_conversion(self):
         """Test Path type conversion for optional fields."""
         # Test None handling
         settings = IngestionSettings()
         assert settings.vespa_artifacts_dir is None
-        
+
         # Test Path conversion
         with patch.dict(os.environ, {
             "POLICIES_DOCUMENT_INGESTION_VESPA_ARTIFACTS_DIR": "relative/path"
@@ -137,7 +137,7 @@ class TestIngestionConfig:
             settings = IngestionSettings()
             assert isinstance(settings.vespa_artifacts_dir, Path)
             assert str(settings.vespa_artifacts_dir) == "relative/path"
-    
+
     def test_temporal_settings(self):
         """Test Temporal configuration."""
         with patch.dict(os.environ, {
@@ -146,13 +146,13 @@ class TestIngestionConfig:
             "POLICIES_DOCUMENT_INGESTION_TEMPORAL_TASK_QUEUE_BASE": "custom-queue"
         }):
             settings = IngestionSettings()
-            
+
             assert settings.temporal_server_url == "temporal:7233"
             assert settings.temporal_namespace == "policies"
             assert settings.get_temporal_namespace() == "policies"
             assert settings.temporal_task_queue_base == "custom-queue"
             assert settings.temporal_task_queue == "custom-queue"  # No prefix when deployment_namespace is None
-    
+
     def test_invalid_node_count(self):
         """Test validation of node count."""
         with patch.dict(os.environ, {
@@ -160,7 +160,7 @@ class TestIngestionConfig:
         }):
             with pytest.raises(ValidationError):
                 IngestionSettings()
-    
+
     def test_env_prefix(self):
         """Test environment variable prefix handling."""
         # Wrong prefix should not override
@@ -175,7 +175,7 @@ class TestIngestionConfig:
 
 class TestConfigIntegration:
     """Test configuration integration between modules."""
-    
+
     def test_shared_settings(self):
         """Test settings that are shared between configurations."""
         with patch.dict(os.environ, {
@@ -184,11 +184,11 @@ class TestConfigIntegration:
         }):
             main_settings = MainSettings()
             ingestion_settings = IngestionSettings()
-            
+
             # Each config has its own namespace
             assert main_settings.otel_endpoint == "http://otel:4318"
             assert ingestion_settings.otel_endpoint == "http://otel2:4318"
-    
+
     def test_deployment_mode_validation(self):
         """Test deployment mode values."""
         # Valid modes
@@ -198,12 +198,12 @@ class TestConfigIntegration:
             }):
                 settings = IngestionSettings()
                 assert settings.vespa_deployment_mode == mode
-    
+
     def test_settings_mutability(self):
         """Test that settings can be modified after creation."""
         settings = MainSettings()
         original_name = settings.app_name
-        
+
         # Settings are mutable by default in pydantic_settings
         settings.app_name = "changed"
         assert settings.app_name == "changed"
@@ -217,12 +217,12 @@ class TestConfigIntegration:
             "POLICIES_DOCUMENT_INGESTION_DEPLOYMENT_NAMESPACE": "pr-123"
         }):
             settings = IngestionSettings()
-            
+
             assert settings.deployment_namespace == "pr-123"
             assert settings.get_temporal_namespace() == "pr-123"  # Uses deployment namespace
             assert settings.temporal_task_queue == "pr-123-policy-rag"  # Prefixed
             assert settings.vespa_app_name == "pr-123-policies"  # Prefixed
-    
+
     def test_deployment_namespace_from_env(self):
         """Test deployment namespace from DEPLOYMENT_NAMESPACE env var."""
         # Clear any POLICIES_DOCUMENT_INGESTION_ prefix vars
@@ -231,7 +231,7 @@ class TestConfigIntegration:
             "POLICIES_DOCUMENT_INGESTION_DEPLOYMENT_NAMESPACE": ""  # Empty to use fallback
         }):
             settings = IngestionSettings()
-            
+
             assert settings.deployment_namespace == "staging"
             assert settings.get_temporal_namespace() == "staging"
             assert settings.temporal_task_queue == "staging-policy-rag"
@@ -240,7 +240,7 @@ class TestConfigIntegration:
 
 class TestConfigurationEdgeCases:
     """Test edge cases and validation for configuration settings."""
-    
+
     def test_invalid_port_number(self):
         """Test validation of port numbers."""
         # Test negative port - Pydantic will coerce to int without validation
@@ -257,7 +257,7 @@ class TestConfigurationEdgeCases:
         with patch.dict(os.environ, {"POLICIES_API_PORT": "not-a-number"}):
             with pytest.raises(ValidationError):
                 MainSettings()
-    
+
     def test_boolean_parsing(self):
         """Test various boolean value formats."""
         # Test different true values
@@ -265,18 +265,18 @@ class TestConfigurationEdgeCases:
             with patch.dict(os.environ, {"POLICIES_CACHE_ENABLED": true_value}):
                 settings = MainSettings()
                 assert settings.cache_enabled is True
-        
+
         # Test different false values
         for false_value in ["false", "False", "FALSE", "0", "no", "No", "off"]:
             with patch.dict(os.environ, {"POLICIES_CACHE_ENABLED": false_value}):
                 settings = MainSettings()
                 assert settings.cache_enabled is False
-        
+
         # Test invalid boolean
         with patch.dict(os.environ, {"POLICIES_CACHE_ENABLED": "maybe"}):
             with pytest.raises(ValidationError):
                 MainSettings()
-    
+
     def test_path_validation_ingestion(self):
         """Test Path field validation in ingestion settings."""
         # Test valid paths
@@ -289,7 +289,7 @@ class TestConfigurationEdgeCases:
             assert settings.vespa_artifacts_dir == Path("/valid/path")
             assert settings.vespa_hosts_config == Path("../relative/path.json")
             assert settings.vespa_services_xml == Path("~/home/services.xml")
-        
+
         # Test empty path strings (should become None)
         with patch.dict(os.environ, {
             "POLICIES_DOCUMENT_INGESTION_VESPA_ARTIFACTS_DIR": "",
@@ -298,7 +298,7 @@ class TestConfigurationEdgeCases:
             settings = IngestionSettings()
             assert settings.vespa_artifacts_dir is None
             assert settings.vespa_hosts_config is None
-    
+
     def test_url_validation(self):
         """Test URL field validation."""
         # Valid URLs
@@ -308,19 +308,19 @@ class TestConfigurationEdgeCases:
             "http://192.168.1.1:8080",
             "https://otel-collector:4318/v1/traces"
         ]
-        
+
         for url in valid_urls:
             with patch.dict(os.environ, {"POLICIES_OTEL_ENDPOINT": url}):
                 settings = MainSettings()
                 assert settings.otel_endpoint == url
-        
+
         # Test temporal server URL (not validated as HTTP URL)
         with patch.dict(os.environ, {
             "POLICIES_DOCUMENT_INGESTION_TEMPORAL_SERVER_URL": "temporal:7233"
         }):
             settings = IngestionSettings()
             assert settings.temporal_server_url == "temporal:7233"
-    
+
     def test_enum_validation(self):
         """Test enum-like field validation."""
         # Valid deployment modes
@@ -330,7 +330,7 @@ class TestConfigurationEdgeCases:
             }):
                 settings = IngestionSettings()
                 assert settings.vespa_deployment_mode == mode
-        
+
         # Invalid deployment mode - will be accepted as-is (no enum validation)
         with patch.dict(os.environ, {
             "POLICIES_DOCUMENT_INGESTION_VESPA_DEPLOYMENT_MODE": "invalid_mode"
@@ -338,33 +338,33 @@ class TestConfigurationEdgeCases:
             # No validation, accepts any string
             settings = IngestionSettings()
             assert settings.vespa_deployment_mode == "invalid_mode"
-    
+
     def test_missing_required_fields(self):
         """Test that all fields have defaults (no required fields without defaults)."""
         # Main settings should work without any env vars
         settings = MainSettings()
         assert settings.app_name == "policies_agent"
-        
+
         # Ingestion settings should work without any env vars
         ingestion_settings = IngestionSettings()
         assert ingestion_settings.app_name == "policies_document_ingestion"
-    
+
     def test_integer_bounds(self):
         """Test integer field boundaries."""
         # Test Kafka timeout boundaries
         with patch.dict(os.environ, {"POLICIES_KAFKA_REBALANCE_TIMEOUT_MS": "0"}):
             settings = MainSettings()
             assert settings.kafka_rebalance_timeout_ms == 0
-        
+
         with patch.dict(os.environ, {"POLICIES_KAFKA_REBALANCE_TIMEOUT_MS": "2147483647"}):
             settings = MainSettings()
             assert settings.kafka_rebalance_timeout_ms == 2147483647
-        
+
         # Test node count boundaries - zero should be accepted without validation
         with patch.dict(os.environ, {"POLICIES_DOCUMENT_INGESTION_VESPA_NODE_COUNT": "0"}):
             settings = IngestionSettings()
             assert settings.vespa_node_count == 0  # No validation, accepts 0
-    
+
     def test_special_characters_in_strings(self):
         """Test handling of special characters in string fields."""
         special_strings = [
@@ -377,31 +377,31 @@ class TestConfigurationEdgeCases:
             "app\nwith\nnewlines",
             "app\twith\ttabs"
         ]
-        
+
         for special_string in special_strings:
             with patch.dict(os.environ, {"POLICIES_APP_NAME": special_string}):
                 settings = MainSettings()
                 assert settings.app_name == special_string
-    
+
     def test_environment_variable_precedence(self):
         """Test that environment variables override defaults."""
         # Create settings with defaults
         settings1 = MainSettings()
         default_model = settings1.language_model
-        
+
         # Override with environment variable
         with patch.dict(os.environ, {"POLICIES_LANGUAGE_MODEL": "custom/model"}):
             settings2 = MainSettings()
             assert settings2.language_model == "custom/model"
             assert settings2.language_model != default_model
-    
+
     def test_empty_string_handling(self):
         """Test how empty strings are handled for different field types."""
         # Empty string for string field - env_ignore_empty=True means it uses default
         with patch.dict(os.environ, {"POLICIES_KAFKA_TOPIC_PREFIX": ""}):
             settings = MainSettings()
             assert settings.kafka_topic_prefix == "eggai"  # Uses default due to env_ignore_empty
-        
+
         # Empty string for optional Path field - also ignored, uses None default
         with patch.dict(os.environ, {
             "POLICIES_DOCUMENT_INGESTION_VESPA_ARTIFACTS_DIR": ""
@@ -409,7 +409,7 @@ class TestConfigurationEdgeCases:
             settings = IngestionSettings()
             # Empty string is ignored, uses None default
             assert settings.vespa_artifacts_dir is None
-    
+
     def test_whitespace_handling(self):
         """Test handling of whitespace in configuration values."""
         # Leading/trailing whitespace should be preserved for strings
@@ -421,7 +421,7 @@ class TestConfigurationEdgeCases:
         with patch.dict(os.environ, {"POLICIES_API_PORT": " 8080 "}):
             settings = MainSettings()
             assert settings.api_port == 8080  # Pydantic strips whitespace and parses
-    
+
     def test_case_sensitivity(self):
         """Test case sensitivity of environment variables."""
         # Environment variable names are case-sensitive
@@ -431,19 +431,19 @@ class TestConfigurationEdgeCases:
         }):
             settings = MainSettings()
             assert settings.app_name == "uppercase"  # Should use uppercase version
-    
+
     def test_null_and_none_handling(self):
         """Test handling of null/None values."""
         # String "None" should be treated as a string
         with patch.dict(os.environ, {"POLICIES_APP_NAME": "None"}):
             settings = MainSettings()
             assert settings.app_name == "None"
-        
+
         # String "null" should be treated as a string
         with patch.dict(os.environ, {"POLICIES_KAFKA_TOPIC_PREFIX": "null"}):
             settings = MainSettings()
             assert settings.kafka_topic_prefix == "null"
-    
+
     def test_very_long_values(self):
         """Test handling of very long configuration values."""
         # Very long string
@@ -452,16 +452,16 @@ class TestConfigurationEdgeCases:
             settings = MainSettings()
             assert settings.app_name == long_string
             assert len(settings.app_name) == 10000
-    
+
     def test_concurrent_settings_creation(self):
         """Test that multiple settings instances don't interfere."""
         # Create multiple settings instances with different env vars
         with patch.dict(os.environ, {"POLICIES_APP_NAME": "instance1"}):
             settings1 = MainSettings()
-        
+
         with patch.dict(os.environ, {"POLICIES_APP_NAME": "instance2"}):
             settings2 = MainSettings()
-        
+
         # Each should have its own values
         assert settings1.app_name == "instance1"
         assert settings2.app_name == "instance2"

@@ -1,7 +1,7 @@
 import datetime
 import os
 import time
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
 import dspy
 import mlflow
@@ -43,11 +43,11 @@ class SIMBAOptimizer:
     def optimize(
         self,
         program: dspy.Module,
-        trainset: List[dspy.Example],
-        devset: Optional[List[dspy.Example]] = None,
+        trainset: list[dspy.Example],
+        devset: list[dspy.Example] | None = None,
         experiment_name: str = "dspy_optimization",
-        run_name: Optional[str] = None,
-        output_path: Optional[str] = None,
+        run_name: str | None = None,
+        output_path: str | None = None,
         seed: int = 42,
     ) -> dspy.Module:
         """
@@ -176,14 +176,14 @@ class SIMBAOptimizer:
 def optimize_react_agent(
     agent_class: type,
     signature_class: type,
-    tools: List[Callable],
-    trainset: List[dspy.Example],
-    devset: Optional[List[dspy.Example]] = None,
-    metric: Optional[Callable] = None,
+    tools: list[Callable],
+    trainset: list[dspy.Example],
+    devset: list[dspy.Example] | None = None,
+    metric: Callable | None = None,
     max_steps: int = 8,
     max_demos: int = 5,
     max_iters: int = 5,
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     experiment_name: str = "react_optimization",
     seed: int = 42,
 ) -> dspy.Module:
@@ -243,7 +243,7 @@ def load_optimized_react_agent(
     path: str,
     agent_class: type,
     signature_class: type,
-    tools: List[Callable],
+    tools: list[Callable],
     max_iters: int = 5,
 ) -> dspy.Module:
     """

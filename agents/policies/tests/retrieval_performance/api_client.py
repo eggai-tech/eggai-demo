@@ -6,7 +6,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
 import aiohttp
 
@@ -23,7 +22,7 @@ class RetrievalAPIClient:
     def __init__(self):
         self.port = self._find_available_port()
         self.base_url = f"http://localhost:{self.port}"
-        self.process: Optional[subprocess.Popen] = None
+        self.process: subprocess.Popen | None = None
 
     def _find_available_port(self) -> int:
         """Find an available port in the range 10000-11000."""
@@ -82,7 +81,7 @@ class RetrievalAPIClient:
         logger.info(f"Starting command: {' '.join(cmd)}")
         logger.info(f"Working directory: {project_root}")
         logger.info(f"Environment overrides: POLICIES_API_HOST={env.get('POLICIES_API_HOST')}, POLICIES_API_PORT={env.get('POLICIES_API_PORT')}")
-        
+
         self.process = subprocess.Popen(
             cmd,
             cwd=str(project_root),
@@ -99,7 +98,7 @@ class RetrievalAPIClient:
             if self.process.poll() is not None:
                 exit_code = self.process.poll()
                 logger.error(f"Process died early with exit code {exit_code}")
-                
+
                 # Log process output for debugging
                 try:
                     stdout, _ = self.process.communicate(timeout=1)
@@ -117,7 +116,7 @@ class RetrievalAPIClient:
                 logger.info(f"Waiting for service to start... ({i}/60 seconds)")
 
         logger.error("Service failed to start within timeout")
-        
+
         # Try to get final process output before stopping
         if self.process and self.process.poll() is not None:
             try:
@@ -126,7 +125,7 @@ class RetrievalAPIClient:
                     logger.error(f"Final process output: {stdout.decode()}")
             except Exception as e:
                 logger.error(f"Could not read final process output: {e}")
-        
+
         self.stop_service()
         return False
 
@@ -170,7 +169,7 @@ class RetrievalAPIClient:
                         response_data = await response.json()
                         retrieved_chunks = self._extract_chunks(response_data)
                         total_hits = response_data.get("total_hits", len(retrieved_chunks))
-                        
+
                         # Debug logging
                         logger.info(f"Query: '{test_case.question[:50]}...' | Category: {test_case.category} | Search: {combination.search_type} | Hits: {total_hits}")
                         if total_hits == 0:
@@ -202,7 +201,7 @@ class RetrievalAPIClient:
                 error=str(e),
             )
 
-    def _extract_chunks(self, response_data: dict) -> List[dict]:
+    def _extract_chunks(self, response_data: dict) -> list[dict]:
         """Extract document chunks from API response."""
         retrieved_chunks = []
         for doc in response_data.get("documents", []):

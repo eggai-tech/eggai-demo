@@ -1,7 +1,7 @@
 import logging
 import logging.config
 import sys
-from typing import Any, Dict, Optional
+from typing import Any
 
 from colorlog import ColoredFormatter
 
@@ -68,7 +68,7 @@ for logger_name in settings.suppress_loggers:
     }
 
 
-def configure_logging(config: Optional[Dict[str, Any]] = None) -> None:
+def configure_logging(config: dict[str, Any] | None = None) -> None:
     """
     Configure logging based on provided configuration or default settings.
 

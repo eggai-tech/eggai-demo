@@ -5,7 +5,6 @@ These utilities help with testing EggAI agents and their interactions.
 """
 
 import asyncio
-from typing import List, Optional
 from uuid import uuid4
 
 from libraries.communication.protocol import ChatMessage, MessageType
@@ -32,7 +31,7 @@ def create_mock_agent_response(
 
 def create_mock_request_message(
     request_type: MessageType,
-    chat_messages: List[ChatMessage],
+    chat_messages: list[ChatMessage],
     connection_id: str = "test-connection-123",
     source: str = "Triage"
 ) -> TracedMessage:
@@ -52,34 +51,34 @@ def create_mock_request_message(
 async def wait_for_message_with_timeout(
     response_queue: asyncio.Queue,
     timeout: float = 5.0,
-    expected_source: Optional[str] = None,
-    expected_type: Optional[str] = None
-) -> Optional[TracedMessage]:
+    expected_source: str | None = None,
+    expected_type: str | None = None
+) -> TracedMessage | None:
     """
     Wait for a message in the queue with optional filtering.
-    
+
     Args:
         response_queue: The queue to monitor
         timeout: Maximum time to wait in seconds
         expected_source: If provided, only return messages from this source
         expected_type: If provided, only return messages of this type
-    
+
     Returns:
         The matching message or None if timeout occurs
     """
     try:
         while True:
             message = await asyncio.wait_for(response_queue.get(), timeout=timeout)
-            
+
             # Check if message matches criteria
             if expected_source and message.source != expected_source:
                 continue
             if expected_type and message.type != expected_type:
                 continue
-                
+
             return message
-            
-    except asyncio.TimeoutError:
+
+    except TimeoutError:
         return None
 
 

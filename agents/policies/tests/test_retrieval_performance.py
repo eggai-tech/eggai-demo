@@ -7,7 +7,6 @@ Tracks results in MLflow for analysis.
 import asyncio
 import os
 from datetime import datetime
-from typing import List, Tuple
 
 import httpx
 import pytest
@@ -82,7 +81,7 @@ class RetrievalPerformanceTester:
 
         logger.info(f"Generated {len(self.combinations)} parameter combinations")
 
-    def _generate_combinations(self) -> List[ParameterCombination]:
+    def _generate_combinations(self) -> list[ParameterCombination]:
         """Generate all parameter combinations to test."""
         combinations = []
         for test_case in self.test_cases:
@@ -100,14 +99,14 @@ class RetrievalPerformanceTester:
     async def check_service_prerequisites(self) -> bool:
         """Check infrastructure prerequisites and start embedded service for testing."""
         logger.info("Checking infrastructure prerequisites using configuration settings...")
-        
+
         # Log configuration being used
         self._log_configuration()
-        
+
         # Get Vespa URLs for later use
         vespa_config_url = ingestion_settings.vespa_config_url
         vespa_query_url = ingestion_settings.vespa_query_url
-        
+
         # Deploy Vespa schema FIRST (before connectivity checks)
         logger.info("Deploying Vespa schema (before connectivity checks)...")
         deployment_success = deploy_to_vespa(
@@ -125,7 +124,7 @@ class RetrievalPerformanceTester:
             logger.error("Failed to deploy Vespa schema")
             return False
         logger.info("✓ Vespa schema deployment completed")
-        
+
         # Check Kafka connectivity using agent config
         kafka_url = agent_settings.kafka_bootstrap_servers
         logger.info(f"Checking Kafka at {kafka_url} (from agent config)...")
@@ -133,7 +132,7 @@ class RetrievalPerformanceTester:
             logger.error(f"Kafka not accessible at {kafka_url}")
             return False
         logger.info("✓ Kafka connectivity verified")
-        
+
         # Check Vespa connectivity AFTER deployment
         logger.info(f"Checking Vespa config server at {vespa_config_url} (from ingestion config)...")
         logger.info(f"Checking Vespa query server at {vespa_query_url} (from ingestion config)...")
@@ -141,7 +140,7 @@ class RetrievalPerformanceTester:
             logger.error(f"Vespa not accessible at {vespa_config_url} or {vespa_query_url}")
             return False
         logger.info("✓ Vespa connectivity verified")
-        
+
         # Run document ingestion to populate Vespa with sample data
         logger.info("Running initial document ingestion...")
         ingestion_success = await self.run_document_ingestion()
@@ -149,7 +148,7 @@ class RetrievalPerformanceTester:
             logger.error("Failed to ingest sample documents")
             return False
         logger.info("✓ Sample documents ingested successfully")
-        
+
         # Start embedded service
         logger.info("Starting embedded service for testing...")
         success = await self.api_client.start_service()
@@ -159,7 +158,7 @@ class RetrievalPerformanceTester:
 
         logger.info(f"✓ Service ready at {self.api_client.base_url}")
         return True
-    
+
     def _log_configuration(self) -> None:
         """Log the configuration being used for service checks."""
         logger.info("=== Configuration for Infrastructure Checks ===")
@@ -176,7 +175,7 @@ class RetrievalPerformanceTester:
         logger.info(f"  - Temporal Server: {ingestion_settings.temporal_server_url}")
         logger.info(f"  - Temporal Namespace: {ingestion_settings.get_temporal_namespace()}")
         logger.info("=" * 50)
-        
+
         # Validate critical configuration
         if not agent_settings.kafka_bootstrap_servers:
             logger.warning("Kafka bootstrap servers not configured!")
@@ -184,7 +183,7 @@ class RetrievalPerformanceTester:
             logger.warning("Vespa config URL not configured!")
         if not ingestion_settings.vespa_query_url:
             logger.warning("Vespa query URL not configured!")
-    
+
     async def _check_kafka_connectivity(self, kafka_url: str) -> bool:
         """Check if Kafka is accessible."""
         try:
@@ -193,23 +192,23 @@ class RetrievalPerformanceTester:
             import socket
             host, port = kafka_url.split(":")
             port = int(port)
-            
+
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             result = sock.connect_ex((host, port))
             sock.close()
-            
+
             if result == 0:
                 logger.info(f"Kafka port {port} is accessible on {host}")
                 return True
             else:
                 logger.warning(f"Kafka port {port} not accessible on {host}")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Error checking Kafka connectivity: {e}")
             return False
-    
+
     async def _check_vespa_connectivity(self, config_url: str, query_url: str) -> bool:
         """Check if Vespa is accessible."""
         try:
@@ -221,7 +220,7 @@ class RetrievalPerformanceTester:
                     logger.warning(f"Vespa config server returned status {config_response.status_code}")
                     return False
                 logger.info("Config server responded successfully")
-                
+
                 # Check query service
                 logger.info(f"Testing Vespa query service: {query_url}")
                 query_response = await client.get(f"{query_url}/status.html")
@@ -229,9 +228,9 @@ class RetrievalPerformanceTester:
                     logger.warning(f"Vespa query service returned status {query_response.status_code}")
                     return False
                 logger.info("Query service responded successfully")
-                
+
                 return True
-                
+
         except httpx.ConnectError as e:
             logger.error(f"Cannot connect to Vespa: {e}")
             return False
@@ -246,61 +245,61 @@ class RetrievalPerformanceTester:
         """Run document ingestion activities directly without Temporal."""
         if sample_documents_dir is None:
             sample_documents_dir = "agents/policies/ingestion/documents"
-        
+
         logger.info(f"Starting document ingestion from {sample_documents_dir}")
-        
+
         # Find sample documents
         import glob
         from pathlib import Path
-        
+
         doc_pattern = f"{sample_documents_dir}/*.md"
         sample_files = glob.glob(doc_pattern)
-        
+
         if not sample_files:
             logger.warning(f"No sample documents found in {sample_documents_dir}")
             return False
-        
+
         logger.info(f"Found {len(sample_files)} sample documents to ingest")
-        
+
         success_count = 0
         total_chunks = 0
-        
+
         for file_path in sample_files:
             try:
                 logger.info(f"Processing document: {file_path}")
-                
+
                 # Step 1: Verify document
                 verification_result = await verify_document_activity(
                     file_path, "policies_index", force_rebuild=True
                 )
-                
+
                 if not verification_result["success"]:
                     logger.error(f"Verification failed for {file_path}: {verification_result.get('error_message')}")
                     continue
-                
+
                 # Step 2: Load document
                 load_result = await load_document_activity(file_path)
-                
+
                 if not load_result["success"]:
                     logger.error(f"Loading failed for {file_path}: {load_result.get('error_message')}")
                     continue
-                
+
                 # Step 3: Chunk document
                 chunk_result = await chunk_document_activity(load_result)
-                
+
                 if not chunk_result["success"]:
                     logger.error(f"Chunking failed for {file_path}: {chunk_result.get('error_message')}")
                     continue
-                
+
                 if not chunk_result["chunks"]:
                     logger.warning(f"No chunks generated for {file_path}")
                     continue
-                
+
                 # Step 4: Index chunks
                 # Extract category from filename (e.g., "life.md" -> "life")
                 from pathlib import Path
                 category = Path(file_path).stem  # Gets "life" from "life.md"
-                
+
                 indexing_result = await index_document_activity(
                     chunk_result["chunks"],
                     file_path,
@@ -310,24 +309,24 @@ class RetrievalPerformanceTester:
                     chunk_result.get("document_stats"),
                     load_result.get("metadata")
                 )
-                
+
                 if not indexing_result["success"]:
                     logger.error(f"Indexing failed for {file_path}: {indexing_result.get('error_message')}")
                     continue
-                
+
                 success_count += 1
                 doc_chunks = len(chunk_result["chunks"])
                 total_chunks += doc_chunks
                 logger.info(f"Successfully ingested {Path(file_path).name} - {doc_chunks} chunks")
-                
+
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {e}", exc_info=True)
                 continue
-        
+
         logger.info(f"Document ingestion completed: {success_count}/{len(sample_files)} documents processed, {total_chunks} total chunks")
         return success_count > 0
 
-    async def stage1_collect_all_results(self) -> List[RetrievalResult]:
+    async def stage1_collect_all_results(self) -> list[RetrievalResult]:
         """Stage 1: Collect all retrieved results."""
         logger.info(
             f"Stage 1: Collecting retrieval results for {len(self.combinations)} combinations"
@@ -352,7 +351,7 @@ class RetrievalPerformanceTester:
         )
         return final_results
 
-    def stage2_generate_metrics(self, retrieval_results: List[RetrievalResult]) -> dict:
+    def stage2_generate_metrics(self, retrieval_results: list[RetrievalResult]) -> dict:
         """Stage 2: Generate metrics from retrieval results."""
         logger.info(f"Stage 2: Generating metrics for {len(retrieval_results)} results")
 
@@ -412,8 +411,8 @@ class RetrievalPerformanceTester:
         return metrics
 
     async def stage3_llm_judge(
-        self, retrieval_results: List[RetrievalResult]
-    ) -> List[EvaluationResult]:
+        self, retrieval_results: list[RetrievalResult]
+    ) -> list[EvaluationResult]:
         """Stage 3 (optional): LLM Judge evaluation."""
         logger.info(
             f"Stage 3: LLM Judge evaluation for {len(retrieval_results)} results"
@@ -442,9 +441,9 @@ class RetrievalPerformanceTester:
 
     def stage4_report_to_mlflow(
         self,
-        retrieval_results: List[RetrievalResult],
+        retrieval_results: list[RetrievalResult],
         metrics: dict,
-        evaluation_results: List[EvaluationResult] = None,
+        evaluation_results: list[EvaluationResult] = None,
     ) -> None:
         """Stage 4: Report to MLflow."""
         logger.info("Stage 4: Reporting to MLflow")
@@ -454,7 +453,7 @@ class RetrievalPerformanceTester:
 
     async def run_full_evaluation(
         self,
-    ) -> Tuple[List[RetrievalResult], dict, List[EvaluationResult]]:
+    ) -> tuple[list[RetrievalResult], dict, list[EvaluationResult]]:
         """Run complete 4-stage evaluation: Prerequisites -> Collect -> Metrics -> Judge -> Report."""
         # Prerequisites check
         if not await self.check_service_prerequisites():
@@ -490,8 +489,8 @@ class RetrievalPerformanceTester:
 
     def find_best_combination(
         self,
-        retrieval_results: List[RetrievalResult],
-        evaluation_results: List[EvaluationResult],
+        retrieval_results: list[RetrievalResult],
+        evaluation_results: list[EvaluationResult],
     ) -> dict:
         """Find the best performing parameter combination."""
         combination_stats = {}
@@ -574,8 +573,8 @@ class RetrievalPerformanceTester:
 
     def generate_summary_report(
         self,
-        retrieval_results: List[RetrievalResult],
-        evaluation_results: List[EvaluationResult],
+        retrieval_results: list[RetrievalResult],
+        evaluation_results: list[EvaluationResult],
     ) -> str:
         """Generate comprehensive summary report."""
         report_lines = [
@@ -665,7 +664,7 @@ async def test_retrieval_performance():
     """Async pytest version of the retrieval performance test with 8-minute timeout."""
     try:
         await asyncio.wait_for(_run_retrieval_test(), timeout=480)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         pytest.fail("Test timed out after 8 minutes")
 
 
@@ -677,7 +676,7 @@ async def _run_retrieval_test():
     enable_llm_judge = bool(os.getenv("OPENAI_API_KEY"))
     if not enable_llm_judge:
         logger.warning("OPENAI_API_KEY not set, disabling LLM judge for evaluation")
-    
+
     config = RetrievalTestConfiguration(
         search_types=["hybrid", "keyword", "vector"],
         max_hits_values=[1, 5, 10],
@@ -698,7 +697,7 @@ async def _run_retrieval_test():
             evaluation_results,
         ) = await asyncio.wait_for(tester.run_full_evaluation(), timeout=475)  # Leave 5s buffer for cleanup
         logger.info("Evaluation completed within timeout")
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Test evaluation timed out after 475 seconds")
         raise RuntimeError("Test evaluation timed out - check infrastructure connectivity")
     finally:
@@ -723,7 +722,7 @@ async def _run_retrieval_test():
     # Find and display best combination using unified performance calculator
     calculator = PerformanceCalculator(has_llm_judge=bool(evaluation_results))
     best_combo = calculator.find_best_combination(retrieval_results, evaluation_results)
-    
+
     if best_combo:
         logger.info("=" * 60)
         llm_suffix = " (WITH LLM JUDGE)" if evaluation_results else " (RETRIEVAL-ONLY)"
@@ -733,21 +732,21 @@ async def _run_retrieval_test():
         logger.info(f"Max Hits: {best_combo.max_hits}")
         logger.info(f"Final Score: {best_combo.final_score:.3f}")
         logger.info("")
-        
+
         # Display key metrics
         logger.info("Key Metrics:")
         logger.info(f"  • Success Rate: {best_combo.metrics.get('success_rate', 0):.1%}")
         logger.info(f"  • Avg Retrieval Time: {best_combo.metrics.get('avg_retrieval_time', 0):.1f}ms")
         logger.info(f"  • Avg Total Hits: {best_combo.metrics.get('avg_total_hits', 0):.1f}")
-        
+
         if evaluation_results:
             logger.info(f"  • Avg Quality Score: {best_combo.metrics.get('avg_quality_score', 0):.3f}")
             logger.info(f"  • Pass Rate: {best_combo.metrics.get('pass_rate', 0):.1%}")
             logger.info(f"  • Avg Recall: {best_combo.metrics.get('avg_recall_score', 0):.3f}")
             logger.info(f"  • Hit Rate Top 3: {best_combo.metrics.get('hit_rate_top_3', 0):.1%}")
-        
+
         logger.info("=" * 60)
-        
+
         # Recommendation based on performance score
         if best_combo.final_score >= 0.8:
             logger.info("RECOMMENDATION: Excellent overall performance!")
@@ -757,14 +756,14 @@ async def _run_retrieval_test():
             logger.info("RECOMMENDATION: Moderate performance - consider parameter tuning.")
         else:
             logger.info("RECOMMENDATION: Poor performance - significant optimization needed.")
-            
+
         # Warning if no LLM judge
         if not evaluation_results:
             logger.warning("")
             logger.warning("⚠️  WARNING: Test ran without LLM quality evaluation!")
             logger.warning("⚠️  Results may be misleading - only retrieval metrics were used.")
             logger.warning("⚠️  For accurate results, ensure OPENAI_API_KEY is set and enable_llm_judge=True")
-        
+
         # Log metrics summary
         metrics_summary = calculator.get_metrics_summary()
         logger.info(f"Performance calculated using {metrics_summary['total_metrics']} metrics")
@@ -810,7 +809,7 @@ async def main():
     try:
         await asyncio.wait_for(_run_retrieval_test(), timeout=480)
         logger.info("Standalone test completed successfully")
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Standalone test timed out after 8 minutes")
         raise
 

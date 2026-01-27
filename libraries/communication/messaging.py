@@ -5,16 +5,13 @@ Provides the @subscribe decorator for type-safe message subscriptions.
 For protocol documentation, see libraries/protocol/README.md
 """
 
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
     Literal,
-    Optional,
     Protocol,
     TypedDict,
     TypeVar,
-    Union,
 )
 
 from eggai import Agent, Channel
@@ -35,7 +32,7 @@ from libraries.communication.protocol import (
 from libraries.observability.tracing import TracedMessage
 
 # Filter protocol
-T = TypeVar('T', bound=Dict[str, Any])
+T = TypeVar('T', bound=dict[str, Any])
 
 
 class MessageFilter(Protocol[T]):
@@ -44,22 +41,22 @@ class MessageFilter(Protocol[T]):
 
 
 # Filter factories
-def create_type_filter(message_type: Union[str, MessageType]) -> MessageFilter[Dict[str, Any]]:
+def create_type_filter(message_type: str | MessageType) -> MessageFilter[dict[str, Any]]:
     """Create a type-safe message filter for a specific message type."""
     return lambda msg: msg.get("type") == message_type
 
 
-def create_source_filter(source: Union[str, AgentName]) -> MessageFilter[Dict[str, Any]]:
+def create_source_filter(source: str | AgentName) -> MessageFilter[dict[str, Any]]:
     """Create a type-safe message filter for a specific source."""
     return lambda msg: msg.get("source") == source
 
 
 def create_compound_filter(
-    message_type: Optional[Union[str, MessageType]] = None,
-    source: Optional[Union[str, AgentName]] = None,
-) -> MessageFilter[Dict[str, Any]]:
+    message_type: str | MessageType | None = None,
+    source: str | AgentName | None = None,
+) -> MessageFilter[dict[str, Any]]:
     """Create a compound filter for multiple criteria."""
-    def filter_func(msg: Dict[str, Any]) -> bool:
+    def filter_func(msg: dict[str, Any]) -> bool:
         if message_type and msg.get("type") != message_type:
             return False
         if source and msg.get("source") != source:
@@ -86,16 +83,16 @@ def subscribe(
     agent: Agent,
     channel: Channel,
     *,
-    message_type: Optional[Union[str, MessageType]] = None,
-    source: Optional[Union[str, AgentName]] = None,
-    filter_func: Optional[MessageFilter] = None,
-    group_id: Optional[str] = None,
-    auto_offset_reset: Union[OffsetReset, Literal["latest", "earliest", "none"]] = OffsetReset.LATEST,
+    message_type: str | MessageType | None = None,
+    source: str | AgentName | None = None,
+    filter_func: MessageFilter | None = None,
+    group_id: str | None = None,
+    auto_offset_reset: OffsetReset | Literal["latest", "earliest", "none"] = OffsetReset.LATEST,
     **kwargs: Any
 ) -> Callable[[HandlerT], HandlerT]:
     """
     Type-safe wrapper for agent.subscribe.
-    
+
     Args:
         agent: The agent instance
         channel: Channel to subscribe to
@@ -105,7 +102,7 @@ def subscribe(
         group_id: Kafka consumer group ID
         auto_offset_reset: Where to start consuming
         **kwargs: Additional Kafka consumer options
-    
+
     Returns:
         Decorator function
     """
@@ -113,19 +110,19 @@ def subscribe(
     if not filter_func:
         if message_type or source:
             filter_func = create_compound_filter(message_type, source)
-    
+
     # Build subscribe kwargs
-    subscribe_kwargs: Dict[str, Any] = {
+    subscribe_kwargs: dict[str, Any] = {
         "auto_offset_reset": auto_offset_reset,
         **kwargs
     }
-    
+
     if filter_func:
         subscribe_kwargs["filter_by_message"] = filter_func
-    
+
     if group_id:
         subscribe_kwargs["group_id"] = group_id
-    
+
     return agent.subscribe(channel=channel, **subscribe_kwargs)
 
 
@@ -139,11 +136,11 @@ __all__ = [
     "create_type_filter",
     "create_source_filter",
     "create_compound_filter",
-    
+
     # Main functions
     "subscribe",
     "typed_subscribe",
-    
+
     # Handler types
     "BillingHandler",
     "ClaimsHandler",
@@ -155,11 +152,11 @@ __all__ = [
 
 
 # Typed handler signatures for better IDE support
-BillingHandler = Callable[[Union[BillingRequestMessage, TracedMessage], KafkaMessage], None]
-ClaimsHandler = Callable[[Union[ClaimRequestMessage, TracedMessage], KafkaMessage], None]
-PolicyHandler = Callable[[Union[PolicyRequestMessage, TracedMessage], KafkaMessage], None]
-EscalationHandler = Callable[[Union[EscalationRequestMessage, TracedMessage], KafkaMessage], None]
-UserMessageHandler = Callable[[Union[UserMessage, TracedMessage], KafkaMessage], None]
-AuditHandler = Callable[[Union[TracedMessage, Dict], KafkaMessage], Optional[Union[TracedMessage, Dict]]]
+BillingHandler = Callable[[BillingRequestMessage | TracedMessage, KafkaMessage], None]
+ClaimsHandler = Callable[[ClaimRequestMessage | TracedMessage, KafkaMessage], None]
+PolicyHandler = Callable[[PolicyRequestMessage | TracedMessage, KafkaMessage], None]
+EscalationHandler = Callable[[EscalationRequestMessage | TracedMessage, KafkaMessage], None]
+UserMessageHandler = Callable[[UserMessage | TracedMessage, KafkaMessage], None]
+AuditHandler = Callable[[TracedMessage | dict, KafkaMessage], TracedMessage | dict | None]
 
 

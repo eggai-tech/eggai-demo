@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, Dict, Tuple
+from typing import Any
 
 # Default pricing data (fallback if remote loading fails)
 DEFAULT_PRICING_DATA = {
@@ -71,11 +71,10 @@ DEFAULT_PRICING_DATA = {
 
 
 class PricingCalculator:
-
     def __init__(self):
         self.pricing_data = self._load_pricing_data()
 
-    def _load_pricing_data(self) -> Dict[str, Any]:
+    def _load_pricing_data(self) -> dict[str, Any]:
         try:
             # Try to load from remote source (could be a URL in production)
             # For now, just use the default data
@@ -140,7 +139,7 @@ class PricingCalculator:
         # Default fallback
         return "gpt-3.5-turbo"
 
-    def get_model_pricing(self, model_name: str) -> Tuple[float, float]:
+    def get_model_pricing(self, model_name: str) -> tuple[float, float]:
         normalized_name = self._normalize_model_name(model_name)
 
         if normalized_name in self.pricing_data["chat"]:
@@ -153,7 +152,7 @@ class PricingCalculator:
 
     def calculate_cost(
         self, model_name: str, prompt_tokens: int, completion_tokens: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Handle negative tokens gracefully
         prompt_tokens = max(0, prompt_tokens)
         completion_tokens = max(0, completion_tokens)
@@ -178,7 +177,7 @@ class PricingCalculator:
             "completion_price_per_1k": output_price_per_1k,
         }
 
-    def get_supported_models(self) -> Dict[str, Dict[str, float]]:
+    def get_supported_models(self) -> dict[str, dict[str, float]]:
         return self.pricing_data["chat"]
 
 
@@ -195,7 +194,7 @@ def get_pricing_calculator() -> PricingCalculator:
 
 def calculate_request_cost(
     model_name: str, prompt_tokens: int, completion_tokens: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     calculator = get_pricing_calculator()
     return calculator.calculate_cost(model_name, prompt_tokens, completion_tokens)
 

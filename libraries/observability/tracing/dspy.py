@@ -1,6 +1,6 @@
 import asyncio
 import functools
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
 import dspy
 from opentelemetry import trace
@@ -27,12 +27,11 @@ def add_gen_ai_attributes_to_span(
 
 
 class TracedChainOfThought(dspy.ChainOfThought):
-
     def __init__(
         self,
         signature,
-        name: Optional[str] = None,
-        tracer: Optional[trace.Tracer] = None,
+        name: str | None = None,
+        tracer: trace.Tracer | None = None,
     ):
         super().__init__(signature)
         self.trace_name = name or self.__class__.__name__.lower()
@@ -144,14 +143,13 @@ def traced_dspy_function(name=None, span_namer=None):
 
 
 class TracedReAct(dspy.ReAct):
-
     def __init__(
         self,
         signature,
-        tools: Optional[List[Callable]] = None,
-        max_iters: Optional[int] = 5,
-        name: Optional[str] = None,
-        tracer: Optional[trace.Tracer] = None,
+        tools: list[Callable] | None = None,
+        max_iters: int | None = 5,
+        name: str | None = None,
+        tracer: trace.Tracer | None = None,
     ):
         super().__init__(signature, tools=tools, max_iters=max_iters)
         self.trace_name = name or self.__class__.__name__.lower()

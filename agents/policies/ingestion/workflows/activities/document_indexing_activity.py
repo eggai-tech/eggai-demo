@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from temporalio import activity
 
@@ -16,14 +16,14 @@ logger = get_console_logger("ingestion.document_indexing")
 
 @activity.defn
 async def index_document_activity(
-    chunks_data: List[Dict[str, Any]],
+    chunks_data: list[dict[str, Any]],
     file_path: str,
     category: str,
     index_name: str,
     force_rebuild: bool,
-    document_stats: Optional[Dict[str, Any]],
-    workflow_metadata: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
+    document_stats: dict[str, Any] | None,
+    workflow_metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
     logger.info(
         f"Starting enhanced indexing for {len(chunks_data)} chunks from {file_path}"
     )

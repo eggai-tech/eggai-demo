@@ -1,7 +1,8 @@
 import json
 import time
+from collections.abc import AsyncIterable
 from pathlib import Path
-from typing import Any, AsyncIterable, Dict, Optional, Union
+from typing import Any
 
 import dspy
 from dspy import Prediction
@@ -142,7 +143,7 @@ def load_optimized_prompts() -> bool:
     if optimized_model_path.exists():
         try:
             logger.info(f"Loading optimized prompts from {optimized_model_path}")
-            with open(optimized_model_path, "r") as f:
+            with open(optimized_model_path) as f:
                 data = json.load(f)
 
             instr = (
@@ -192,8 +193,8 @@ def get_prediction_from_model(model, chat_history: str):
 
 
 def truncate_long_history(
-    chat_history: str, config: Optional[ModelConfig] = None
-) -> Dict[str, Any]:
+    chat_history: str, config: ModelConfig | None = None
+) -> dict[str, Any]:
     """Truncate conversation history if it exceeds maximum length."""
     config = config or DEFAULT_CONFIG
     max_length = config.truncation_length
@@ -223,8 +224,8 @@ def truncate_long_history(
 
 @traced_dspy_function(name="claims_dspy")
 async def process_claims(
-    chat_history: str, config: Optional[ModelConfig] = None
-) -> AsyncIterable[Union[StreamResponse, Prediction]]:
+    chat_history: str, config: ModelConfig | None = None
+) -> AsyncIterable[StreamResponse | Prediction]:
     """Process a claims inquiry using the DSPy model with streaming output."""
     config = config or DEFAULT_CONFIG
 

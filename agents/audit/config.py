@@ -1,28 +1,25 @@
-from typing import Dict
-
 from dotenv import load_dotenv
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
+
+from libraries.communication.messaging import MessageType
+from libraries.core import BaseAgentConfig
 
 from .types import AuditCategory, AuditConfig
 
 load_dotenv()
 
-MESSAGE_CATEGORIES: Dict[str, AuditCategory] = {
-    "agent_message": "User Communication",
-    "billing_request": "Billing",
-    "policy_request": "Policies",
-    "escalation_request": "Escalation",
-    "triage_request": "Triage",
+MESSAGE_CATEGORIES: dict[str, AuditCategory] = {
+    MessageType.AGENT_MESSAGE: "User Communication",
+    MessageType.BILLING_REQUEST: "Billing",
+    MessageType.POLICY_REQUEST: "Policies",
+    MessageType.ESCALATION_REQUEST: "Escalation",
 }
 
-class Settings(BaseSettings):
+class Settings(BaseAgentConfig):
     app_name: str = Field(default="audit_agent")
-    kafka_bootstrap_servers: str = Field(default="localhost:19092")
-    kafka_ca_content: str = Field(default="")
-    otel_endpoint: str = Field(default="http://localhost:4318")
     prometheus_metrics_port: int = Field(default=9096)
-    
+
     debug_logging_enabled: bool = Field(default=False)
     audit_channel_name: str = Field(default="audit_logs")
     default_category: AuditCategory = Field(default="Other")

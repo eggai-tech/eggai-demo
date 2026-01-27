@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -10,27 +10,27 @@ class PolicyDocument(BaseModel):
     category: str
     chunk_index: int
     source_file: str
-    relevance: Optional[float] = None
+    relevance: float | None = None
 
     # Enhanced metadata fields
-    page_numbers: List[int] = []
-    page_range: Optional[str] = None
-    headings: List[str] = []
-    citation: Optional[str] = None
+    page_numbers: list[int] = []
+    page_range: str | None = None
+    headings: list[str] = []
+    citation: str | None = None
 
     # Relationships
-    document_id: Optional[str] = None
-    previous_chunk_id: Optional[str] = None
-    next_chunk_id: Optional[str] = None
-    chunk_position: Optional[float] = None
+    document_id: str | None = None
+    previous_chunk_id: str | None = None
+    next_chunk_id: str | None = None
+    chunk_position: float | None = None
 
 
 class SearchResponse(BaseModel):
     query: str
-    category: Optional[str]
+    category: str | None
     total_hits: int
-    documents: List[PolicyDocument]
-    search_type: Optional[str] = None
+    documents: list[PolicyDocument]
+    search_type: str | None = None
 
 
 class FullDocumentResponse(BaseModel):
@@ -41,19 +41,19 @@ class FullDocumentResponse(BaseModel):
     total_chunks: int
     total_characters: int
     total_tokens: int
-    headings: List[str]
-    page_numbers: List[int]
-    page_range: Optional[str]
-    chunk_ids: List[str]
-    metadata: Dict[str, Any]
+    headings: list[str]
+    page_numbers: list[int]
+    page_range: str | None
+    chunk_ids: list[str]
+    metadata: dict[str, Any]
 
 
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=500)
-    category: Optional[str] = None
+    category: str | None = None
     max_hits: int = Field(10, ge=1, le=100)
     search_type: str = Field("hybrid", pattern="^(vector|hybrid|keyword)$")  # "vector", "hybrid", or "keyword"
-    
+
     @field_validator('query')
     @classmethod
     def validate_query_length(cls, v):
@@ -71,8 +71,8 @@ class CategoryStats(BaseModel):
 
 class ReindexRequest(BaseModel):
     force_rebuild: bool = False
-    policy_ids: Optional[List[str]] = None  # If None, reindex all
-    
+    policy_ids: list[str] | None = None  # If None, reindex all
+
     def validate_policy_ids(self):
         """Validate policy IDs are valid categories."""
         if self.policy_ids:
@@ -87,20 +87,20 @@ class ReindexResponse(BaseModel):
     status: str
     workflow_id: str
     total_documents_submitted: int
-    policy_ids: List[str]
+    policy_ids: list[str]
 
 
-class PersonalPolicy(BaseModel):    
+class PersonalPolicy(BaseModel):
     policy_number: str
     name: str
     policy_category: str
     premium_amount: float
     due_date: str
     status: str = "active"
-    coverage_amount: Optional[float] = None
-    deductible: Optional[float] = None
+    coverage_amount: float | None = None
+    deductible: float | None = None
 
 
-class PolicyListResponse(BaseModel):    
-    policies: List[PersonalPolicy]
+class PolicyListResponse(BaseModel):
+    policies: list[PersonalPolicy]
     total: int

@@ -1,6 +1,6 @@
 import random
 from dataclasses import dataclass
-from typing import List, Literal, Optional
+from typing import Literal
 
 import dspy
 
@@ -11,12 +11,12 @@ PolicyCategory = Literal["auto", "life", "home", "health"]
 class PoliciesExample:
     chat_history: str
     expected_response: str
-    policy_category: Optional[PolicyCategory] = None
-    policy_number: Optional[str] = None
-    documentation_reference: Optional[str] = None
+    policy_category: PolicyCategory | None = None
+    policy_number: str | None = None
+    documentation_reference: str | None = None
 
 
-def create_policies_dataset() -> List[PoliciesExample]:
+def create_policies_dataset() -> list[PoliciesExample]:
     # Known policies data from the mock database
     policies_data = [
         {
@@ -62,7 +62,6 @@ User: {policy["policy_number"]}."""
         )
 
     # Policy coverage inquiries with documentation references
-    policy_categories = ["auto", "home", "life", "health"]
     coverage_topics = {
         "auto": [
             "accident coverage",
@@ -166,7 +165,7 @@ User: {policy["policy_number"]}"""
     return examples
 
 
-def as_dspy_examples(examples: List[PoliciesExample]) -> List[dspy.Example]:
+def as_dspy_examples(examples: list[PoliciesExample]) -> list[dspy.Example]:
     return [
         dspy.Example(
             chat_history=example.chat_history, final_response=example.expected_response

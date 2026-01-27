@@ -10,7 +10,7 @@ from agents.billing.agent import (
     handle_other_messages,
     process_billing_request,
 )
-from agents.billing.config import MESSAGE_TYPE_BILLING_REQUEST
+from libraries.communication.messaging import MessageType
 from libraries.observability.tracing import TracedMessage
 
 
@@ -35,7 +35,7 @@ async def test_billing_agent_error_handling(monkeypatch):
 
     test_message = TracedMessage(
         id=str(uuid4()),
-        type=MESSAGE_TYPE_BILLING_REQUEST,
+        type=MessageType.BILLING_REQUEST,
         source="TestAgent",
         data={
             "chat_messages": [{"role": "user", "content": "What's my bill?"}],
@@ -68,7 +68,7 @@ async def test_billing_empty_chat_messages(monkeypatch):
 
     test_message = TracedMessage(
         id=str(uuid4()),
-        type=MESSAGE_TYPE_BILLING_REQUEST,
+        type=MessageType.BILLING_REQUEST,
         source="TestAgent",
         data={
             "chat_messages": [],
@@ -101,7 +101,7 @@ async def test_billing_missing_connection_id(monkeypatch):
 
     test_message = TracedMessage(
         id=str(uuid4()),
-        type=MESSAGE_TYPE_BILLING_REQUEST,
+        type=MessageType.BILLING_REQUEST,
         source="TestAgent",
         data={
             "chat_messages": [{"role": "user", "content": "test"}],
@@ -177,7 +177,7 @@ async def test_billing_missing_data_fields(monkeypatch):
 
     test_message = TracedMessage(
         id=str(uuid4()),
-        type=MESSAGE_TYPE_BILLING_REQUEST,
+        type=MessageType.BILLING_REQUEST,
         source="TestAgent",
         data={},
     )

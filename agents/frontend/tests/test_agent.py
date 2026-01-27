@@ -8,7 +8,7 @@ from eggai.transport import eggai_set_default_transport
 from fastapi import FastAPI
 from starlette.websockets import WebSocket, WebSocketState
 
-from agents.frontend.types import MessageType
+from libraries.communication.protocol import MessageType
 from libraries.communication.transport import create_kafka_transport
 from libraries.observability.tracing import TracedMessage
 
@@ -311,7 +311,7 @@ async def test_handle_human_messages_new_connection():
 
     with patch.object(
         websocket_manager, "send_message_to_connection", new_callable=AsyncMock
-    ) as mock_send:
+    ):
         message = TracedMessage(
             id=message_id,
             type="agent_message",

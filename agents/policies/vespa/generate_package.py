@@ -9,7 +9,6 @@ import xml.etree.ElementTree as ET
 import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
 from xml.dom import minidom
 
 # Add the project root to the Python path
@@ -32,7 +31,7 @@ from libraries.observability.logger import get_console_logger
 logger = get_console_logger("vespa_package_generator")
 
 
-def create_validation_overrides() -> List[Validation]:
+def create_validation_overrides() -> list[Validation]:
     future_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 
     validations = []
@@ -204,7 +203,7 @@ def create_application_package(app_name: str = "policies") -> ApplicationPackage
     return app_package
 
 
-def create_hosts_xml(hosts: List[Dict[str, str]]) -> str:
+def create_hosts_xml(hosts: list[dict[str, str]]) -> str:
     root = ET.Element("hosts")
 
     for host in hosts:
@@ -281,8 +280,8 @@ def save_package_to_zip(
     output_path: Path,
     deployment_mode: str = "local",
     node_count: int = 1,
-    hosts: Optional[List[Dict[str, str]]] = None,
-    services_xml: Optional[Path] = None,
+    hosts: list[dict[str, str]] | None = None,
+    services_xml: Path | None = None,
 ) -> Path:
     # Create a temporary directory to save the application package
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -346,11 +345,11 @@ def save_package_metadata(output_path: Path, schema_info: dict) -> Path:
 
 
 def generate_package_artifacts(
-    output_dir: Optional[Path] = None,
+    output_dir: Path | None = None,
     deployment_mode: str = "local",
     node_count: int = 1,
-    hosts: Optional[List[Dict[str, str]]] = None,
-    services_xml: Optional[Path] = None,
+    hosts: list[dict[str, str]] | None = None,
+    services_xml: Path | None = None,
     app_name: str = "policies",
 ) -> tuple[Path, Path]:
     if output_dir is None:

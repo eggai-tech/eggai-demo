@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -54,15 +52,15 @@ class ModelResult(BaseModel):
         default=False,
         description="Whether the input was truncated"
     )
-    original_length: Optional[int] = Field(
+    original_length: int | None = Field(
         default=None,
         description="Original length of input before truncation"
     )
-    truncated_length: Optional[int] = Field(
+    truncated_length: int | None = Field(
         default=None,
         description="Length of input after truncation"
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         description="Error message if execution failed"
     )

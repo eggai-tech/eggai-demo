@@ -43,7 +43,7 @@ __all__ = [
     "AgentName",
     "AuditCategory",
     "OffsetReset",
-    
+
     # Data types
     "MessageData",
     "ChatMessage",
@@ -52,7 +52,7 @@ __all__ = [
     "StreamChunkData",
     "StreamEndData",
     "AuditEventData",
-    
+
     # Message types
     "AuditLogMessage",
     "BillingRequestMessage",
@@ -63,7 +63,7 @@ __all__ = [
     "AgentMessage",
     "StreamChunkMessage",
     "StreamEndMessage",
-    
+
     # Type guards
     "is_audit_log",
     "is_billing_request",

@@ -1,7 +1,4 @@
-from typing import List
-
-
-def markdown_table(rows: List[List[str]], headers: List[str]) -> str:
+def markdown_table(rows: list[list[str]], headers: list[str]) -> str:
     """Generate a markdown table from rows and headers."""
     widths = [len(h) for h in headers]
     for row in rows:

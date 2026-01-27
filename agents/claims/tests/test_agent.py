@@ -1,7 +1,6 @@
 import asyncio
 import time
 from datetime import datetime
-from typing import List
 from uuid import uuid4
 
 import dspy
@@ -174,7 +173,7 @@ human_stream_channel = Channel("human_stream")
 _response_queue = asyncio.Queue()
 
 
-def _markdown_table(rows: List[List[str]], headers: List[str]) -> str:
+def _markdown_table(rows: list[list[str]], headers: list[str]) -> str:
     """Generate a markdown table from rows and headers."""
     widths = [len(h) for h in headers]
     for row in rows:
@@ -237,11 +236,11 @@ async def wait_for_agent_response(connection_id: str, timeout: float = 120.0) ->
                 logger.info(
                     f"Received non-matching response from {source} for connection_id {event_conn_id}, waiting for Claims with {connection_id}"
                 )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Wait a little and try again
             await asyncio.sleep(0.5)
 
-    raise asyncio.TimeoutError(
+    raise TimeoutError(
         f"Timeout waiting for response with connection_id {connection_id}"
     )
 
@@ -371,7 +370,7 @@ async def test_claims_agent():
                     f"Test case {i + 1} precision score {evaluation_result.precision_score} is negative"
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(
                     f"Timeout: No response received within timeout period for test {i + 1}"
                 )

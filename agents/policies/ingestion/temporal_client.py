@@ -1,7 +1,6 @@
 import os
 import re
 import uuid
-from typing import Optional
 
 from temporalio.client import Client
 
@@ -25,7 +24,7 @@ class TemporalClient:
         self.temporal_server_url = temporal_server_url
         self.temporal_namespace = temporal_namespace
         self.temporal_task_queue = temporal_task_queue
-        self._client: Optional[Client] = None
+        self._client: Client | None = None
 
     async def get_client(self) -> Client:
         if self._client is None:
@@ -40,7 +39,7 @@ class TemporalClient:
         category: str = "general",
         index_name: str = "policies_index",
         force_rebuild: bool = False,
-        request_id: Optional[str] = None,
+        request_id: str | None = None,
     ) -> DocumentIngestionResult:
         if request_id is None:
             request_id = str(uuid.uuid4())

@@ -1,27 +1,26 @@
 import json
 
-from opentelemetry import trace
-
 from agents.policies.agent.tools.database.example_data import (
     EXAMPLE_POLICIES,
     USE_EXAMPLE_DATA,
 )
 from libraries.observability.logger import get_console_logger
+from libraries.observability.tracing import create_tracer
 
 logger = get_console_logger("policies_agent.tools.database")
-tracer = trace.get_tracer("policies_agent_tools_database")
+tracer = create_tracer("policies_agent_tools_database")
 
 
 def get_all_policies() -> list:
     """
     Retrieve all policies from the database.
     Used by the API to list all available policies.
-    
+
     Returns:
         List of policy dictionaries
     """
     logger.info("Retrieving all policies")
-    
+
     try:
         # In production, this would query a real database
         # For now, use example data if enabled
@@ -56,7 +55,7 @@ def get_personal_policy_details(policy_number: str) -> str:
 
     try:
         cleaned_policy_number = policy_number.strip().upper()
-        
+
         # In production, this would query a real database
         # For now, use example data if enabled
         if USE_EXAMPLE_DATA:
@@ -65,7 +64,7 @@ def get_personal_policy_details(policy_number: str) -> str:
             # TODO: Replace with actual database query
             logger.warning("Production database not configured, using empty dataset")
             policies_to_search = []
-        
+
         for policy in policies_to_search:
             if policy["policy_number"] == cleaned_policy_number:
                 logger.info(

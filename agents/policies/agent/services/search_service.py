@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sentence_transformers import SentenceTransformer
 
@@ -21,21 +21,21 @@ logger = get_console_logger("search_service")
 class SearchService:
     """Service for searching policy documents."""
 
-    def __init__(self, vespa_client: VespaClient, embedding_model: Optional[SentenceTransformer] = None):
+    def __init__(self, vespa_client: VespaClient, embedding_model: SentenceTransformer | None = None):
         self.vespa_client = vespa_client
         self._embedding_model = embedding_model
 
     def create_policy_document(self, doc_data: dict) -> PolicyDocument:
         """Convert raw document data to PolicyDocument model.
-        
+
         Args:
             doc_data: Raw document data from Vespa
-            
+
         Returns:
             PolicyDocument instance
         """
         from agents.policies.agent.api.models import PolicyDocument
-        
+
         # Generate citation
         citation = None
         if doc_data.get("page_range"):
@@ -63,15 +63,15 @@ class SearchService:
 
     async def search(self, request: SearchRequest) -> SearchResponse:
         """Perform search based on the specified search type (vector, hybrid, or keyword).
-        
+
         Args:
             request: Search request parameters with search type
-            
+
         Returns:
             SearchResponse object
         """
         from agents.policies.agent.api.models import SearchResponse
-        
+
         try:
             results = []
 

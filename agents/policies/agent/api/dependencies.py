@@ -13,13 +13,13 @@ from libraries.observability.logger import get_console_logger
 logger = get_console_logger("policies_api_dependencies")
 
 
-@lru_cache()
+@lru_cache
 def get_vespa_client() -> VespaClient:
     logger.info("Creating Vespa client instance")
     return VespaClient()
 
 
-@lru_cache()
+@lru_cache
 def get_embedding_model() -> SentenceTransformer:
     logger.info("Loading embedding model")
     return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")

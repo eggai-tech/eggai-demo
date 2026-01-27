@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
@@ -45,9 +44,9 @@ async def health_check():
     return {"status": "healthy", "service": "policies-agent", "version": "1.0.0"}
 
 
-@router.get("/kb/documents", response_model=List[PolicyDocument])
+@router.get("/kb/documents", response_model=list[PolicyDocument])
 async def list_documents(
-    category: Optional[str] = Query(None, description="Filter by category"),
+    category: str | None = Query(None, description="Filter by category"),
     limit: int = Query(20, description="Number of documents to return", ge=1, le=100),
     offset: int = Query(0, description="Offset for pagination", ge=0),
     document_service: DocumentService = Depends(get_document_service),
@@ -62,7 +61,7 @@ async def list_documents(
     try:
         # Validate category if provided
         validated_category = validate_category(category)
-        
+
         documents = await document_service.list_documents(
             category=validated_category,
             limit=limit,
@@ -78,7 +77,7 @@ async def list_documents(
         )
 
 
-@router.get("/kb/categories", response_model=List[CategoryStats])
+@router.get("/kb/categories", response_model=list[CategoryStats])
 async def get_categories(
     document_service: DocumentService = Depends(get_document_service),
 ):
@@ -102,14 +101,14 @@ async def get_document(
     try:
         # Validate document ID
         validated_doc_id = validate_document_id(doc_id)
-        
+
         document = await document_service.get_document_by_id(validated_doc_id)
-        
+
         if not document:
             raise HTTPException(
                 status_code=404, detail=f"Document not found: {doc_id}"
             )
-        
+
         return document
     except HTTPException:
         raise
@@ -146,7 +145,7 @@ async def reindex_knowledge_base(
             request.validate_policy_ids()
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
-        
+
         response = await reindex_service.reindex_documents(request)
         return response
     except HTTPException:
@@ -164,7 +163,7 @@ async def clear_index(
 ):
     """
     Clear all documents from the knowledge base.
-    
+
     **WARNING**: This will delete all indexed documents. Use with caution.
     """
     try:
@@ -183,7 +182,7 @@ async def get_indexing_status(
 ):
     """
     Get the current indexing status of the knowledge base.
-    
+
     Returns information about:
     - Whether the index contains documents
     - Total number of documents and chunks
@@ -206,14 +205,14 @@ async def get_full_document(document_id: str):
     try:
         # Validate document ID
         validated_doc_id = validate_document_id(document_id)
-        
+
         full_doc = await retrieve_full_document_async(validated_doc_id)
-        
+
         if not full_doc:
             raise HTTPException(
                 status_code=404, detail=f"Document not found: {document_id}"
             )
-        
+
         return full_doc
     except HTTPException:
         raise
@@ -224,7 +223,7 @@ async def get_full_document(document_id: str):
         )
 
 
-@router.get("/kb/documents/{document_id}/chunks", response_model=List[PolicyDocument])
+@router.get("/kb/documents/{document_id}/chunks", response_model=list[PolicyDocument])
 async def get_document_chunks(
     document_id: str,
     document_service: DocumentService = Depends(get_document_service),
@@ -233,13 +232,13 @@ async def get_document_chunks(
     try:
         # Validate document ID
         validated_doc_id = validate_document_id(document_id)
-        
+
         all_documents = await document_service.list_documents(limit=1000)
         chunks = [doc for doc in all_documents if doc.document_id == validated_doc_id]
-        
+
         if not chunks:
             raise HTTPException(status_code=404, detail="Document not found")
-        
+
         return chunks
     except HTTPException:
         raise
@@ -254,30 +253,30 @@ async def get_document_chunks(
 async def get_document_range(
     document_id: str,
     start_chunk: int = Query(0, description="Starting chunk index", ge=0),
-    end_chunk: Optional[int] = Query(None, description="Ending chunk index (inclusive)"),
+    end_chunk: int | None = Query(None, description="Ending chunk index (inclusive)"),
 ):
     """Get a range of chunks from a document."""
     try:
         # Validate document ID
         validated_doc_id = validate_document_id(document_id)
-        
+
         # Validate chunk range
         if end_chunk is not None and end_chunk < start_chunk:
             raise HTTPException(
                 status_code=400,
                 detail="End chunk must be greater than or equal to start chunk"
             )
-        
+
         doc_range = get_document_chunk_range(
             validated_doc_id, start_chunk, end_chunk
         )
-        
+
         if not doc_range:
             raise HTTPException(
                 status_code=404,
                 detail=f"Document not found or invalid range: {document_id}",
             )
-        
+
         return doc_range
     except HTTPException:
         raise
@@ -291,13 +290,13 @@ async def get_document_range(
 @router.get("/kb/search")
 async def search_documents(
     query: str = Query(..., description="Search query"),
-    category: Optional[str] = Query(None, description="Filter by category"),
+    category: str | None = Query(None, description="Filter by category"),
     max_hits: int = Query(10, description="Maximum number of results", ge=1, le=100),
     search_service: SearchService = Depends(get_search_service),
 ):
     """
     Search policy documents using keyword search.
-    
+
     - **query**: Search query string
     - **category**: Optional category filter
     - **max_hits**: Maximum number of results to return
@@ -306,7 +305,7 @@ async def search_documents(
         # Validate inputs
         validated_query = validate_query(query)
         validated_category = validate_category(category) if category else None
-        
+
         # Create search request
         request = SearchRequest(
             query=validated_query,
@@ -314,9 +313,9 @@ async def search_documents(
             max_hits=max_hits,
             search_type="keyword"
         )
-        
+
         result = await search_service.search(request)
-        
+
         return {
             "query": result.query,
             "category": result.category,
@@ -350,7 +349,7 @@ async def vector_search(
 ):
     """
     Perform search on policy documents.
-    
+
     Supports three search types:
     - **vector**: Pure semantic search using embeddings
     - **hybrid**: Combines vector and keyword search (recommended)
@@ -361,9 +360,9 @@ async def vector_search(
         request.query = validate_query(request.query)
         if request.category:
             request.category = validate_category(request.category)
-        
+
         result = await search_service.search(request)
-        
+
         return SearchResponse(
             query=result.query,
             category=result.category,
@@ -383,7 +382,7 @@ async def vector_search(
 # Personal Policy Endpoints
 @router.get("/policies", response_model=PolicyListResponse)
 async def list_personal_policies(
-    category: Optional[str] = Query(None, description="Filter by category (auto, home, life)"),
+    category: str | None = Query(None, description="Filter by category (auto, home, life)"),
     limit: int = Query(20, description="Number of policies to return", ge=1, le=100),
     offset: int = Query(0, description="Offset for pagination", ge=0),
 ):
@@ -391,22 +390,22 @@ async def list_personal_policies(
     try:
         # Import here to avoid circular imports
         from agents.policies.agent.tools.database.policy_data import get_all_policies
-        
+
         # Get all policies
         all_policies = get_all_policies()
-        
+
         # Filter by category if provided
         if category:
             filtered_policies = [p for p in all_policies if p["policy_category"] == category]
         else:
             filtered_policies = all_policies
-        
+
         # Apply pagination
         paginated_policies = filtered_policies[offset:offset + limit]
-        
+
         # Convert to response models
         policies = [PersonalPolicy(**policy) for policy in paginated_policies]
-        
+
         return PolicyListResponse(
             policies=policies,
             total=len(filtered_policies)
@@ -426,19 +425,19 @@ async def get_personal_policy(policy_number: str):
         from agents.policies.agent.tools.database.policy_data import (
             get_personal_policy_details,
         )
-        
+
         # Get policy details (returns JSON string)
         policy_json = get_personal_policy_details(policy_number)
-        
+
         if policy_json == "Policy not found.":
             raise HTTPException(
                 status_code=404, detail=f"Policy not found: {policy_number}"
             )
-        
+
         # Parse the JSON response
         import json
         policy_data = json.loads(policy_json)
-        
+
         return PersonalPolicy(**policy_data)
     except HTTPException:
         raise
@@ -456,22 +455,22 @@ async def upload_document(
 ):
     """
     Upload a document to MinIO for processing.
-    
+
     The document will be:
     1. Uploaded to MinIO inbox folder
     2. Automatically processed by the watcher workflow
     3. Indexed in Vespa if not already present
-    
+
     Supported formats: PDF, DOCX, Markdown, Text
     """
     try:
         # Validate category
-        validated_category = validate_category(category)
-        
+        validate_category(category)
+
         # Validate file
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
-            
+
         # Check file extension
         allowed_extensions = {'.pdf', '.docx', '.md', '.txt'}
         file_ext = Path(file.filename).suffix.lower()
@@ -480,24 +479,24 @@ async def upload_document(
                 status_code=400,
                 detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}"
             )
-            
+
         # Read file content
         content = await file.read()
         if not content:
             raise HTTPException(status_code=400, detail="Empty file")
-            
+
         # Upload to MinIO
         from agents.policies.ingestion.minio_client import MinIOClient
-        
+
         async with MinIOClient() as minio_client:
             metadata = await minio_client.upload_to_inbox(
                 filename=file.filename,
                 content=content,
                 mime_type=file.content_type or "application/octet-stream"
             )
-            
+
         logger.info(f"Uploaded document {file.filename} with ID {metadata.document_id}")
-        
+
         return {
             "message": "Document uploaded successfully",
             "filename": file.filename,
@@ -506,7 +505,7 @@ async def upload_document(
             "size": metadata.file_size,
             "status": "queued_for_processing"
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -520,7 +519,7 @@ async def upload_document(
 async def get_upload_status():
     """
     Get the status of the MinIO upload system.
-    
+
     Returns information about:
     - Files in inbox awaiting processing
     - Recently processed files
@@ -528,17 +527,17 @@ async def get_upload_status():
     """
     try:
         from agents.policies.ingestion.minio_client import MinIOClient
-        
+
         async with MinIOClient() as minio_client:
             # Get files from different folders
             inbox_files = await minio_client.list_inbox_files()
-            
+
             # Get recent processed files (simplified for now)
             processed_count = 0
             failed_count = 0
-            
+
             # TODO: Implement listing for processed and failed folders
-            
+
         return {
             "inbox_count": len(inbox_files),
             "inbox_files": [
@@ -553,7 +552,7 @@ async def get_upload_status():
             "processed_count": processed_count,
             "failed_count": failed_count
         }
-        
+
     except Exception as e:
         logger.error(f"Get upload status error: {e}", exc_info=True)
         raise HTTPException(

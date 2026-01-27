@@ -1,15 +1,14 @@
 import json
 from pathlib import Path
-from typing import List
 
 from .models import RetrievalTestCase
 
 
-def load_qa_pairs_from_json() -> List[RetrievalTestCase]:
+def load_qa_pairs_from_json() -> list[RetrievalTestCase]:
     """Load test cases from filtered QA pairs JSON file."""
     json_path = Path(__file__).parent / "filtered_qa_pairs.json"
 
-    with open(json_path, "r") as f:
+    with open(json_path) as f:
         qa_pairs = json.load(f)
 
     test_cases = []
@@ -28,6 +27,6 @@ def load_qa_pairs_from_json() -> List[RetrievalTestCase]:
     return test_cases
 
 
-def get_retrieval_test_cases() -> List[RetrievalTestCase]:
+def get_retrieval_test_cases() -> list[RetrievalTestCase]:
     """Get test dataset - now loads from JSON file with context-based evaluation."""
     return load_qa_pairs_from_json()

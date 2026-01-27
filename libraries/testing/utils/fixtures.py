@@ -1,6 +1,5 @@
 import asyncio
 import time
-from typing import Dict, List, Optional
 
 from libraries.observability.logger import get_console_logger
 
@@ -8,11 +7,11 @@ logger = get_console_logger("test_utils.fixtures")
 
 
 def create_message_list(
-    user_messages: List[str], 
-    agent_responses: Optional[List[str]] = None,
+    user_messages: list[str],
+    agent_responses: list[str] | None = None,
     user_role: str = "User",
     agent_role: str = "Agent"
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     if agent_responses is None:
         agent_responses = []
 
@@ -24,18 +23,15 @@ def create_message_list(
     return messages
 
 
-def create_conversation_string(messages: List[Dict[str, str]]) -> str:
-    conversation = ""
-    for msg in messages:
-        conversation += f"{msg['role']}: {msg['content']}\n"
-    return conversation
+def create_conversation_string(messages: list[dict[str, str]]) -> str:
+    return "".join(f"{msg['role']}: {msg['content']}\n" for msg in messages)
 
 
 async def wait_for_agent_response(
     response_queue: asyncio.Queue,
     connection_id: str,
     timeout: float = 30.0,
-    expected_source: Optional[str] = None
+    expected_source: str | None = None
 ) -> dict:
     start_wait = time.perf_counter()
     logger.info(f"Waiting for response with connection_id {connection_id}")
@@ -64,7 +60,7 @@ async def wait_for_agent_response(
             # Check if this response matches our request
             event_connection_id = event.get("data", {}).get("connection_id")
             event_source = event.get("source")
-            
+
             if event_connection_id == connection_id:
                 # If expected_source is specified, check it matches
                 if expected_source is None or event_source == expected_source:
@@ -80,7 +76,7 @@ async def wait_for_agent_response(
                     f"Received non-matching response: {event_source} for "
                     f"{event_connection_id}"
                 )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Wait a little and try again but don't log every attempt
             await asyncio.sleep(0.1)
 
@@ -94,6 +90,6 @@ async def wait_for_agent_response(
     logger.error(
         f"Timeout after {timeout}s waiting for response with connection_id {connection_id}"
     )
-    raise asyncio.TimeoutError(
+    raise TimeoutError(
         f"Timeout waiting for response with connection_id {connection_id}"
     )

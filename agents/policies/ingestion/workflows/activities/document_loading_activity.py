@@ -2,7 +2,7 @@ import os
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import aiofiles
 from docling.document_converter import DocumentConverter
@@ -15,7 +15,7 @@ logger = get_console_logger("ingestion.document_loading")
 
 
 @activity.defn
-async def load_document_activity(file_path: str, source: str = "filesystem", metadata: Dict = None) -> Dict[str, Any]:
+async def load_document_activity(file_path: str, source: str = "filesystem", metadata: dict = None) -> dict[str, Any]:
     logger.info(f"Loading document: {file_path} from {source}")
 
     try:
@@ -25,29 +25,29 @@ async def load_document_activity(file_path: str, source: str = "filesystem", met
             async with MinIOClient() as client:
                 content, minio_metadata = await client.download_file(file_path)
                 original_filename = minio_metadata.get('original_filename', Path(file_path).name)
-            
+
             # Create temporary file for processing
             suffix = Path(original_filename).suffix
-            
+
             # Create a unique temporary file path
             tmp_dir = tempfile.gettempdir()
             tmp_filename = f"doc_{uuid.uuid4().hex}{suffix}"
             tmp_file_path = os.path.join(tmp_dir, tmp_filename)
-            
+
             # Write content asynchronously
             async with aiofiles.open(tmp_file_path, 'wb') as tmp_file:
                 await tmp_file.write(content)
-                
+
             try:
                 converter = DocumentConverter()
                 result = converter.convert(tmp_file_path)
                 document = result.document
-                
+
                 logger.info(f"Successfully loaded MinIO document with {len(document.pages)} pages")
-                
+
                 # Use MinIO metadata for document ID
                 document_id = minio_metadata.get("document_id", Path(original_filename).stem)
-                
+
                 return {
                     "success": True,
                     "document": document.model_dump(),
@@ -65,7 +65,7 @@ async def load_document_activity(file_path: str, source: str = "filesystem", met
                 # Clean up temporary file
                 if tmp_file_path and os.path.exists(tmp_file_path):
                     os.unlink(tmp_file_path)
-                
+
         # Handle filesystem source (original behavior)
         file_path_obj = Path(file_path)
         if not file_path_obj.exists():

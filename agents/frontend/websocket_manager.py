@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Dict
 
 from starlette.websockets import WebSocket, WebSocketState
 
@@ -9,10 +8,10 @@ from libraries.observability.logger import get_console_logger
 class WebSocketManager:
     def __init__(self) -> None:
         self.logger = get_console_logger("websocket_manager")
-        self.active_connections: Dict[str, WebSocket] = {}
-        self.message_buffers: Dict[str, list] = defaultdict(list)
-        self.message_ids: Dict[str, str] = defaultdict(str)
-        self.chat_messages: Dict[str, list] = defaultdict(list)
+        self.active_connections: dict[str, WebSocket] = {}
+        self.message_buffers: dict[str, list] = defaultdict(list)
+        self.message_ids: dict[str, str] = defaultdict(str)
+        self.chat_messages: dict[str, list] = defaultdict(list)
 
     async def connect(self, websocket: WebSocket, connection_id: str) -> str:
         """Accept a WebSocket connection, register it, and replay any buffered messages."""
