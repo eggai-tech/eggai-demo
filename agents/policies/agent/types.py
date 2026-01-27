@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, get_args
 
 from pydantic import Field
 
@@ -10,6 +10,7 @@ from libraries.core import (
 )
 
 PolicyCategory = Literal["auto", "life", "home", "health"]
+VALID_CATEGORIES: frozenset[str] = frozenset(get_args(PolicyCategory))
 
 
 class ModelConfig(BaseModelConfig):

@@ -76,10 +76,11 @@ class ReindexRequest(BaseModel):
     def validate_policy_ids(self):
         """Validate policy IDs are valid categories."""
         if self.policy_ids:
-            valid_ids = {"auto", "home", "health", "life"}
-            invalid_ids = [pid for pid in self.policy_ids if pid not in valid_ids]
+            from agents.policies.agent.types import VALID_CATEGORIES
+
+            invalid_ids = [pid for pid in self.policy_ids if pid not in VALID_CATEGORIES]
             if invalid_ids:
-                raise ValueError(f"Invalid policy IDs: {invalid_ids}. Valid IDs are: {valid_ids}")
+                raise ValueError(f"Invalid policy IDs: {invalid_ids}. Valid IDs are: {sorted(VALID_CATEGORIES)}")
         return self
 
 

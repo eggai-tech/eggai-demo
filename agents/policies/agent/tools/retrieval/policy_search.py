@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+from agents.policies.agent.config import settings
 from agents.policies.agent.services.embeddings import (
     generate_embedding_async,
 )
@@ -120,7 +121,7 @@ async def _hybrid_search_with_embedding(
         query=query,
         query_embedding=query_embedding,
         category=category,
-        alpha=0.7  # Default weight for vector search (70% vector, 30% keyword)
+        alpha=settings.hybrid_search_alpha,
     )
 
     return results

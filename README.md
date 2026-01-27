@@ -26,7 +26,7 @@ Open **http://localhost:8000** and start chatting.
 | Feature | Description |
 |---------|-------------|
 | **7 Collaborating Agents** | Triage, Billing, Claims, Policies, Escalation, Audit, Frontend |
-| **9 Classifier Strategies** | Compare LLM vs fine-tuned vs neural network approaches |
+| **9 Classifier Strategies** | Compare LLM, fine-tuned, and neural network approaches (v0-v8) |
 | **RAG Document Search** | Vespa-powered hybrid search (70% semantic + 30% keyword) |
 | **Production Patterns** | Health checks, observability, message-driven architecture |
 | **Full Observability** | Grafana dashboards, distributed tracing, metrics |
@@ -37,12 +37,12 @@ Open **http://localhost:8000** and start chatting.
 User (WebSocket) → Frontend Agent → Triage Agent → Specialized Agent → Response
                                          │
                                     Classifier
-                                    (v0-v7: pick your strategy)
+                                    (v0-v8: pick your strategy)
 ```
 
 **Message Flow:**
 1. User sends message via WebSocket to **Frontend**
-2. **Triage** classifies intent using configurable classifier (v0-v7)
+2. **Triage** classifies intent using configurable classifier (v0-v8)
 3. Routes to specialized agent: **Billing**, **Claims**, **Policies**, or **Escalation**
 4. **Audit** monitors all interactions for compliance
 5. Response streams back to user
@@ -76,7 +76,7 @@ User (WebSocket) → Frontend Agent → Triage Agent → Specialized Agent → R
 │   ├── frontend/             # WebSocket gateway + chat UI
 │   ├── triage/               # Classification and routing
 │   │   ├── agent.py          # Message handler
-│   │   ├── classifiers/      # 8 classifier strategies (NEW!)
+│   │   ├── classifiers/      # 9 classifier strategies (v0-v8)
 │   │   └── dspy_modules/     # DSPy-based classifiers
 │   ├── billing/              # Payment inquiries
 │   ├── claims/               # Claim processing
@@ -98,21 +98,21 @@ User (WebSocket) → Frontend Agent → Triage Agent → Specialized Agent → R
 
 ## Classifier Comparison
 
-The triage agent supports 8 classification strategies. Select via `TRIAGE_CLASSIFIER_VERSION`:
+The triage agent supports 9 classification strategies. Select via `TRIAGE_CLASSIFIER_VERSION`:
 
-| Version | Type | Latency | Cost | Training |
-|---------|------|---------|------|----------|
-| **v0** | Minimal prompt | ~500ms | $0.001 | No |
-| **v1** | Enhanced prompt | ~600ms | $0.002 | No |
-| **v2** | COPRO optimized | ~500ms | $0.001 | One-time |
-| **v3** | Few-shot MLflow | ~50ms | $0 | Yes |
-| **v4** | Zero-shot COPRO | ~400ms | $0.001 | One-time |
-| **v5** | Attention network | ~20ms | $0 | Yes |
-| **v6** | OpenAI fine-tuned | ~300ms | $0.01 | Yes |
-| **v7** | Gemma fine-tuned | ~100ms | $0 | Yes |
-| **v8** | RoBERTa LoRA | ~50ms | $0 | Yes |
+| Version | Type | Latency | API Call | Training |
+|---------|------|---------|----------|----------|
+| **v0** | Minimal prompt | ~500ms | Yes | No |
+| **v1** | Enhanced prompt | ~600ms | Yes | No |
+| **v2** | COPRO optimized | ~500ms | Yes | One-time |
+| **v3** | Few-shot MLflow | ~50ms | No | Yes |
+| **v4** | Zero-shot COPRO | ~400ms | Yes | One-time |
+| **v5** | Attention network | ~20ms | No | Yes |
+| **v6** | OpenAI fine-tuned | ~300ms | Yes | Yes |
+| **v7** | Gemma fine-tuned | ~100ms | No | Yes |
+| **v8** | RoBERTa LoRA | ~50ms | No | Yes |
 
-**Default:** v4 (best balance of accuracy and simplicity)
+**Default:** v4 (configured in `config/defaults.env` — best balance of accuracy and simplicity)
 
 ```python
 # Using the unified classifier interface
@@ -134,7 +134,7 @@ for info in list_classifiers():
 | Chat UI | http://localhost:8000 | Main application |
 | Redpanda Console | http://localhost:8082 | Message queue UI |
 | Vespa | http://localhost:8080 | Vector search |
-| Temporal UI | http://localhost:8088 | Workflow monitoring |
+| Temporal UI | http://localhost:8081 | Workflow monitoring |
 | MLflow | http://localhost:5001 | Experiment tracking |
 | Grafana | http://localhost:3000 | Dashboards |
 | Prometheus | http://localhost:9090 | Metrics |

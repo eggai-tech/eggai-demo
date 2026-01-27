@@ -10,7 +10,11 @@ from agents.triage.dspy_modules.small_talk import chatty
 from agents.triage.models import AGENT_REGISTRY, TargetAgent
 from libraries.communication.channels import channels
 from libraries.communication.messaging import AgentName, MessageType, OffsetReset, subscribe
-from libraries.communication.streaming import get_conversation_string, stream_dspy_response
+from libraries.communication.streaming import (
+    get_conversation_string,
+    publish_waiting_message,
+    stream_dspy_response,
+)
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import (
     TracedMessage,
@@ -132,6 +136,14 @@ async def handle_user_message(msg: TracedMessage) -> None:
     conversation_string = build_conversation_string(chat_messages)
     safe_set_attribute(span, "conversation_length", len(conversation_string))
 
+    # Send immediate feedback so the user doesn't see a dead silence
+    await publish_waiting_message(
+        channel=human_stream_channel,
+        agent_name=AGENT_NAME,
+        connection_id=connection_id,
+        message_id=str(msg.id),
+    )
+
     try:
         response = current_classifier.classify(chat_history=conversation_string)
         safe_set_attribute(span, "classifier_version", settings.classifier_version)
@@ -176,6 +188,14 @@ async def handle_user_message(msg: TracedMessage) -> None:
 
     if target_agent != TargetAgent.ChattyAgent:
         try:
+            # Let the user know which agent will handle their request
+            await publish_waiting_message(
+                channel=human_stream_channel,
+                agent_name=AGENT_NAME,
+                connection_id=connection_id,
+                message_id=str(msg.id),
+                message=f"Connecting you to {target_agent.value}...",
+            )
             await _publish_to_agent(conversation_string, target_agent, msg)
         except Exception as e:
             logger.error("Error routing to agent %s: %s", target_agent, e, exc_info=True)

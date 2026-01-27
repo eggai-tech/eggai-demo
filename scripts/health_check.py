@@ -47,12 +47,11 @@ class ServiceHealth:
 
 # Service definitions: (name, url, optional_validator)
 INFRASTRUCTURE_SERVICES: list[tuple[str, str, Callable | None]] = [
-    ("Redpanda", "http://localhost:19644/health", None),
+    ("Redpanda", "http://localhost:19644/v1/status/ready", None),
     ("Redpanda Console", "http://localhost:8082/", None),
     ("Vespa Config", "http://localhost:19071/state/v1/health", None),
     ("Vespa Query", "http://localhost:8080/", None),
-    ("Temporal", "http://localhost:7233/health", None),
-    ("Temporal UI", "http://localhost:8088/", None),
+    ("Temporal UI", "http://localhost:8081/", None),
     ("MLflow", "http://localhost:5001/health", None),
     ("MinIO", "http://localhost:9001/", None),
     ("Grafana", "http://localhost:3000/api/health", None),

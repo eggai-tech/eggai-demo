@@ -26,6 +26,7 @@ services:
       - --default-log-level=info
     image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
     container_name: redpanda
+    restart: unless-stopped
     volumes:
       - redpanda:/var/lib/redpanda/data
     networks:
@@ -44,6 +45,7 @@ services:
   console:
     container_name: redpanda-console
     image: docker.redpanda.com/redpandadata/console:v2.8.0
+    restart: unless-stopped
     networks:
       - eggai-example-network
     entrypoint: /bin/sh
@@ -83,6 +85,7 @@ services:
       echo 'Topic agents created successfully!'"
   otel-collector:
     container_name: otel-collector
+    restart: unless-stopped
     image: otel/opentelemetry-collector:0.86.0
     command: [ "--config=/etc/otel-collector.yaml" ]
     volumes:
@@ -93,6 +96,7 @@ services:
       - eggai-example-network
   tempo:
     container_name: tempo
+    restart: unless-stopped
     image: grafana/tempo:latest
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
@@ -108,6 +112,7 @@ services:
       - eggai-example-network
   prometheus:
     container_name: prometheus
+    restart: unless-stopped
     image: prom/prometheus:latest
     command:
       - --config.file=/etc/prometheus.yaml
@@ -122,6 +127,7 @@ services:
       - eggai-example-network
   grafana:
     container_name: grafana
+    restart: unless-stopped
     image: grafana/grafana:latest
     volumes:
       - ./dockerConfig/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
@@ -147,6 +153,7 @@ services:
       - eggai-example-network
   minio:
     container_name: minio
+    restart: unless-stopped
     image: minio/minio
     expose:
       - "9000"
@@ -167,6 +174,7 @@ services:
       - eggai-example-network
   mlflow-artifacts-server:
     container_name: mlflow-artifacts-server
+    restart: unless-stopped
     image: ghcr.io/mlflow/mlflow:v3.0.0rc2
     depends_on:
       - minio
@@ -191,6 +199,7 @@ services:
       - eggai-example-network
   postgres-temporal:
     container_name: postgres-temporal
+    restart: unless-stopped
     image: postgres
     environment:
       POSTGRES_DB: temporal
@@ -211,6 +220,7 @@ services:
       start_period: 10s
   postgres-mlflow:
     container_name: postgres-mlflow
+    restart: unless-stopped
     image: postgres
     environment:
       POSTGRES_DB: db
@@ -242,6 +252,7 @@ services:
       - POSTGRES_SEEDS=postgres-temporal
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     image: temporalio/auto-setup:1.23.0
+    restart: unless-stopped
     networks:
       - eggai-example-network
     ports:
@@ -262,12 +273,14 @@ services:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
     image: temporalio/ui:2.26.2
+    restart: unless-stopped
     networks:
       - eggai-example-network
     ports:
       - 8081:8080
   mlflow-tracking-server:
     container_name: mlflow-tracking-server
+    restart: unless-stopped
     image: ghcr.io/mlflow/mlflow:v3.0.0rc2
     depends_on:
       - postgres-mlflow
@@ -297,6 +310,7 @@ services:
   vespa-node-0:
     image: vespaengine/vespa
     container_name: vespa-node-0
+    restart: unless-stopped
     hostname: vespa-node-0.eggai-example-network
     networks:
       - eggai-example-network
@@ -321,6 +335,7 @@ services:
   vespa-node-1:
     image: vespaengine/vespa
     container_name: vespa-node-1
+    restart: unless-stopped
     hostname: vespa-node-1.eggai-example-network
     networks:
       - eggai-example-network
@@ -346,6 +361,7 @@ services:
   vespa-node-2:
     image: vespaengine/vespa
     container_name: vespa-node-2
+    restart: unless-stopped
     hostname: vespa-node-2.eggai-example-network
     networks:
       - eggai-example-network

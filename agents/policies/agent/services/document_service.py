@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+from agents.policies.agent.api.models import PolicyDocument
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
-
-if TYPE_CHECKING:
-    from agents.policies.agent.api.models import PolicyDocument
 
 logger = get_console_logger("document_service")
 
@@ -16,8 +12,6 @@ class DocumentService:
         self.vespa_client = vespa_client
 
     def create_policy_document(self, doc_data: dict) -> PolicyDocument:
-        from agents.policies.agent.api.models import PolicyDocument
-
         # Generate citation
         citation = None
         if doc_data.get("page_range"):

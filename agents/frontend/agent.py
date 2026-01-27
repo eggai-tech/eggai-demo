@@ -178,17 +178,19 @@ async def handle_human_stream_messages(message: TracedMessage):
             {
                 "sender": agent,
                 "content": "",
+                "message_id": message_id,
                 "type": MessageType.ASSISTANT_MESSAGE_STREAM_START.value,
             },
         )
 
     elif message_type == MessageType.AGENT_MESSAGE_STREAM_WAITING_MESSAGE.value:
-        message = message.data.get("message")
+        waiting_text = message.data.get("message")
         await websocket_manager.send_message_to_connection(
             connection_id,
             {
                 "sender": agent,
-                "content": message,
+                "content": waiting_text,
+                "message_id": message_id,
                 "type": MessageType.ASSISTANT_MESSAGE_STREAM_WAITING_MESSAGE.value,
             },
         )

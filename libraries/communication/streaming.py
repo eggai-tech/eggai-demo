@@ -250,6 +250,32 @@ async def publish_error_message(
     )
 
 
+async def publish_waiting_message(
+    channel: Channel,
+    agent_name: str,
+    connection_id: str,
+    message_id: str,
+    message: str = "Thinking...",
+) -> None:
+    """
+    Publish a waiting message to give the user immediate feedback.
+
+    Sends an ``AGENT_MESSAGE_STREAM_WAITING_MESSAGE`` so the frontend can
+    display a "thinking" or "connecting" indicator while the agent processes.
+    """
+    await channel.publish(
+        TracedMessage(
+            type=MessageType.AGENT_MESSAGE_STREAM_WAITING_MESSAGE,
+            source=agent_name,
+            data={
+                "message_id": message_id,
+                "connection_id": connection_id,
+                "message": message,
+            },
+        )
+    )
+
+
 def validate_conversation(conversation_string: str, tracer: Any, span: Any) -> None:
     """
     Validate that a conversation string is non-empty and long enough.

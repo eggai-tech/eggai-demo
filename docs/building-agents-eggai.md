@@ -1,73 +1,90 @@
 # Building Agents Guide
 
-Build a GDPR agent using DSPy ReAct in 5 minutes.
+Build a new agent using DSPy ReAct in 5 minutes. This tutorial creates a hypothetical GDPR agent to demonstrate the pattern used by all agents in the system.
 
 ## Step 1: Create the Agent Structure
 
 ```bash
 mkdir -p agents/gdpr
-cd agents/gdpr
 ```
 
 ## Step 2: Create Configuration File
 
-Create `config.py`:
+Create `agents/gdpr/config.py`:
 
 ```python
 from pydantic import Field
+from pydantic_settings import SettingsConfigDict
+
+from libraries.communication.messaging import AgentName
 from libraries.core import BaseAgentConfig
+
+AGENT_NAME = "GDPRAgent"
+CONSUMER_GROUP_ID = "gdpr_agent_group"
+
 
 class Settings(BaseAgentConfig):
     app_name: str = Field(default="gdpr_agent")
-    prometheus_metrics_port: int = Field(default=9099)
+    prometheus_metrics_port: int = Field(default=9098)
+
+    model_config = SettingsConfigDict(
+        env_prefix="GDPR_", env_file=".env", env_ignore_empty=True, extra="ignore"
+    )
+
 
 settings = Settings()
 ```
 
 ## Step 3: Create the Agent
 
-Create `agent.py`:
+Create `agents/gdpr/agent.py`:
 
 ```python
 import dspy
 from eggai import Agent, Channel
-from libraries.observability.tracing import TracedMessage, TracedReAct, create_tracer
-from libraries.observability.logger import get_console_logger
+
 from libraries.communication.channels import channels
-from libraries.communication.messaging import subscribe
+from libraries.communication.messaging import MessageType, subscribe
+from libraries.communication.streaming import stream_dspy_response
+from libraries.observability.logger import get_console_logger
+from libraries.observability.tracing import (
+    TracedMessage,
+    TracedReAct,
+    create_tracer,
+    traced_handler,
+)
+
+from .config import AGENT_NAME, CONSUMER_GROUP_ID, settings
 
 logger = get_console_logger("gdpr_agent")
+gdpr_agent = Agent(name=AGENT_NAME)
 agents_channel = Channel(channels.agents)
+human_channel = Channel(channels.human)
 human_stream_channel = Channel(channels.human_stream)
-
-# Define message types
-class GDPRInquiry(TracedMessage):
-    type: str = "GDPRInquiry"
-    query: str
-
-class GDPRResponse(TracedMessage):
-    type: str = "GDPRResponse"
-    answer: str
+tracer = create_tracer("gdpr_agent")
 
 # Sample GDPR data
 GDPR_ARTICLES = {
     "17": {
         "title": "Right to erasure ('right to be forgotten')",
-        "content": "The data subject shall have the right to obtain from the controller the erasure of personal data..."
+        "content": "The data subject shall have the right to obtain from the controller the erasure of personal data...",
     },
     "33": {
         "title": "Notification of a personal data breach",
-        "content": "In case of a personal data breach, the controller shall notify within 72 hours..."
-    }
+        "content": "In case of a personal data breach, the controller shall notify within 72 hours...",
+    },
 }
+
 
 # Define tools for ReAct
 def list_gdpr_articles() -> str:
     """List all GDPR article numbers and titles."""
-    articles_list = []
-    for num, data in sorted(GDPR_ARTICLES.items(), key=lambda x: int(x[0])):
-        articles_list.append(f"Article {num}: {data['title']}")
-    return "GDPR Articles:\n" + "\n".join(articles_list)
+    lines = [
+        f"Article {num}: {data['title']}"
+        for num, data in sorted(GDPR_ARTICLES.items(), key=lambda x: int(x[0]))
+    ]
+    return "GDPR Articles:\n" + "\n".join(lines)
+
 
 def read_gdpr_article(article_number: str) -> str:
     """Read a specific GDPR article content."""
@@ -76,73 +93,87 @@ def read_gdpr_article(article_number: str) -> str:
         return f"Article {article_number}: {article['title']}\n\n{article['content']}"
     return f"Article {article_number} not found"
 
-# Tools for ReAct
-TOOLS = [list_gdpr_articles, read_gdpr_article]
 
 # Create ReAct signature
 class GDPRSignature(dspy.Signature):
-    """Answer GDPR-related questions."""
-    query: str = dspy.InputField(desc="The GDPR question")
-    answer: str = dspy.OutputField(desc="Answer based on GDPR knowledge")
+    """Answer GDPR-related questions using available article tools."""
 
-# Initialize agent
-gdpr_agent = Agent(name="gdpr")
+    chat_history: str = dspy.InputField(desc="Full conversation context.")
+    final_response: str = dspy.OutputField(desc="Answer based on GDPR knowledge.")
+
 
 # Create ReAct agent
-tracer = create_tracer("gdpr_agent")
-react = TracedReAct(
-    signature=GDPRSignature,
-    tools=TOOLS,
+gdpr_model = TracedReAct(
+    GDPRSignature,
+    tools=[list_gdpr_articles, read_gdpr_article],
+    name="gdpr_react",
     tracer=tracer,
-    max_iters=3
+    max_iters=3,
 )
+
 
 @subscribe(
     agent=gdpr_agent,
     channel=agents_channel,
-    filter_func=lambda msg: msg.get("type") == "GDPRInquiry",
-    group_id="gdpr_group"
+    message_type=MessageType.GDPR_REQUEST,  # Add to MessageType enum
+    group_id=CONSUMER_GROUP_ID,
 )
-async def handle_gdpr_inquiry(message: TracedMessage):
+@traced_handler("handle_gdpr_request")
+async def handle_gdpr_request(msg: TracedMessage) -> None:
     """Handle GDPR inquiries using ReAct."""
-    query = message.data.get("query", "")
-    logger.info(f"Processing: {query[:50]}...")
-    
-    # Use ReAct to answer the query
-    result = react(query=query)
-    
-    # Send response
-    await human_stream_channel.publish(
-        TracedMessage(
-            type="agent_message",
-            source="GDPR",
-            data={
-                "message": result.answer,
-                "connection_id": message.data.get("connection_id", "unknown"),
-                "agent": "GDPR"
-            },
-            traceparent=message.traceparent,
-            tracestate=message.tracestate
-        )
+    chat_messages = msg.data.get("chat_messages", [])
+    connection_id = msg.data.get("connection_id", "unknown")
+
+    if not chat_messages:
+        logger.warning(f"Empty chat history for connection: {connection_id}")
+        return
+
+    conversation_string = "\n".join(
+        f"{m.get('role', 'User')}: {m['content']}" for m in chat_messages if "content" in m
     )
-    
-    logger.info("Response sent.")
+
+    chunks = dspy.streamify(
+        gdpr_model,
+        stream_listeners=[
+            dspy.streaming.StreamListener(signature_field_name="final_response"),
+        ],
+        include_final_prediction_in_output_stream=True,
+        is_async_program=False,
+        async_streaming=True,
+    )(chat_history=conversation_string)
+
+    await stream_dspy_response(
+        chunks=chunks,
+        agent_name=AGENT_NAME,
+        connection_id=connection_id,
+        message_id=str(msg.id),
+        stream_channel=human_stream_channel,
+        tracer=tracer,
+    )
+
+
+@gdpr_agent.subscribe(channel=agents_channel)
+async def handle_other_messages(msg: TracedMessage) -> None:
+    """Handle non-GDPR messages received on the agent channel."""
+    logger.debug("Received non-GDPR message: %s", msg)
 ```
 
 ## Step 4: Create Main Entry Point
 
-Create `main.py`:
+Create `agents/gdpr/main.py`:
 
 ```python
 import asyncio
+
 from eggai import eggai_main
 from eggai.transport import eggai_set_default_transport
+
 from libraries.communication.transport import create_kafka_transport
+from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import init_telemetry
-from libraries.ml.dspy.language_model import dspy_set_language_model
+
 from .config import settings
-from .agent import gdpr_agent
 
 eggai_set_default_transport(
     lambda: create_kafka_transport(
@@ -151,19 +182,22 @@ eggai_set_default_transport(
     )
 )
 
+from .agent import gdpr_agent  # noqa: E402 (must import after transport setup)
+
 logger = get_console_logger("gdpr_agent")
+
 
 @eggai_main
 async def main():
     logger.info(f"Starting {settings.app_name}")
-    
     init_telemetry(app_name=settings.app_name, endpoint=settings.otel_endpoint)
     dspy_set_language_model(settings)
-    
+
     await gdpr_agent.start()
     logger.info(f"{settings.app_name} started successfully")
-    
+
     await asyncio.Future()  # Keep running
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -171,128 +205,34 @@ if __name__ == "__main__":
 
 ## Step 5: Create Module Init
 
-Create `__init__.py`:
+Create `agents/gdpr/__init__.py`:
 
 ```python
 # GDPR Agent Module
 ```
 
-## Step 6: Create a Test
+## Step 6: Run Your Agent
 
-Create `test.py`:
-
-```python
-import asyncio
-from eggai import Agent, Channel
-from eggai.transport import eggai_set_default_transport
-from libraries.communication.transport import create_kafka_transport
-from libraries.communication.channels import channels
-from libraries.observability.tracing import TracedMessage
-
-eggai_set_default_transport(
-    lambda: create_kafka_transport(bootstrap_servers="localhost:19092")
-)
-
-async def test():
-    test_agent = Agent("test")
-    agents_channel = Channel(channels.agents)
-    human_stream_channel = Channel(channels.human_stream)
-    
-    # Set up response capture
-    response_received = asyncio.Event()
-    captured_response = None
-    
-    @test_agent.subscribe(
-        channel=human_stream_channel,
-        filter_by_message=lambda msg: msg.get("type") == "agent_message" and msg.get("source") == "GDPR"
-    )
-    async def capture_response(message):
-        nonlocal captured_response
-        captured_response = message
-        response_received.set()
-    
-    await test_agent.start()
-    
-    # Send test query
-    await agents_channel.publish(
-        TracedMessage(
-            type="GDPRInquiry",
-            source="test",
-            data={
-                "query": "What is the right to be forgotten?",
-                "connection_id": "test-connection"
-            }
-        )
-    )
-    
-    # Wait for response
-    try:
-        await asyncio.wait_for(response_received.wait(), timeout=15.0)
-        print("✅ Response received!")
-        
-        # Verify response
-        assert captured_response is not None, "No response received"
-        assert captured_response.get("type") == "agent_message", "Wrong message type"
-        assert captured_response.get("source") == "GDPR", "Wrong source"
-        
-        answer = captured_response.get("data", {}).get("message", "")
-        assert "right to erasure" in answer.lower() or "article 17" in answer.lower(), \
-            f"Response doesn't mention right to erasure or Article 17: {answer}"
-        
-        print(f"✅ Response validated: {answer[:100]}...")
-        print("✅ All tests passed!")
-        
-    except asyncio.TimeoutError:
-        print("❌ Timeout: No response received within 15 seconds")
-    except AssertionError as e:
-        print(f"❌ Test failed: {e}")
-    finally:
-        await test_agent.stop()
-
-if __name__ == "__main__":
-    asyncio.run(test())
-```
-
-## Step 7: Update Makefile
-
-Add these lines to your project's Makefile:
-
-```makefile
-start-gdpr:
-	@echo "Starting GDPR Agent..."
-	@source $(VENV_DIR)/bin/activate && $(VENV_DIR)/bin/python -m agents.gdpr.main
-
-test-gdpr:
-	@echo "Testing GDPR Agent..."
-	@source $(VENV_DIR)/bin/activate && $(VENV_DIR)/bin/python -m agents.gdpr.test
-```
-
-## Step 8: Run Your Agent
-
-1. Start the agent:
 ```bash
-make start-gdpr
-```
-
-2. In another terminal, run the test:
-```bash
-make test-gdpr
+uv run -m agents.gdpr.main
 ```
 
 ## What You Built
 
-A minimal GDPR agent with:
-- **ReAct reasoning**: DSPy framework handles the thinking process
-- **Two simple tools**: List articles and read specific articles
-- **Kafka messaging**: Integrates with the multi-agent system
-- **Ready to extend**: Add more GDPR articles or fetch from real sources
+A minimal GDPR agent following the same patterns as all production agents:
+
+- **ReAct reasoning**: DSPy TracedReAct with OpenTelemetry tracing
+- **Streaming responses**: Uses `stream_dspy_response()` for token-by-token output
+- **Kafka messaging**: Subscribes via `@subscribe` with `MessageType` filtering
+- **Ready to extend**: Add more GDPR articles or connect to real data sources
 
 ## Next Steps
 
 To integrate with the main system:
-1. Add your message type to the triage agent's routing logic
-2. Deploy alongside other agents
-3. Extend with real GDPR data sources
+
+1. Add `GDPR_REQUEST` to the `MessageType` enum in `libraries/communication/protocol/enums.py`
+2. Add `GDPRAgent` to the triage agent's `AGENT_REGISTRY` in `agents/triage/models.py`
+3. Add routing logic in the triage classifier
 
 ---
 

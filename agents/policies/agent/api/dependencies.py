@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 from sentence_transformers import SentenceTransformer
 
+from agents.policies.agent.config import settings
 from agents.policies.agent.services.document_service import DocumentService
 from agents.policies.agent.services.reindex_service import ReindexService
 from agents.policies.agent.services.search_service import SearchService
@@ -21,8 +22,8 @@ def get_vespa_client() -> VespaClient:
 
 @lru_cache
 def get_embedding_model() -> SentenceTransformer:
-    logger.info("Loading embedding model")
-    return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    logger.info(f"Loading embedding model: {settings.embedding_model}")
+    return SentenceTransformer(settings.embedding_model)
 
 
 def get_document_service(

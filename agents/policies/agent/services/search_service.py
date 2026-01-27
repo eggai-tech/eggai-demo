@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from sentence_transformers import SentenceTransformer
 
+from agents.policies.agent.api.models import (
+    PolicyDocument,
+    SearchRequest,
+    SearchResponse,
+)
+from agents.policies.agent.config import settings
 from agents.policies.agent.services.embeddings import generate_embedding
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
-
-if TYPE_CHECKING:
-    from agents.policies.agent.api.models import (
-        PolicyDocument,
-        SearchRequest,
-        SearchResponse,
-    )
 
 logger = get_console_logger("search_service")
 
@@ -34,8 +31,6 @@ class SearchService:
         Returns:
             PolicyDocument instance
         """
-        from agents.policies.agent.api.models import PolicyDocument
-
         # Generate citation
         citation = None
         if doc_data.get("page_range"):
@@ -70,8 +65,6 @@ class SearchService:
         Returns:
             SearchResponse object
         """
-        from agents.policies.agent.api.models import SearchResponse
-
         try:
             results = []
 
@@ -111,7 +104,7 @@ class SearchService:
                         query_embedding=query_embedding,
                         category=request.category,
                         max_hits=request.max_hits,
-                        alpha=0.7  # 70% semantic, 30% keyword
+                        alpha=settings.hybrid_search_alpha,
                     )
 
             else:

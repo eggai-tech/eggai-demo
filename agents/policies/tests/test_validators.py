@@ -188,12 +188,14 @@ class TestConstants:
     """Test that constants are properly defined."""
 
     def test_valid_categories_constant(self):
-        """Test VALID_CATEGORIES is properly defined."""
+        """Test VALID_CATEGORIES is properly defined and imported from types."""
         from agents.policies.agent.api.validators import VALID_CATEGORIES
+        from agents.policies.agent.types import VALID_CATEGORIES as TYPES_CATEGORIES
 
-        assert isinstance(VALID_CATEGORIES, set)
+        assert isinstance(VALID_CATEGORIES, frozenset)
         assert VALID_CATEGORIES == {"auto", "home", "life", "health"}
         assert len(VALID_CATEGORIES) == 4
+        assert VALID_CATEGORIES is TYPES_CATEGORIES  # Same object, single source of truth
 
     def test_max_query_length_constant(self):
         """Test MAX_QUERY_LENGTH is properly defined."""

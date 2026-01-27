@@ -6,20 +6,15 @@ This guide covers optimization techniques for both DSPy-based agents and the Tri
 
 ### SIMBA Optimizer
 
-SIMBA (Simple Instruction Following via Bootstrapping) optimizes agent prompts automatically:
+SIMBA (Simple Instruction Following via Bootstrapping) optimizes agent prompts automatically. Agents with optimizer scripts:
 
 ```bash
-make compile-billing-optimizer     # Optimize billing agent
-make compile-claims-optimizer      # Optimize claims agent
-make compile-policies-optimizer    # Optimize policies agent
-make compile-escalation-optimizer  # Optimize escalation agent
+uv run -m agents.billing.dspy_modules.billing_optimizer_simba
+uv run -m agents.claims.dspy_modules.claims_optimizer_simba
+uv run -m agents.policies.agent.optimization.policies_optimizer_simba
 ```
 
-### Batch Optimization
-
-```bash
-make compile-all  # Optimize all agents sequentially
-```
+Optimized prompts are saved as JSON files (e.g., `optimized_billing_simba.json`) and loaded automatically at startup.
 
 ## Triage Classifier Optimization
 
@@ -41,42 +36,35 @@ The Triage agent evolved through multiple versions, from basic prompts to advanc
 
 ### 1. Unoptimized Baselines (v0, v1)
 
-Test the unoptimized versions to establish baseline performance:
+No setup required — these use LLM prompts directly. Test via:
 
 ```bash
-# Test basic prompt classifier
-make test-triage-classifier-v0
-
-# Test enhanced prompt with examples
-make test-triage-classifier-v1
+TRIAGE_CLASSIFIER_VERSION=v0 make test
+TRIAGE_CLASSIFIER_VERSION=v1 make test
 ```
 
 ### 2. DSPy-Based Optimizers (v2, v4)
 
-```bash
-# Compile and test few-shot classifier
-make compile-triage-classifier-v2
-make test-triage-classifier-v2
+Optimize prompts with DSPy, then test:
 
-# Compile and test zero-shot COPRO optimizer (recommended)
-make compile-triage-classifier-v4
-make test-triage-classifier-v4
+```bash
+# Optimize few-shot classifier
+uv run -m agents.triage.classifiers.v2.classifier_v2_optimizer
+
+# Optimize zero-shot COPRO classifier (recommended)
+uv run -m agents.triage.classifiers.v4.classifier_v4_optimizer
 ```
 
 **COPRO** (Compositional Preference Optimization) automatically discovers optimal prompts without training data.
 
 ### 3. Custom ML Classifiers (v3, v5)
 
-For improved latency and cost reduction:
+For improved latency with no API calls:
 
 ```bash
-# Train custom classifiers
-make train-triage-classifier-v3  # Logistic regression (100 examples/class)
-make train-triage-classifier-v5  # Attention-based neural network
-
-# Test performance
-make test-triage-classifier-v3
-make test-triage-classifier-v5
+# Train classifiers
+make train-v3  # Few-shot classifier
+make train-v5  # Attention-based neural network
 ```
 
 ### 4. Fine-tuned Models (v6, v7, v8)
@@ -85,26 +73,23 @@ For production deployments with high accuracy:
 
 ```bash
 # v6: OpenAI fine-tuning (requires API key)
-make train-triage-classifier-v6
+make train-v6
 
-# v7: Local Gemma3 with LoRA (no API costs)
-make train-triage-classifier-v7
+# v7: Local Gemma3 with LoRA (no API calls)
+make train-v7
 
 # v8: Local RoBERTa with LoRA (fastest inference)
-make train-triage-classifier-v8
+uv run -m agents.triage.classifiers.v8.finetune_trainer
 ```
 
 **v7 and v8** run entirely locally, making them ideal for privacy-sensitive deployments.
 
 ### 5. Performance Comparison
 
-Run comprehensive comparison across all versions:
+Benchmark all classifiers:
 
 ```bash
-# Run all classifier tests to compare in MLflow
-for v in 0 1 2 3 4 5 6 7 8; do
-    make test-triage-classifier-v$v
-done
+make benchmark-classifiers
 
 # View results in MLflow UI
 # http://localhost:5001

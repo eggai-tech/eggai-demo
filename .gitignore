@@ -120,3 +120,4 @@ outputs/
 .agent_pids
 tmp
 .claude
+temp/

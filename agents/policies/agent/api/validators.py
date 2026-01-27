@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 
-# Valid policy categories
-VALID_CATEGORIES = {"auto", "home", "health", "life"}
+from agents.policies.agent.types import VALID_CATEGORIES
 
 # Policy number pattern (letter followed by numbers)
 POLICY_NUMBER_PATTERN = r"^[A-Z]\d+$"

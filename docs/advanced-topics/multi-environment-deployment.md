@@ -87,13 +87,13 @@ Access pre-configured dashboards at <http://localhost:3000>:
 
 Each agent exposes metrics on different ports:
 
-- Frontend: 9090
-- Triage: 9091
-- Billing: 9092
-- Claims: 9093
+- Billing: 9091
+- Claims: 9092
+- Policies: 9093
 - Escalation: 9094
-- Policies: 9095
-- Audit: 9096
+- Audit: 9095
+- Triage: 9096
+- Frontend: 9097
 
 ### Distributed Tracing
 

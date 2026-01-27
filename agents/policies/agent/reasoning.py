@@ -106,7 +106,7 @@ policies_model = TracedReAct(
     tools=[get_personal_policy_details, search_policy_documentation],
     name="policies_react",
     tracer=policies_tracer,
-    max_iters=5,
+    max_iters=settings.max_iterations,
 )
 
 # Flag to indicate if we're using optimized prompts (from JSON)
@@ -165,12 +165,12 @@ def truncate_long_history(
 
     # Check if truncation needed based on both character count and line count
     lines = chat_history.split("\n")
-    max_lines = 30
+    max_lines = settings.max_conversation_lines
 
     if len(chat_history) <= max_length and len(lines) <= max_lines:
         return result
 
-    truncated_lines = lines[-max_lines:]  # Keep last 30 lines
+    truncated_lines = lines[-max_lines:]
     truncated_history = "\n".join(truncated_lines)
 
     # Update result

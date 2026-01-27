@@ -129,7 +129,7 @@ Results tracked in MLflow for continuous optimization.
 
 1. **User Opens Chat UI**
    ```
-   http://localhost:8501
+   http://localhost:8000
    ```
 
 2. **User Asks Policy Question**
@@ -164,7 +164,7 @@ Results tracked in MLflow for continuous optimization.
 make docker-up && make start-all
 
 # 2. Open chat UI
-open http://localhost:8501
+open http://localhost:8000
 
 # 3. Ask policy questions
 # Examples:

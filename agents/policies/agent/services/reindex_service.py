@@ -1,14 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+from agents.policies.agent.api.models import ReindexRequest, ReindexResponse
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
-
-if TYPE_CHECKING:
-    from agents.policies.agent.api.models import ReindexRequest, ReindexResponse
-    from agents.policies.ingestion.temporal_client import TemporalClient
 
 logger = get_console_logger("reindex_service")
 
@@ -175,8 +171,6 @@ class ReindexService:
     def _create_reindex_response(
         self, documents_queued: int, queued_policy_ids: list[str], errors: list[str]
     ) -> ReindexResponse:
-        from agents.policies.agent.api.models import ReindexResponse
-
         if documents_queued == 0 and errors:
             return ReindexResponse(
                 status="failed",
@@ -200,8 +194,6 @@ class ReindexService:
             )
 
     async def reindex_documents(self, request: ReindexRequest) -> ReindexResponse:
-        from agents.policies.agent.api.models import ReindexResponse
-
         errors = []
 
         try:

@@ -28,6 +28,14 @@ class Settings(BaseAgentConfig):
     cache_enabled: bool = Field(default=False)
     timeout_seconds: float = Field(default=30.0, ge=1.0)
     truncation_length: int = Field(default=15000, ge=1000)
+    hybrid_search_alpha: float = Field(
+        default=0.7, ge=0.0, le=1.0,
+        description="Weight for semantic search in hybrid mode (1-alpha for keyword)"
+    )
+    max_conversation_lines: int = Field(
+        default=30, ge=5,
+        description="Maximum conversation lines to keep when truncating"
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="POLICIES_", env_file=".env", env_ignore_empty=True, extra="ignore"

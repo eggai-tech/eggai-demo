@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel
 from temporalio import workflow
+from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
     from agents.policies.ingestion.workflows.activities.document_chunking_activity import (
@@ -46,6 +47,16 @@ class DocumentIngestionResult(BaseModel):
 
 @workflow.defn
 class DocumentIngestionWorkflow:
+    """Workflow for ingesting policy documents into the Vespa search index."""
+
+    # Retry policy for activities that interact with external services
+    _default_retry_policy = RetryPolicy(
+        initial_interval=timedelta(seconds=1),
+        backoff_coefficient=2.0,
+        maximum_interval=timedelta(seconds=30),
+        maximum_attempts=3,
+    )
+
     @workflow.run
     async def run(
         self, input_data: DocumentIngestionWorkflowInput
@@ -72,6 +83,7 @@ class DocumentIngestionWorkflow:
                 input_data.force_rebuild,
             ],
             start_to_close_timeout=timedelta(minutes=2),
+            retry_policy=self._default_retry_policy,
         )
 
         # If file should be skipped, return early
@@ -98,6 +110,7 @@ class DocumentIngestionWorkflow:
             load_document_activity,
             args=[input_data.file_path, input_data.source, input_data.metadata],
             start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=self._default_retry_policy,
         )
 
         if not load_result["success"]:
@@ -112,6 +125,7 @@ class DocumentIngestionWorkflow:
             chunk_document_activity,
             args=[load_result],
             start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=self._default_retry_policy,
         )
 
         if not chunk_result["success"]:
@@ -158,6 +172,7 @@ class DocumentIngestionWorkflow:
                 load_result.get("metadata"),  # Pass workflow metadata
             ],
             start_to_close_timeout=timedelta(minutes=10),
+            retry_policy=self._default_retry_policy,
         )
 
         if not indexing_result["success"]:

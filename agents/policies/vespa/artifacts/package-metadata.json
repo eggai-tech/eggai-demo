@@ -1,0 +1,67 @@
+{
+  "name": "policies",
+  "generated_at": "2026-01-27T23:55:07.705123",
+  "deployment": {
+    "mode": "production",
+    "node_count": 3,
+    "hosts": [
+      {
+        "name": "vespa-node-0.eggai-example-network",
+        "alias": "node0"
+      },
+      {
+        "name": "vespa-node-1.eggai-example-network",
+        "alias": "node1"
+      },
+      {
+        "name": "vespa-node-2.eggai-example-network",
+        "alias": "node2"
+      }
+    ]
+  },
+  "schema": {
+    "name": "policy_document",
+    "fields": {
+      "core": [
+        "id",
+        "title",
+        "text",
+        "category",
+        "chunk_index",
+        "source_file"
+      ],
+      "metadata": [
+        "page_numbers",
+        "page_range",
+        "headings",
+        "char_count",
+        "token_count"
+      ],
+      "relationships": [
+        "document_id",
+        "previous_chunk_id",
+        "next_chunk_id",
+        "chunk_position"
+      ],
+      "context": [
+        "section_path"
+      ],
+      "vector": [
+        "embedding (384 dimensions)"
+      ]
+    },
+    "rank_profiles": [
+      "default",
+      "with_position",
+      "semantic",
+      "hybrid"
+    ],
+    "indexing": {
+      "bm25_enabled": [
+        "title",
+        "text"
+      ],
+      "vector_search": "embedding field with angular distance metric"
+    }
+  }
+}
