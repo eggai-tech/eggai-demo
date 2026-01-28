@@ -14,7 +14,7 @@ graph TB
     end
     
     subgraph "Routing Layer"
-        WS[WebSocket Gateway]
+        WS[Frontend Agent]
         TR[Triage Agent]
     end
     
