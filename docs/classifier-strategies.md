@@ -6,17 +6,19 @@ evolution from basic prompting to fine-tuned local models.
 
 ## Overview
 
-| Version | Approach          | Latency | API Required | Training |
-| ------- | ----------------- | ------- | ------------ | -------- |
-| v0      | Basic DSPy prompt | ~500ms  | Yes          | No       |
-| v1      | Enhanced prompt   | ~600ms  | Yes          | No       |
-| v2      | COPRO optimized   | ~500ms  | Yes          | One-time |
-| v3      | Few-shot MLflow   | ~50ms   | No           | Yes      |
-| **v4**  | Zero-shot COPRO   | ~400ms  | Yes          | One-time |
-| v5      | Attention network | ~20ms   | No           | Yes      |
-| v6      | OpenAI fine-tuned | ~300ms  | Yes          | Yes      |
-| v7      | Gemma fine-tuned  | ~100ms  | No           | Yes      |
-| v8      | RoBERTa LoRA      | ~50ms   | No           | Yes      |
+| Version | Approach                  | Latency  | LLM API | Training |
+| ------- | ------------------------- | -------- | ------- | -------- |
+| v0      | Basic DSPy prompt         | ~500ms   | Yes     | No       |
+| v1      | Enhanced prompt           | ~600ms   | Yes     | No       |
+| v2      | COPRO optimized           | ~500ms   | Yes     | One-time |
+| v3      | Few-shot (local embeddings) | ~50ms  | No      | Yes      |
+| **v4**  | Zero-shot COPRO           | ~400ms   | Yes     | One-time |
+| v5      | Attention network         | ~20ms    | No      | Yes      |
+| v6      | OpenAI fine-tuned         | ~300ms   | Yes     | Yes      |
+| v7      | Gemma fine-tuned          | ~100ms   | No      | Yes      |
+| v8      | RoBERTa LoRA              | ~50ms    | No      | Yes      |
+
+*Latency values are approximate estimates.*
 
 **Default:** v4 (Zero-shot COPRO) - best balance of accuracy and latency
 
@@ -55,12 +57,13 @@ classifier = get_classifier("v4")
 
 ### v3: Few-Shot Local
 
-**v3 - Few-Shot with MLflow**
+**v3 - Few-Shot with Local Embeddings**
 
-- Uses example-based classification
-- Models stored in MLflow registry
-- Fast inference (~50ms), no API needed
-- Requires training dataset
+- Uses sentence-transformer embeddings for similarity matching
+- No LLM API calls - runs entirely locally
+- Models stored in MLflow registry for versioning
+- Fast inference (~50ms) because it's just vector similarity
+- Requires training dataset with labeled examples
 
 ### v4: Zero-Shot Optimized (Default)
 
