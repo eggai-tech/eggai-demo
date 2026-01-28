@@ -1,6 +1,7 @@
 # Retrieval Performance Testing Guide
 
-This guide walks you through testing and optimizing the retrieval performance of your RAG system.
+This guide walks you through testing and optimizing the retrieval performance of
+your RAG system.
 
 ## Quick Start
 
@@ -51,11 +52,13 @@ Test Cases:    Real Q&A pairs from policy documents
 ### RAGAS Integration
 
 This test uses [RAGAS](https://docs.ragas.io/)-inspired evaluation:
+
 - **Answer Relevancy**: How well retrieved chunks answer the question
 - **Faithfulness**: Whether the content supports the answer
 - **Context Precision**: Quality of retrieved context ranking
 
-The LLM judge (GPT-4o-mini) evaluates each retrieval result against expected answers.
+The LLM judge (GPT-4o-mini) evaluates each retrieval result against expected
+answers.
 
 ## Practical Examples
 
@@ -121,25 +124,30 @@ RECOMMENDATION: Excellent overall performance!
 Our evaluation uses RAGAS-style metrics plus custom retrieval metrics:
 
 #### Retrieval Metrics (30% weight)
+
 - **Success Rate** (15%): % of queries returning results without errors
 - **Avg Total Hits** (10%): Documents retrieved per query
 - **Avg Retrieval Time** (5%): Response speed in ms (target < 100ms)
 
 #### LLM Judge Metrics (40% weight)
+
 - **Quality Score** (20%): Overall relevance rating (0-1)
 - **Pass Rate** (15%): % of queries scoring ≥ 0.7
 - **Completeness** (5%): How fully the answer addresses the question
 
 #### Context Metrics (20% weight)
+
 - **Recall** (8%): Whether relevant context was found
 - **Precision@K** (7%): Accuracy of top K results
 - **NDCG** (5%): Ranking quality (Normalized Discounted Cumulative Gain)
 
 #### Position Metrics (10% weight)
+
 - **Best Position** (5%): Where the best match appears
 - **Hit Rate Top 3** (5%): % with relevant result in top 3
 
-**Final Score**: Weighted sum of all metrics (0-1 scale). Scores > 0.8 = Excellent.
+**Final Score**: Weighted sum of all metrics (0-1 scale). Scores > 0.8 =
+Excellent.
 
 ## Common Scenarios
 
@@ -181,12 +189,15 @@ make test-policies-retrieval-performance
 ## Customization
 
 ### Add Test Questions
+
 `agents/policies/tests/retrieval_performance/filtered_qa_pairs.json`
 
-### Adjust Metric Weights  
+### Adjust Metric Weights
+
 `agents/policies/tests/retrieval_performance/metrics_config.py`
 
 ### Test New Documents
+
 1. Add to `agents/policies/ingestion/documents/`
 2. Update test questions
 3. Run test (auto-ingests)
@@ -227,11 +238,17 @@ docker-compose restart mlflow
 ## Code References
 
 ### Core Files
-- [`test_retrieval_performance.py`](../agents/policies/tests/test_retrieval_performance.py) - Main test
-- [`metrics_config.py`](../agents/policies/tests/retrieval_performance/metrics_config.py) - Metric definitions
-- [`llm_judge.py`](../agents/policies/tests/retrieval_performance/llm_judge.py) - RAGAS-style evaluation
-- [`context_metrics.py`](../agents/policies/tests/retrieval_performance/context_metrics.py) - IR metrics
+
+- [`test_retrieval_performance.py`](../agents/policies/tests/test_retrieval_performance.py) -
+  Main test
+- [`metrics_config.py`](../agents/policies/tests/retrieval_performance/metrics_config.py) -
+  Metric definitions
+- [`llm_judge.py`](../agents/policies/tests/retrieval_performance/llm_judge.py) -
+  RAGAS-style evaluation
+- [`context_metrics.py`](../agents/policies/tests/retrieval_performance/context_metrics.py) -
+  IR metrics
 
 ### Documentation
+
 - [RAG Architecture Overview](agentic-rag.md)
 - [Document Ingestion Pipeline](ingestion-pipeline.md)

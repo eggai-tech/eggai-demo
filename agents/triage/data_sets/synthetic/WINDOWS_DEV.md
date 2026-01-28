@@ -1,6 +1,7 @@
 # Windows Development Instructions
 
-This document provides instructions for setting up and running the triage-toolkit on Windows when you don't have access to the `make` command.
+This document provides instructions for setting up and running the
+triage-toolkit on Windows when you don't have access to the `make` command.
 
 ## Setup
 
@@ -35,18 +36,19 @@ This document provides instructions for setting up and running the triage-toolki
 
 If you don't have Make installed on Windows, here are the equivalent commands:
 
-| Make Command | Windows Equivalent |
-|--------------|-------------------|
-| `make setup` | Use steps 1-4 above |
-| `make start` | `docker-compose up -d` |
-| `make stop` | `docker-compose down` |
-| `make logs` | `docker-compose logs -f` |
-| `make db` | `docker-compose up -d db` |
+| Make Command   | Windows Equivalent             |
+| -------------- | ------------------------------ |
+| `make setup`   | Use steps 1-4 above            |
+| `make start`   | `docker-compose up -d`         |
+| `make stop`    | `docker-compose down`          |
+| `make logs`    | `docker-compose logs -f`       |
+| `make db`      | `docker-compose up -d db`      |
 | `make rebuild` | `docker-compose up -d --build` |
-| `make run-web` | `python dev_webserver.py` |
-| `make run-gen` | `python dev_generator.py` |
+| `make run-web` | `python dev_webserver.py`      |
+| `make run-gen` | `python dev_generator.py`      |
 
-You can also install Make for Windows using [Chocolatey](https://chocolatey.org/) or [Scoop](https://scoop.sh/).
+You can also install Make for Windows using
+[Chocolatey](https://chocolatey.org/) or [Scoop](https://scoop.sh/).
 
 ## Running the Application
 
@@ -88,7 +90,8 @@ docker-compose up -d
 
 ## Database Access
 
-To connect to the PostgreSQL database, you can use the following connection details if running with Docker:
+To connect to the PostgreSQL database, you can use the following connection
+details if running with Docker:
 
 - Host: localhost
 - Port: 5432
@@ -102,7 +105,8 @@ You can use tools like pgAdmin or DBeaver to connect to the database.
 
 ### Import Errors
 
-If you get import errors, make sure your Python path includes the project root directory. The dev scripts handle this automatically.
+If you get import errors, make sure your Python path includes the project root
+directory. The dev scripts handle this automatically.
 
 ### Port Already in Use
 
@@ -114,7 +118,8 @@ python dev_webserver.py --port 8080
 
 ### Database Connection Issues
 
-If you can't connect to the database, make sure Docker is running and the database container is up:
+If you can't connect to the database, make sure Docker is running and the
+database container is up:
 
 ```
 docker-compose ps

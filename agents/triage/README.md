@@ -3,6 +3,7 @@
 ML-powered message classification and routing to specialized agents.
 
 ## What it does
+
 - Classifies incoming messages using ML
 - Routes to: Billing, Claims, Policies, or Escalation agents
 - Handles small talk directly
@@ -54,17 +55,17 @@ TRIAGE_CLASSIFIER_VERSION=v4  # v0-v8 available
 
 ## Classifier Versions
 
-| Version | Name | Type | Training Required |
-|---------|------|------|-------------------|
-| v0 | Minimal Prompt | LLM | No |
-| v1 | Enhanced Prompt | LLM | No |
-| v2 | COPRO Optimized | LLM | One-time |
-| v3 | Few-Shot MLflow | Local | Yes |
-| v4 | Zero-Shot COPRO | LLM | One-time |
-| v5 | Attention Network | Local | Yes |
-| v6 | OpenAI Fine-tuned | API | Yes |
-| v7 | Gemma Fine-tuned | Local | Yes |
-| v8 | RoBERTa LoRA | Local | Yes |
+| Version | Name              | Type  | Training Required |
+| ------- | ----------------- | ----- | ----------------- |
+| v0      | Minimal Prompt    | LLM   | No                |
+| v1      | Enhanced Prompt   | LLM   | No                |
+| v2      | COPRO Optimized   | LLM   | One-time          |
+| v3      | Few-Shot MLflow   | Local | Yes               |
+| v4      | Zero-Shot COPRO   | LLM   | One-time          |
+| v5      | Attention Network | Local | Yes               |
+| v6      | OpenAI Fine-tuned | API   | Yes               |
+| v7      | Gemma Fine-tuned  | Local | Yes               |
+| v8      | RoBERTa LoRA      | Local | Yes               |
 
 ## Training
 

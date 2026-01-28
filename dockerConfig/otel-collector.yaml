@@ -20,5 +20,5 @@ service:
       receivers: [otlp]
       exporters: [otlp]
     metrics:
-      receivers: [ otlp ]
-      exporters: [ prometheus,logging ]
+      receivers: [otlp]
+      exporters: [prometheus, logging]

@@ -17,7 +17,9 @@
         -moz-osx-font-smoothing: grayscale;
       }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
       }
     </style>
   </head>
@@ -95,34 +97,38 @@
         }, [activeTab]);
 
         const checkAPIStatus = async () => {
-          console.log('Checking API status...');
+          console.log("Checking API status...");
           const status = {};
-          
+
           // Check each API using their actual endpoints since /health doesn't exist
           const endpoints = {
             policies: `${API_ENDPOINTS.policies}/policies?limit=1`,
             claims: `${API_ENDPOINTS.claims}/claims?limit=1`,
-            billing: `${API_ENDPOINTS.billing}/billing?limit=1`
+            billing: `${API_ENDPOINTS.billing}/billing?limit=1`,
           };
-          
+
           for (const [name, url] of Object.entries(endpoints)) {
             try {
               console.log(`Checking ${name} API at ${url}`);
               const response = await fetch(url, {
-                method: 'GET',
-                mode: 'cors',
+                method: "GET",
+                mode: "cors",
                 headers: {
-                  'Accept': 'application/json',
-                }
+                  "Accept": "application/json",
+                },
               });
               status[name] = response.ok;
-              console.log(`${name} API status:`, response.ok, response.status);
+              console.log(
+                `${name} API status:`,
+                response.ok,
+                response.status,
+              );
             } catch (err) {
               console.error(`${name} API error:`, err);
               status[name] = false;
             }
           }
-          console.log('Final API status:', status);
+          console.log("Final API status:", status);
           setApiStatus(status);
         };
 
@@ -130,13 +136,19 @@
           try {
             setLoading(true);
             setError(null);
-            const response = await fetch(`${API_ENDPOINTS.policies}/policies?limit=100`);
-            if (!response.ok) throw new Error('Failed to fetch policies');
+            const response = await fetch(
+              `${API_ENDPOINTS.policies}/policies?limit=100`,
+            );
+            if (!response.ok) {
+              throw new Error("Failed to fetch policies");
+            }
             const data = await response.json();
             setPolicies(data.policies || []);
           } catch (err) {
-            console.error('Error fetching policies:', err);
-            setError('Failed to load policies. Make sure the policies agent is running.');
+            console.error("Error fetching policies:", err);
+            setError(
+              "Failed to load policies. Make sure the policies agent is running.",
+            );
           } finally {
             setLoading(false);
           }
@@ -146,16 +158,23 @@
           try {
             setLoading(true);
             setError(null);
-            const response = await fetch(`${API_ENDPOINTS.policies}/kb/documents?limit=100`);
-            if (!response.ok) throw new Error('Failed to fetch documents');
+            const response = await fetch(
+              `${API_ENDPOINTS.policies}/kb/documents?limit=100`,
+            );
+            if (!response.ok) {
+              throw new Error("Failed to fetch documents");
+            }
             const data = await response.json();
-            
+
             // The API returns chunks, not documents. Group chunks by document_id
-            const chunks = Array.isArray(data) ? data : data.documents || [];
+            const chunks = Array.isArray(data)
+              ? data
+              : data.documents || [];
             const documentMap = new Map();
-            
-            chunks.forEach(chunk => {
-              const docId = chunk.document_id || chunk.category || 'unknown';
+
+            chunks.forEach((chunk) => {
+              const docId = chunk.document_id || chunk.category ||
+                "unknown";
               if (!documentMap.has(docId)) {
                 documentMap.set(docId, {
                   document_id: docId,
@@ -163,20 +182,22 @@
                   category: chunk.category,
                   chunk_count: 0,
                   source_file: chunk.source_file,
-                  chunks: []
+                  chunks: [],
                 });
               }
               const doc = documentMap.get(docId);
               doc.chunk_count++;
               doc.chunks.push(chunk);
             });
-            
+
             // Convert map to array
             const documents = Array.from(documentMap.values());
             setDocuments(documents);
           } catch (err) {
-            console.error('Error fetching documents:', err);
-            setError('Failed to load documents. Make sure the policies agent is running.');
+            console.error("Error fetching documents:", err);
+            setError(
+              "Failed to load documents. Make sure the policies agent is running.",
+            );
           } finally {
             setLoading(false);
           }
@@ -184,12 +205,16 @@
 
         const fetchKBStatus = async () => {
           try {
-            const response = await fetch(`${API_ENDPOINTS.policies}/kb/status`);
-            if (!response.ok) throw new Error('Failed to fetch KB status');
+            const response = await fetch(
+              `${API_ENDPOINTS.policies}/kb/status`,
+            );
+            if (!response.ok) {
+              throw new Error("Failed to fetch KB status");
+            }
             const data = await response.json();
             setKbStatus(data);
           } catch (err) {
-            console.error('Error fetching KB status:', err);
+            console.error("Error fetching KB status:", err);
           }
         };
 
@@ -199,123 +224,151 @@
             setDocumentChunks(selectedDocument.chunks);
             return;
           }
-          
+
           // Fallback to API if chunks not available locally
           try {
             setLoading(true);
             setError(null);
             setDocumentChunks([]); // Clear previous chunks
-            const response = await fetch(`${API_ENDPOINTS.policies}/kb/documents/${documentId}/chunks`);
+            const response = await fetch(
+              `${API_ENDPOINTS.policies}/kb/documents/${documentId}/chunks`,
+            );
             if (!response.ok) {
               const errorText = await response.text();
-              console.error('Chunks API error:', response.status, errorText);
+              console.error(
+                "Chunks API error:",
+                response.status,
+                errorText,
+              );
               if (response.status === 404) {
                 throw new Error(`Document not found: ${documentId}`);
               }
-              throw new Error(`Failed to fetch chunks: ${response.status}`);
+              throw new Error(
+                `Failed to fetch chunks: ${response.status}`,
+              );
             }
             const data = await response.json();
-            console.log('Chunks response:', data); // Debug log
+            console.log("Chunks response:", data); // Debug log
             setDocumentChunks(data.chunks || data || []);
           } catch (err) {
-            console.error('Error fetching chunks:', err);
-            setError(err.message || 'Failed to load chunks');
+            console.error("Error fetching chunks:", err);
+            setError(err.message || "Failed to load chunks");
           } finally {
             setLoading(false);
           }
         };
 
         const fetchClaimsData = async () => {
-          console.log('fetchClaimsData called, apiStatus:', apiStatus);
+          console.log("fetchClaimsData called, apiStatus:", apiStatus);
           // Skip the API status check for now - let's try to fetch anyway
           try {
             setLoading(true);
-            console.log('Fetching claims data from:', API_ENDPOINTS.claims);
+            console.log(
+              "Fetching claims data from:",
+              API_ENDPOINTS.claims,
+            );
             const [claimsResp, statsResp] = await Promise.all([
               fetch(`${API_ENDPOINTS.claims}/claims?limit=100`, {
-                method: 'GET',
-                mode: 'cors',
+                method: "GET",
+                mode: "cors",
                 headers: {
-                  'Accept': 'application/json',
-                }
+                  "Accept": "application/json",
+                },
               }),
               fetch(`${API_ENDPOINTS.claims}/claims/stats`, {
-                method: 'GET',
-                mode: 'cors',
+                method: "GET",
+                mode: "cors",
                 headers: {
-                  'Accept': 'application/json',
-                }
-              })
+                  "Accept": "application/json",
+                },
+              }),
             ]);
-            
-            console.log('Claims responses:', claimsResp.status, statsResp.status);
-            
+
+            console.log(
+              "Claims responses:",
+              claimsResp.status,
+              statsResp.status,
+            );
+
             if (!claimsResp.ok || !statsResp.ok) {
-              throw new Error('Failed to fetch claims data');
+              throw new Error("Failed to fetch claims data");
             }
-            
+
             const claims = await claimsResp.json();
             const stats = await statsResp.json();
-            
-            console.log('Claims data received:', claims, stats);
+
+            console.log("Claims data received:", claims, stats);
             // Handle the response structure properly
-            setClaimsData({ 
-              claims: claims.claims || claims, 
+            setClaimsData({
+              claims: claims.claims || claims,
               total: claims.total || 0,
               by_status: claims.by_status || {},
-              stats 
+              stats,
             });
           } catch (err) {
-            console.error('Error fetching claims:', err);
-            setClaimsData({ error: 'Failed to load claims data. Make sure the claims API is running on port 8003.' });
+            console.error("Error fetching claims:", err);
+            setClaimsData({
+              error:
+                "Failed to load claims data. Make sure the claims API is running on port 8003.",
+            });
           } finally {
             setLoading(false);
           }
         };
 
         const fetchBillingData = async () => {
-          console.log('fetchBillingData called, apiStatus:', apiStatus);
+          console.log("fetchBillingData called, apiStatus:", apiStatus);
           // Skip the API status check for now - let's try to fetch anyway
           try {
             setLoading(true);
-            console.log('Fetching billing data from:', API_ENDPOINTS.billing);
+            console.log(
+              "Fetching billing data from:",
+              API_ENDPOINTS.billing,
+            );
             const [billingResp, statsResp] = await Promise.all([
               fetch(`${API_ENDPOINTS.billing}/billing?limit=100`, {
-                method: 'GET',
-                mode: 'cors',
+                method: "GET",
+                mode: "cors",
                 headers: {
-                  'Accept': 'application/json',
-                }
+                  "Accept": "application/json",
+                },
               }),
               fetch(`${API_ENDPOINTS.billing}/billing/stats`, {
-                method: 'GET',
-                mode: 'cors',
+                method: "GET",
+                mode: "cors",
                 headers: {
-                  'Accept': 'application/json',
-                }
-              })
+                  "Accept": "application/json",
+                },
+              }),
             ]);
-            
-            console.log('Billing responses:', billingResp.status, statsResp.status);
-            
+
+            console.log(
+              "Billing responses:",
+              billingResp.status,
+              statsResp.status,
+            );
+
             if (!billingResp.ok || !statsResp.ok) {
-              throw new Error('Failed to fetch billing data');
+              throw new Error("Failed to fetch billing data");
             }
-            
+
             const billing = await billingResp.json();
             const stats = await statsResp.json();
-            
-            console.log('Billing data received:', billing, stats);
+
+            console.log("Billing data received:", billing, stats);
             // Handle the response structure properly
-            setBillingData({ 
+            setBillingData({
               records: billing.records || billing,
               total: billing.total || 0,
               by_status: billing.by_status || {},
-              stats 
+              stats,
             });
           } catch (err) {
-            console.error('Error fetching billing:', err);
-            setBillingData({ error: 'Failed to load billing data. Make sure the billing API is running on port 8004.' });
+            console.error("Error fetching billing:", err);
+            setBillingData({
+              error:
+                "Failed to load billing data. Make sure the billing API is running on port 8004.",
+            });
           } finally {
             setLoading(false);
           }
@@ -325,20 +378,31 @@
         useEffect(() => {
           if (selectedDocument) {
             // Use the correct document ID field
-            const docId = selectedDocument.document_id || selectedDocument.id;
-            console.log('Fetching chunks for document:', docId, selectedDocument);
+            const docId = selectedDocument.document_id ||
+              selectedDocument.id;
+            console.log(
+              "Fetching chunks for document:",
+              docId,
+              selectedDocument,
+            );
             fetchDocumentChunks(docId);
           }
         }, [selectedDocument]);
 
-        const filteredPolicies = policies.filter(p => 
-          p.policy_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const filteredPolicies = policies.filter((p) =>
+          p.policy_number.toLowerCase().includes(
+            searchTerm.toLowerCase(),
+          ) ||
           p.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
-        const filteredDocuments = documents.filter(d => 
-          (d.title || d.document_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (d.category || '').toLowerCase().includes(searchTerm.toLowerCase())
+        const filteredDocuments = documents.filter((d) =>
+          (d.title || d.document_id || "").toLowerCase().includes(
+            searchTerm.toLowerCase(),
+          ) ||
+          (d.category || "").toLowerCase().includes(
+            searchTerm.toLowerCase(),
+          )
         );
 
         return (
@@ -348,21 +412,31 @@
               <div className="max-w-full xl:max-w-7xl mx-auto px-4 md:px-6">
                 <div className="flex justify-between items-center h-14 md:h-16">
                   <div className="flex items-center space-x-8">
-                    <a href="/" className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    <a
+                      href="/"
+                      className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
                       Admin
                     </a>
                     <nav className="hidden md:flex space-x-1 overflow-x-auto">
-                      {['overview', 'policies', 'claims', 'billing', 'knowledge', 'system'].map(tab => (
+                      {[
+                        "overview",
+                        "policies",
+                        "claims",
+                        "billing",
+                        "knowledge",
+                        "system",
+                      ].map((tab) => (
                         <button
                           key={tab}
                           onClick={() => setActiveTab(tab)}
                           className={`px-3 lg:px-4 py-2 text-sm font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
                             activeTab === tab
-                              ? "bg-blue-600 text-white dark:bg-blue-500" 
+                              ? "bg-blue-600 text-white dark:bg-blue-500"
                               : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                           }`}
                         >
-                          {tab === 'knowledge' ? 'Documents' : tab}
+                          {tab === "knowledge" ? "Documents" : tab}
                         </button>
                       ))}
                     </nav>
@@ -387,9 +461,18 @@
                   onChange={(e) => setActiveTab(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100"
                 >
-                  {['overview', 'policies', 'claims', 'billing', 'knowledge', 'system'].map(tab => (
+                  {[
+                    "overview",
+                    "policies",
+                    "claims",
+                    "billing",
+                    "knowledge",
+                    "system",
+                  ].map((tab) => (
                     <option key={tab} value={tab}>
-                      {tab === 'knowledge' ? 'Documents' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {tab === "knowledge"
+                        ? "Documents"
+                        : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -412,34 +495,48 @@
             {/* Main Content */}
             <main className="max-w-full xl:max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8">
               {/* Overview Tab */}
-              {activeTab === 'overview' && (
+              {activeTab === "overview" && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Policies</h3>
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">{policies.length}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Active policies</p>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Total Policies
+                      </h3>
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                        {policies.length}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Active policies
+                      </p>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Claims</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Total Claims
+                      </h3>
                       <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">
                         {claimsData?.stats?.total_claims || 0}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        ${(claimsData?.stats?.total_estimated || 0).toLocaleString()} estimated
+                        ${(claimsData?.stats?.total_estimated || 0)
+                          .toLocaleString()} estimated
                       </p>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Billing</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Pending Billing
+                      </h3>
                       <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">
-                        ${(billingData?.stats?.total_amount_due || 0).toLocaleString()}
+                        ${(billingData?.stats?.total_amount_due || 0)
+                          .toLocaleString()}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {billingData?.stats?.overdue_count || 0} overdue
                       </p>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Indexed Documents</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Indexed Documents
+                      </h3>
                       <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">
                         {kbStatus?.total_documents || 0}
                       </p>
@@ -451,21 +548,35 @@
 
                   {/* API Status */}
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">API Status</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                      API Status
+                    </h3>
                     <div className="grid grid-cols-3 gap-4">
-                      {Object.entries(apiStatus).map(([name, isOnline]) => (
-                        <div key={name} className="flex items-center justify-between">
+                      {Object.entries(apiStatus).map((
+                        [name, isOnline],
+                      ) => (
+                        <div
+                          key={name}
+                          className="flex items-center justify-between"
+                        >
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-400 capitalize">
                             {name} API
                           </span>
                           <div className="flex items-center">
-                            <div className={`w-2 h-2 rounded-full mr-2 ${
-                              isOnline ? 'bg-green-500' : 'bg-red-500'
-                            }`}></div>
-                            <span className={`text-sm ${
-                              isOnline ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {isOnline ? 'Online' : 'Offline'}
+                            <div
+                              className={`w-2 h-2 rounded-full mr-2 ${
+                                isOnline ? "bg-green-500" : "bg-red-500"
+                              }`}
+                            >
+                            </div>
+                            <span
+                              className={`text-sm ${
+                                isOnline
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              {isOnline ? "Online" : "Offline"}
                             </span>
                           </div>
                         </div>
@@ -481,18 +592,29 @@
                           Recent Claims
                         </h3>
                         <div className="space-y-2">
-                          {claimsData.claims.slice(0, 5).map(claim => (
-                            <div key={claim.claim_number} className="flex justify-between items-center text-sm">
-                              <span className="text-gray-600 dark:text-gray-400">{claim.claim_number}</span>
-                              <span className={`px-2 py-1 text-xs font-medium rounded ${
-                                claim.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                                claim.status === 'In Review' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {claim.status}
-                              </span>
-                            </div>
-                          ))}
+                          {claimsData.claims.slice(0, 5).map(
+                            (claim) => (
+                              <div
+                                key={claim.claim_number}
+                                className="flex justify-between items-center text-sm"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {claim.claim_number}
+                                </span>
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded ${
+                                    claim.status === "Approved"
+                                      ? "bg-green-100 text-green-800"
+                                      : claim.status === "In Review"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  {claim.status}
+                                </span>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
@@ -503,14 +625,22 @@
                           Billing Overview
                         </h3>
                         <div className="space-y-2">
-                          {billingData.by_status && Object.entries(billingData.by_status).map(([status, count]) => (
-                            <div key={status} className="flex justify-between items-center text-sm">
-                              <span className="text-gray-600 dark:text-gray-400">{status}</span>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
-                                {count} records
-                              </span>
-                            </div>
-                          ))}
+                          {billingData.by_status &&
+                            Object.entries(billingData.by_status).map((
+                              [status, count],
+                            ) => (
+                              <div
+                                key={status}
+                                className="flex justify-between items-center text-sm"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {status}
+                                </span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                  {count} records
+                                </span>
+                              </div>
+                            ))}
                         </div>
                       </div>
                     )}
@@ -522,7 +652,8 @@
                 <div className="space-y-6">
                   {loading && (
                     <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100">
+                      </div>
                     </div>
                   )}
                   {error && (
@@ -532,48 +663,54 @@
                   )}
                   {!loading && !error && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPolicies.map((policy) => (
-                      <div
-                        key={policy.policy_number}
-                        onClick={() => setSelectedPolicy(policy)}
-                        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                              {policy.policy_number}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {policy.name}
-                            </p>
+                      {filteredPolicies.map((policy) => (
+                        <div
+                          key={policy.policy_number}
+                          onClick={() => setSelectedPolicy(policy)}
+                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {policy.policy_number}
+                              </h3>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {policy.name}
+                              </p>
+                            </div>
+                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded">
+                              {policy.status}
+                            </span>
                           </div>
-                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded">
-                            {policy.status}
-                          </span>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Type:
+                              </span>
+                              <span className="font-medium text-gray-900 dark:text-gray-100 capitalize">
+                                {policy.policy_category}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Premium:
+                              </span>
+                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                                ${policy.premium_amount}/mo
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Due:
+                              </span>
+                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                                {policy.due_date}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Type:</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100 capitalize">
-                              {policy.policy_category}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Premium:</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
-                              ${policy.premium_amount}/mo
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Due:</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
-                              {policy.due_date}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
                   )}
 
                   {selectedPolicy && (
@@ -587,47 +724,89 @@
                             onClick={() => setSelectedPolicy(null)}
                             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                           >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            <svg
+                              className="w-6 h-6"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
                             </svg>
                           </button>
                         </div>
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Policy Number</label>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">{selectedPolicy.policy_number}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Policy Holder</label>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">{selectedPolicy.name}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Category</label>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100 capitalize">{selectedPolicy.policy_category}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Status</label>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100 capitalize">{selectedPolicy.status}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Premium Amount</label>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">${selectedPolicy.premium_amount}/month</p>
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Due Date</label>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">{selectedPolicy.due_date}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Coverage Amount</label>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Policy Number
+                              </label>
                               <p className="font-semibold text-gray-900 dark:text-gray-100">
-                                {selectedPolicy.coverage_amount ? `$${selectedPolicy.coverage_amount.toLocaleString()}` : 'N/A'}
+                                {selectedPolicy.policy_number}
                               </p>
                             </div>
                             <div>
-                              <label className="text-sm text-gray-600 dark:text-gray-400">Deductible</label>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Policy Holder
+                              </label>
                               <p className="font-semibold text-gray-900 dark:text-gray-100">
-                                {selectedPolicy.deductible ? `$${selectedPolicy.deductible}` : 'N/A'}
+                                {selectedPolicy.name}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Category
+                              </label>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                                {selectedPolicy.policy_category}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Status
+                              </label>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                                {selectedPolicy.status}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Premium Amount
+                              </label>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                ${selectedPolicy.premium_amount}/month
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Due Date
+                              </label>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                {selectedPolicy.due_date}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Coverage Amount
+                              </label>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                {selectedPolicy.coverage_amount
+                                  ? `$${selectedPolicy.coverage_amount.toLocaleString()}`
+                                  : "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-600 dark:text-gray-400">
+                                Deductible
+                              </label>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                {selectedPolicy.deductible
+                                  ? `$${selectedPolicy.deductible}`
+                                  : "N/A"}
                               </p>
                             </div>
                           </div>
@@ -639,205 +818,271 @@
               )}
 
               {/* Claims Tab */}
-              {activeTab === 'claims' && (
+              {activeTab === "claims" && (
                 <div className="space-y-6 p-2 md:p-0">
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold">Claims Management</h2>
+                    <h2 className="text-xl font-semibold">
+                      Claims Management
+                    </h2>
                   </div>
-                  {claimsData?.error ? (
-                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-                      {claimsData.error}
-                      <p className="text-sm mt-2">To start the Claims API, run: <code className="bg-yellow-100 px-1 rounded">python -m agents.claims.api_main</code></p>
-                    </div>
-                  ) : claimsData?.claims ? (
-                    <>
+                  {claimsData?.error
+                    ? (
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+                        {claimsData.error}
+                        <p className="text-sm mt-2">
+                          To start the Claims API, run:{" "}
+                          <code className="bg-yellow-100 px-1 rounded">
+                            python -m agents.claims.api_main
+                          </code>
+                        </p>
+                      </div>
+                    )
+                    : claimsData?.claims
+                    ? (
+                      <>
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                              Claims Management
+                            </h2>
+                          </div>
+                          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
+                            <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-800">
+                                  <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                      Claim #
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                      Policy
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                      Status
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                      Estimate
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                      Next Steps
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                  {(claimsData.claims || []).map((
+                                    claim,
+                                  ) => (
+                                    <tr
+                                      key={claim.claim_number}
+                                      onClick={() =>
+                                        setSelectedClaim(claim)}
+                                      className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                    >
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {claim.claim_number}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {claim.policy_number}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                      ${
+                                            claim.status === "Approved"
+                                              ? "bg-green-100 text-green-800"
+                                              : claim.status ===
+                                                  "In Review"
+                                              ? "bg-yellow-100 text-yellow-800"
+                                              : "bg-gray-100 text-gray-800"
+                                          }`}
+                                        >
+                                          {claim.status}
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {claim.estimate
+                                          ? `$${claim.estimate.toLocaleString()}`
+                                          : "-"}
+                                      </td>
+                                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        {claim.next_steps}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Claim Details Modal */}
+                        {selectedClaim && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                              <div className="flex justify-between items-start mb-6">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                                  Claim Details:{" "}
+                                  {selectedClaim.claim_number}
+                                </h2>
+                                <button
+                                  onClick={() => setSelectedClaim(null)}
+                                  className="text-gray-500 hover:text-gray-700"
+                                >
+                                  <svg
+                                    className="w-6 h-6"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
+                              <div className="space-y-4">
+                                <div>
+                                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    Outstanding Items
+                                  </h3>
+                                  <ul className="mt-2 list-disc list-inside text-sm text-gray-900 dark:text-gray-100">
+                                    {selectedClaim.outstanding_items
+                                      .map((item, idx) => (
+                                        <li key={idx}>{item}</li>
+                                      ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )
+                    : (
+                      <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100">
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Billing Tab */}
+              {activeTab === "billing" && (
+                <div className="space-y-6 p-2 md:p-0">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-semibold">
+                      Billing Management
+                    </h2>
+                  </div>
+                  {loading
+                    ? (
+                      <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100">
+                        </div>
+                      </div>
+                    )
+                    : billingData?.error
+                    ? (
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+                        {billingData.error}
+                        <p className="text-sm mt-2">
+                          To start the Billing API, run:{" "}
+                          <code className="bg-yellow-100 px-1 rounded">
+                            python -m agents.billing.api_main
+                          </code>
+                        </p>
+                      </div>
+                    )
+                    : billingData?.records
+                    ? (
                       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                           <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                            Claims Management
+                            Billing Records
                           </h2>
                         </div>
-                        <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
-                          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead className="bg-gray-50 dark:bg-gray-800">
                               <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Claim #
+                                  Policy
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Policy
+                                  Customer
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Amount Due
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Due Date
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Status
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Estimate
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Next Steps
+                                  Cycle
                                 </th>
                               </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                              {(claimsData.claims || []).map((claim) => (
+                              {(billingData.records || []).map((
+                                record,
+                              ) => (
                                 <tr
-                                  key={claim.claim_number}
-                                  onClick={() => setSelectedClaim(claim)}
-                                  className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                  key={record.policy_number}
+                                  className="hover:bg-gray-50 dark:hover:bg-gray-800"
                                 >
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                    {claim.claim_number}
+                                    {record.policy_number}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {claim.policy_number}
+                                    {record.customer_name || "N/A"}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                    ${record.amount_due
+                                      .toLocaleString()}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    {record.due_date}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                      ${claim.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                                        claim.status === 'In Review' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-gray-100 text-gray-800'}`}>
-                                      {claim.status}
+                                    <span
+                                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                    ${
+                                        record.status === "Paid"
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-yellow-100 text-yellow-800"
+                                      }`}
+                                    >
+                                      {record.status}
                                     </span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {claim.estimate ? `$${claim.estimate.toLocaleString()}` : '-'}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                    {claim.next_steps}
+                                    {record.billing_cycle}
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                          </div>
                         </div>
                       </div>
-
-                      {/* Claim Details Modal */}
-                      {selectedClaim && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-                            <div className="flex justify-between items-start mb-6">
-                              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                                Claim Details: {selectedClaim.claim_number}
-                              </h2>
-                              <button
-                                onClick={() => setSelectedClaim(null)}
-                                className="text-gray-500 hover:text-gray-700"
-                              >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                            <div className="space-y-4">
-                              <div>
-                                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Outstanding Items</h3>
-                                <ul className="mt-2 list-disc list-inside text-sm text-gray-900 dark:text-gray-100">
-                                  {selectedClaim.outstanding_items.map((item, idx) => (
-                                    <li key={idx}>{item}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Billing Tab */}
-              {activeTab === 'billing' && (
-                <div className="space-y-6 p-2 md:p-0">
-                  <div className="mb-4">
-                    <h2 className="text-xl font-semibold">Billing Management</h2>
-                  </div>
-                  {loading ? (
-                    <div className="text-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
-                    </div>
-                  ) : billingData?.error ? (
-                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-                      {billingData.error}
-                      <p className="text-sm mt-2">To start the Billing API, run: <code className="bg-yellow-100 px-1 rounded">python -m agents.billing.api_main</code></p>
-                    </div>
-                  ) : billingData?.records ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          Billing Records
-                        </h2>
+                    )
+                    : billingData === null
+                    ? (
+                      <div className="text-center py-8 text-gray-500">
+                        Loading billing information...
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                          <thead className="bg-gray-50 dark:bg-gray-800">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Policy
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Customer
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Amount Due
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Due Date
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Status
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Cycle
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                            {(billingData.records || []).map((record) => (
-                              <tr key={record.policy_number} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                  {record.policy_number}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                  {record.customer_name || 'N/A'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                  ${record.amount_due.toLocaleString()}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                  {record.due_date}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    ${record.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                    {record.status}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                  {record.billing_cycle}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    )
+                    : (
+                      <div className="text-center py-8 text-gray-500">
+                        No billing data available
                       </div>
-                    </div>
-                  ) : billingData === null ? (
-                    <div className="text-center py-8 text-gray-500">
-                      Loading billing information...
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No billing data available
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
 
@@ -853,7 +1098,8 @@
                       <div className="space-y-4">
                         {loading && (
                           <div className="text-center py-8">
-                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100">
+                            </div>
                           </div>
                         )}
                         {error && (
@@ -861,36 +1107,42 @@
                             {error}
                           </div>
                         )}
-                        {!loading && !error && filteredDocuments.length === 0 && (
+                        {!loading && !error &&
+                          filteredDocuments.length === 0 && (
                           <div className="text-center py-8 text-gray-500">
                             No documents found
                           </div>
                         )}
-                        {!loading && !error && filteredDocuments.map((doc) => (
-                          <div
-                            key={doc.document_id}
-                            onClick={() => setSelectedDocument(doc)}
-                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                                  {doc.title || 'Untitled Document'}
-                                </h3>
-                                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                  <span className="capitalize">{doc.category || 'uncategorized'}</span>
-                                  <span>•</span>
-                                  <span>{doc.chunk_count} chunks</span>
-                                  <span>•</span>
-                                  <span>ID: {doc.document_id}</span>
+                        {!loading && !error &&
+                          filteredDocuments.map((doc) => (
+                            <div
+                              key={doc.document_id}
+                              onClick={() => setSelectedDocument(doc)}
+                              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                    {doc.title || "Untitled Document"}
+                                  </h3>
+                                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <span className="capitalize">
+                                      {doc.category || "uncategorized"}
+                                    </span>
+                                    <span>•</span>
+                                    <span>
+                                      {doc.chunk_count} chunks
+                                    </span>
+                                    <span>•</span>
+                                    <span>ID: {doc.document_id}</span>
+                                  </div>
                                 </div>
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded">
+                                  indexed
+                                </span>
                               </div>
-                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded">
-                                indexed
-                              </span>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -899,14 +1151,25 @@
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
                       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          Document Chunks: {selectedDocument.title || selectedDocument.document_id || 'Unknown'}
+                          Document Chunks: {selectedDocument.title ||
+                            selectedDocument.document_id || "Unknown"}
                         </h2>
                         <button
                           onClick={() => setSelectedDocument(null)}
                           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -914,7 +1177,8 @@
                         <div className="space-y-4">
                           {loading && (
                             <div className="text-center py-8">
-                              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100">
+                              </div>
                             </div>
                           )}
                           {error && (
@@ -922,30 +1186,42 @@
                               {error}
                             </div>
                           )}
-                          {!loading && !error && documentChunks.length === 0 && (
+                          {!loading && !error &&
+                            documentChunks.length === 0 && (
                             <div className="text-center py-8 text-gray-500">
                               No chunks found for this document
                             </div>
                           )}
-                          {!loading && documentChunks.length > 0 && documentChunks.map((chunk, idx) => (
-                            <div key={chunk.chunk_id || `${chunk.document_id}-${chunk.chunk_index}` || idx} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                              <div className="flex justify-between items-start mb-2">
-                                <span className="text-xs font-mono text-gray-500">
-                                  Chunk {chunk.chunk_index !== undefined ? chunk.chunk_index : idx + 1}
-                                </span>
-                                <div className="flex items-center space-x-2">
-                                  {(chunk.embedding || chunk.embeddings) && (
-                                    <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded">
-                                      embedded
-                                    </span>
-                                  )}
+                          {!loading && documentChunks.length > 0 &&
+                            documentChunks.map((chunk, idx) => (
+                              <div
+                                key={chunk.chunk_id ||
+                                  `${chunk.document_id}-${chunk.chunk_index}` ||
+                                  idx}
+                                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-xs font-mono text-gray-500">
+                                    Chunk{" "}
+                                    {chunk.chunk_index !== undefined
+                                      ? chunk.chunk_index
+                                      : idx + 1}
+                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    {(chunk.embedding ||
+                                      chunk.embeddings) && (
+                                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded">
+                                        embedded
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                  {chunk.text || chunk.content ||
+                                    "No content"}
+                                </p>
                               </div>
-                              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                                {chunk.text || chunk.content || 'No content'}
-                              </p>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       </div>
                     </div>
@@ -967,26 +1243,46 @@
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                           {service.name}
                         </h3>
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        <svg
+                          className="w-5 h-5 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
                         </svg>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {service.name === "Redpanda" && "Message queue and event streaming"}
-                        {service.name === "Temporal" && "Workflow orchestration and management"}
-                        {service.name === "Grafana" && "Metrics visualization and dashboards"}
-                        {service.name === "MLflow" && "Machine learning experiment tracking"}
-                        {service.name === "Vespa" && "Vector search and document storage"}
-                        {service.name === "Prometheus" && "Metrics collection and monitoring"}
-                        {service.name === "MinIO" && "Object storage for artifacts and data"}
+                        {service.name === "Redpanda" &&
+                          "Message queue and event streaming"}
+                        {service.name === "Temporal" &&
+                          "Workflow orchestration and management"}
+                        {service.name === "Grafana" &&
+                          "Metrics visualization and dashboards"}
+                        {service.name === "MLflow" &&
+                          "Machine learning experiment tracking"}
+                        {service.name === "Vespa" &&
+                          "Vector search and document storage"}
+                        {service.name === "Prometheus" &&
+                          "Metrics collection and monitoring"}
+                        {service.name === "MinIO" &&
+                          "Object storage for artifacts and data"}
                       </p>
                       <div className="mt-4 flex items-center text-sm">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        <span className="text-green-600 dark:text-green-400">Online</span>
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2">
+                        </div>
+                        <span className="text-green-600 dark:text-green-400">
+                          Online
+                        </span>
                       </div>
                     </a>
                   ))}
-                  
+
                   <div className="col-span-full mt-6">
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -994,22 +1290,36 @@
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Total Policies</p>
-                          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{policies.length}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Total Policies
+                          </p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            {policies.length}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Indexed Documents</p>
-                          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{kbStatus?.total_documents || 0}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Indexed Documents
+                          </p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            {kbStatus?.total_documents || 0}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Total Chunks</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Total Chunks
+                          </p>
                           <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                             {kbStatus?.total_chunks || 0}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Active Agents</p>
-                          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">6</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Active Agents
+                          </p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            6
+                          </p>
                         </div>
                       </div>
                     </div>

@@ -87,7 +87,7 @@ services:
     container_name: otel-collector
     restart: unless-stopped
     image: otel/opentelemetry-collector:0.86.0
-    command: [ "--config=/etc/otel-collector.yaml" ]
+    command: ["--config=/etc/otel-collector.yaml"]
     volumes:
       - ./dockerConfig/otel-collector.yaml:/etc/otel-collector.yaml
     ports:
@@ -98,7 +98,7 @@ services:
     container_name: tempo
     restart: unless-stopped
     image: grafana/tempo:latest
-    command: [ "-config.file=/etc/tempo.yaml" ]
+    command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./dockerConfig/tempo.yaml:/etc/tempo.yaml
       - ./temp/tempo-data:/tmp/tempo
@@ -148,7 +148,11 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: [ "/bin/sh", "-c", "sleep 5 && mc alias set minio http://minio:9000 user password && mc mb -p minio/mlflow && mc anonymous set download minio/mlflow && echo 'MinIO bucket setup completed successfully'" ]
+    entrypoint: [
+      "/bin/sh",
+      "-c",
+      "sleep 5 && mc alias set minio http://minio:9000 user password && mc mb -p minio/mlflow && mc anonymous set download minio/mlflow && echo 'MinIO bucket setup completed successfully'",
+    ]
     networks:
       - eggai-example-network
   minio:
@@ -382,5 +386,3 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
-
-

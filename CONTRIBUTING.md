@@ -1,10 +1,13 @@
 # Contributing to EggAI Demo
 
-Thank you for considering contributing to **EggAI Demo** (Multi-Agent Insurance Support System)! We value your contributions and want to make the process as smooth as possible. Please follow the guidelines below to get started.
+Thank you for considering contributing to **EggAI Demo** (Multi-Agent Insurance
+Support System)! We value your contributions and want to make the process as
+smooth as possible. Please follow the guidelines below to get started.
 
 ---
 
 ## Table of Contents
+
 - [Code of Conduct](#code-of-conduct)
 - [How Can I Contribute?](#how-can-i-contribute)
   - [Bug Reports](#bug-reports)
@@ -19,14 +22,17 @@ Thank you for considering contributing to **EggAI Demo** (Multi-Agent Insurance 
 
 ## Code of Conduct
 
-Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you understand our expectations when interacting with the community.
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you
+understand our expectations when interacting with the community.
 
 ---
 
 ## How Can I Contribute?
 
 ### Bug Reports
-1. Check if the bug has already been reported in the [Issues](https://github.com/eggai-tech/eggai-demo/issues) section.
+
+1. Check if the bug has already been reported in the
+   [Issues](https://github.com/eggai-tech/eggai-demo/issues) section.
 2. Create a new issue and include:
    - A clear and descriptive title.
    - Steps to reproduce the bug.
@@ -34,14 +40,18 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you underst
    - Relevant logs, screenshots, or error messages.
 
 ### Feature Requests
-1. Review the [Issues](https://github.com/eggai-tech/eggai-demo/issues) section to see if your idea has already been proposed.
+
+1. Review the [Issues](https://github.com/eggai-tech/eggai-demo/issues) section
+   to see if your idea has already been proposed.
 2. Create a new issue and describe:
    - The problem your feature solves.
    - The proposed solution.
    - Alternatives you've considered.
 
 ### Code Contributions
-1. Look for `good first issue` or `help wanted` tags in the [Issues](https://github.com/eggai-tech/eggai-demo/issues).
+
+1. Look for `good first issue` or `help wanted` tags in the
+   [Issues](https://github.com/eggai-tech/eggai-demo/issues).
 2. Discuss your plans in the issue before starting work.
 3. Fork the repository and work on a feature branch.
 
@@ -49,7 +59,8 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that you underst
 
 ## Development Workflow
 
-We have a Makefile at the root of the project that simplifies common development tasks. It's the recommended way to work with the project.
+We have a Makefile at the root of the project that simplifies common development
+tasks. It's the recommended way to work with the project.
 
 ### Getting Started
 
@@ -100,7 +111,9 @@ We have a Makefile at the root of the project that simplifies common development
 
 ## Commit Message Guidelines
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) standard for commit messages:
+We follow the [Conventional Commits](https://www.conventionalcommits.org/)
+standard for commit messages:
+
 - `feat`: A new feature.
 - `fix`: A bug fix.
 - `docs`: Documentation changes.
@@ -110,6 +123,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) stand
 - `chore`: Maintenance tasks like updating dependencies.
 
 Example:
+
 ```plaintext
 feat: add new API endpoint for user management
 fix: resolve issue with login timeout
@@ -129,7 +143,8 @@ fix: resolve issue with login timeout
 
 ## License
 
-By contributing to **EggAI Demo**, you agree that your contributions will be licensed under the [MIT License](LICENSE.md).
+By contributing to **EggAI Demo**, you agree that your contributions will be
+licensed under the [MIT License](LICENSE.md).
 
 ---
 

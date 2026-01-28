@@ -2,7 +2,8 @@
 
 ## Overview
 
-A distributed insurance support system where specialized AI agents collaborate via event-driven messaging to handle user inquiries.
+A distributed insurance support system where specialized AI agents collaborate
+via event-driven messaging to handle user inquiries.
 
 ## Architecture Diagram
 
@@ -47,27 +48,30 @@ graph TB
 
 ### Message Channels
 
-| Channel | Purpose | Publishers | Subscribers |
-|---------|---------|------------|-------------|
-| `human` | User messages | Frontend | Triage, Audit |
-| `human_stream` | Agent responses | All agents | Frontend |
-| `agents` | Routed requests | Triage | Specialized agents |
-| `audit_logs` | Compliance | Audit | Monitoring systems |
+| Channel        | Purpose         | Publishers | Subscribers        |
+| -------------- | --------------- | ---------- | ------------------ |
+| `human`        | User messages   | Frontend   | Triage, Audit      |
+| `human_stream` | Agent responses | All agents | Frontend           |
+| `agents`       | Routed requests | Triage     | Specialized agents |
+| `audit_logs`   | Compliance      | Audit      | Monitoring systems |
 
 ### Agent Roles
 
 **Triage Agent**
+
 - Classifies user intent using ML models
 - Routes to appropriate specialist
 - Handles greetings directly
 
 **Specialized Agents**
+
 - **Billing**: Premium amounts, payment dates, billing updates
 - **Claims**: File claims, check status, update information
 - **Policies**: Document search via RAG, coverage questions
 - **Escalation**: Complaints, complex issues, ticket creation
 
 **Audit Agent**
+
 - Monitors all channels
 - Creates compliance logs
 
@@ -85,30 +89,33 @@ graph TB
 ## Key Design Patterns
 
 ### Event-Driven Communication
+
 - Asynchronous message passing via Redpanda
 - No direct agent-to-agent calls
 - Enables independent scaling
 
 ### Stateless Agents
+
 - No shared state between instances
 - All context in messages
 - Horizontal scaling ready
 
 ### RAG Integration
+
 - Policies agent uses Vespa for semantic search
 - Temporal orchestrates document ingestion
 - Hybrid search (keyword + vector)
 
 ## Platform Services
 
-| Service | Purpose | Port |
-|---------|---------|------|
-| Redpanda | Kafka-compatible message broker | 19092 |
-| Vespa | Vector search for documents | 8080 |
-| Temporal | Durable workflow orchestration | 7233 |
-| PostgreSQL | Temporal/MLflow storage | 5432 |
-| Grafana | Metrics visualization | 3000 |
-| Prometheus | Metrics collection | 9090 |
+| Service    | Purpose                         | Port  |
+| ---------- | ------------------------------- | ----- |
+| Redpanda   | Kafka-compatible message broker | 19092 |
+| Vespa      | Vector search for documents     | 8080  |
+| Temporal   | Durable workflow orchestration  | 7233  |
+| PostgreSQL | Temporal/MLflow storage         | 5432  |
+| Grafana    | Metrics visualization           | 3000  |
+| Prometheus | Metrics collection              | 9090  |
 
 ## Deployment Architecture
 
@@ -127,10 +134,11 @@ graph TB
 ```
 
 Each agent:
+
 - Runs as independent container
 - Scales horizontally
 - Connects to shared infrastructure
 
 ---
 
-**Next:** [Agent Capabilities Overview](agents-overview.md)
+**Next:** [Agents Overview](agents-overview.md)

@@ -2,7 +2,9 @@
 
 ## Multi-Environment Deployment
 
-Run multiple isolated instances of the system using deployment namespaces. This is useful for running separate environments (development, staging, production) or pull request previews.
+Run multiple isolated instances of the system using deployment namespaces. This
+is useful for running separate environments (development, staging, production)
+or pull request previews.
 
 ### Configuration
 
@@ -130,7 +132,7 @@ OpenTelemetry traces are collected and can be viewed in:
    - Temporal workflow history backup
    - Database backup strategies
 
-
 ---
 
-**Previous:** [Performance Optimization](agent-optimization.md) | **[Back to Documentation](../../README.md#documentation)**
+**Previous:** [Performance Optimization](agent-optimization.md) |
+**[Back to Documentation](../../README.md#documentation)**

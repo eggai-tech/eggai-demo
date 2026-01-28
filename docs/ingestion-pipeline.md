@@ -1,10 +1,14 @@
 # Document Ingestion Pipeline
 
-This document explains the Temporal-based ingestion pipeline that powers the Policies Agent's RAG (Retrieval-Augmented Generation) system.
+This document explains the Temporal-based ingestion pipeline that powers the
+Policies Agent's RAG (Retrieval-Augmented Generation) system.
 
 ## Overview
 
-The ingestion pipeline uses **Temporal workflows** to orchestrate durable, fault-tolerant document processing. The system supports both initial document ingestion and continuous monitoring through MinIO object storage. Documents are parsed, chunked, and indexed into **Vespa** for semantic search.
+The ingestion pipeline uses **Temporal workflows** to orchestrate durable,
+fault-tolerant document processing. The system supports both initial document
+ingestion and continuous monitoring through MinIO object storage. Documents are
+parsed, chunked, and indexed into **Vespa** for semantic search.
 
 ## Architecture
 
@@ -52,6 +56,7 @@ Document ingestion is a complex multi-step process that requires:
 ## Ingestion Pipeline Components
 
 ### 1. MinIO Inbox Watcher Workflow
+
 [`agents/policies/ingestion/workflows/minio_watcher_workflow.py`](../agents/policies/ingestion/workflows/minio_watcher_workflow.py)
 
 ```python
@@ -63,6 +68,7 @@ Document ingestion is a complex multi-step process that requires:
 ```
 
 ### 2. Document Ingestion Workflow (Child)
+
 [`agents/policies/ingestion/workflows/ingestion_workflow.py`](../agents/policies/ingestion/workflows/ingestion_workflow.py)
 
 ```python
@@ -75,6 +81,7 @@ Document ingestion is a complex multi-step process that requires:
 ```
 
 ### 3. Document Verification
+
 [`agents/policies/ingestion/workflows/activities/document_verification_activity.py`](../agents/policies/ingestion/workflows/activities/document_verification_activity.py)
 
 ```python
@@ -85,6 +92,7 @@ Document ingestion is a complex multi-step process that requires:
 ```
 
 ### 4. Document Loading (DocLing)
+
 [`agents/policies/ingestion/workflows/activities/document_loading_activity.py`](../agents/policies/ingestion/workflows/activities/document_loading_activity.py)
 
 ```python
@@ -95,6 +103,7 @@ Document ingestion is a complex multi-step process that requires:
 ```
 
 ### 5. Hierarchical Chunking
+
 [`agents/policies/ingestion/workflows/activities/document_chunking_activity.py`](../agents/policies/ingestion/workflows/activities/document_chunking_activity.py)
 
 ```python
@@ -105,6 +114,7 @@ Document ingestion is a complex multi-step process that requires:
 ```
 
 ### 6. Vespa Indexing
+
 [`agents/policies/ingestion/workflows/activities/document_indexing_activity.py`](../agents/policies/ingestion/workflows/activities/document_indexing_activity.py)
 
 ```python
@@ -119,6 +129,7 @@ Document ingestion is a complex multi-step process that requires:
 ## Temporal Workflow Details
 
 ### Activity Configuration
+
 ```python
 # Default retry policy for all activities
 retry_policy = RetryPolicy(
@@ -136,6 +147,7 @@ activity_options = ActivityOptions(
 ```
 
 ### Error Handling
+
 - Failed documents are moved to MinIO failed folder
 - Activities automatically retry with exponential backoff
 - Workflow history preserved for debugging
@@ -144,13 +156,20 @@ activity_options = ActivityOptions(
 ## Key Files
 
 ### Workflows
-- **Main Ingestion Workflow**: [`agents/policies/ingestion/workflows/ingestion_workflow.py`](../agents/policies/ingestion/workflows/ingestion_workflow.py)
-- **MinIO Watcher**: [`agents/policies/ingestion/workflows/minio_watcher_workflow.py`](../agents/policies/ingestion/workflows/minio_watcher_workflow.py)
-- **Worker Entry Point**: [`agents/policies/ingestion/start_worker.py`](../agents/policies/ingestion/start_worker.py)
+
+- **Main Ingestion Workflow**:
+  [`agents/policies/ingestion/workflows/ingestion_workflow.py`](../agents/policies/ingestion/workflows/ingestion_workflow.py)
+- **MinIO Watcher**:
+  [`agents/policies/ingestion/workflows/minio_watcher_workflow.py`](../agents/policies/ingestion/workflows/minio_watcher_workflow.py)
+- **Worker Entry Point**:
+  [`agents/policies/ingestion/start_worker.py`](../agents/policies/ingestion/start_worker.py)
 
 ### Supporting Files
-- **Configuration**: [`agents/policies/ingestion/config.py`](../agents/policies/ingestion/config.py)
-- **Vespa Client**: [`libraries/integrations/vespa/vespa_client.py`](../libraries/integrations/vespa/vespa_client.py)
+
+- **Configuration**:
+  [`agents/policies/ingestion/config.py`](../agents/policies/ingestion/config.py)
+- **Vespa Client**:
+  [`libraries/integrations/vespa/vespa_client.py`](../libraries/integrations/vespa/vespa_client.py)
 
 ## Running the Ingestion
 
@@ -169,15 +188,18 @@ make kill-agents
 
 ### Ingestion Process
 
-1. **Initial Ingestion**: Documents in `agents/policies/ingestion/documents/` are automatically ingested on startup:
+1. **Initial Ingestion**: Documents in `agents/policies/ingestion/documents/`
+   are automatically ingested on startup:
    - `auto.md` - Auto insurance policies
-   - `home.md` - Home insurance policies  
+   - `home.md` - Home insurance policies
    - `health.md` - Health insurance policies
    - `life.md` - Life insurance policies
 
-2. **Auto-Migration**: After initial indexing, documents are automatically migrated to MinIO processed folder
+2. **Auto-Migration**: After initial indexing, documents are automatically
+   migrated to MinIO processed folder
 
-3. **Continuous Monitoring**: MinIO watcher workflow automatically starts on worker startup and monitors the inbox folder every 30 seconds
+3. **Continuous Monitoring**: MinIO watcher workflow automatically starts on
+   worker startup and monitors the inbox folder every 30 seconds
 
 ### Monitor Progress
 
@@ -240,8 +262,10 @@ search_policy_documentation(query: str, category: str = None)
 
 The agent analyzes queries to determine:
 
-- **Personal queries**: Require policy number (e.g., "What's my premium for A12345?")
-- **General queries**: Search documentation (e.g., "What does fire damage cover?")
+- **Personal queries**: Require policy number (e.g., "What's my premium for
+  A12345?")
+- **General queries**: Search documentation (e.g., "What does fire damage
+  cover?")
 
 ## Configuration
 
@@ -261,7 +285,7 @@ temporal_task_queue: "policy-rag"
 MINIO_ENDPOINT_URL: "http://localhost:9000"
 MINIO_ACCESS_KEY: "user"
 MINIO_SECRET_KEY: "password"
-MINIO_POLL_INTERVAL: "30"  # seconds
+MINIO_POLL_INTERVAL: "30" # seconds
 ```
 
 ### Vespa Configuration
@@ -280,6 +304,7 @@ schema_name: "policy_document"
 ## Adding New Documents
 
 ### Method 1: Direct Upload to MinIO
+
 1. Upload file to MinIO inbox folder via:
    - MinIO Console (http://localhost:9001)
    - AWS CLI: `aws s3 cp file.md s3://documents/inbox/`
@@ -287,6 +312,7 @@ schema_name: "policy_document"
 3. File is moved to processed/ or failed/ folder based on result
 
 ### Method 2: Add to Source Code
+
 1. Add markdown file to `agents/policies/ingestion/documents/`
 2. Update category enum if needed
 3. Restart the ingestion worker
@@ -295,26 +321,34 @@ schema_name: "policy_document"
 ## Search Capabilities
 
 ### Currently Active
+
 - **Hybrid Search**: Combines semantic understanding with keyword matching
   - 70% weight on vector similarity (semantic understanding)
   - 30% weight on BM25 keyword matching
   - Provides best of both worlds: understanding intent AND exact term matching
 - **Vector Embeddings**: 384-dimensional embeddings using all-MiniLM-L6-v2
-- **Category Filtering**: Filter results by policy type (auto, home, health, life)
+- **Category Filtering**: Filter results by policy type (auto, home, health,
+  life)
 - **Metadata Enrichment**: Page numbers, headings, chunk relationships
 
 ### How It Works
+
 1. User query is embedded using the same model used during indexing
 2. Vespa performs nearest neighbor search in vector space
-3. Results are ranked using hybrid scoring (0.7 × vector_similarity + 0.3 × keyword_relevance)
+3. Results are ranked using hybrid scoring (0.7 × vector_similarity + 0.3 ×
+   keyword_relevance)
 4. Top results returned with metadata and citations
 
 ### Benefits of Hybrid Search
+
 - **Semantic Understanding**: Finds relevant content even with different wording
 - **Keyword Precision**: Still matches exact terms when needed
-- **Better Recall**: Catches both conceptually similar and literally matching documents
-- **Balanced Relevance**: Avoids pure semantic drift while maintaining understanding
+- **Better Recall**: Catches both conceptually similar and literally matching
+  documents
+- **Balanced Relevance**: Avoids pure semantic drift while maintaining
+  understanding
 
 ---
 
-**Previous:** [Building Agents Guide](building-agents-eggai.md) | **Next:** [RAG with Vespa](agentic-rag.md)
+**Previous:** [Agentic RAG](agentic-rag.md) | **Next:**
+[Vespa Search Guide](vespa-search-guide.md) | [Back to Index](README.md)

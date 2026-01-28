@@ -37,7 +37,14 @@ services:
       - "8000:8000"
     volumes:
       - ./src:/app/src
-    command: ["triage-server", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: [
+      "triage-server",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000",
+      "--reload",
+    ]
 
 volumes:
   postgres_data:

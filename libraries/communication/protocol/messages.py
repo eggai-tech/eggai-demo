@@ -71,7 +71,7 @@ class AuditLogMessage(TypedDict):
 class BillingRequestMessage(TypedDict):
     id: str
     type: Literal[MessageType.BILLING_REQUEST]
-    source: str  # Usually AgentName.TRIAGE
+    source: str
     data: AgentRequestData
     traceparent: str | None
     tracestate: str | None
@@ -80,7 +80,7 @@ class BillingRequestMessage(TypedDict):
 class ClaimRequestMessage(TypedDict):
     id: str
     type: Literal[MessageType.CLAIM_REQUEST]
-    source: str  # Usually AgentName.TRIAGE
+    source: str
     data: AgentRequestData
     traceparent: str | None
     tracestate: str | None
@@ -89,7 +89,7 @@ class ClaimRequestMessage(TypedDict):
 class PolicyRequestMessage(TypedDict):
     id: str
     type: Literal[MessageType.POLICY_REQUEST]
-    source: str  # Usually AgentName.TRIAGE
+    source: str
     data: AgentRequestData
     traceparent: str | None
     tracestate: str | None
@@ -98,7 +98,7 @@ class PolicyRequestMessage(TypedDict):
 class EscalationRequestMessage(TypedDict):
     id: str
     type: Literal[MessageType.ESCALATION_REQUEST]
-    source: str  # Usually AgentName.TRIAGE
+    source: str
     data: AgentRequestData
     traceparent: str | None
     tracestate: str | None
@@ -116,7 +116,7 @@ class UserMessage(TypedDict):
 class AgentMessage(TypedDict):
     id: str
     type: Literal[MessageType.AGENT_MESSAGE]
-    source: str  # Agent name: AgentName.BILLING, AgentName.CLAIMS, etc.
+    source: str
     data: AgentResponseData
     traceparent: str | None
     tracestate: str | None
@@ -125,7 +125,7 @@ class AgentMessage(TypedDict):
 class StreamChunkMessage(TypedDict):
     id: str
     type: Literal[MessageType.AGENT_MESSAGE_STREAM_CHUNK]
-    source: str  # Agent name
+    source: str
     data: StreamChunkData
     traceparent: str | None
     tracestate: str | None
@@ -134,7 +134,7 @@ class StreamChunkMessage(TypedDict):
 class StreamEndMessage(TypedDict):
     id: str
     type: Literal[MessageType.AGENT_MESSAGE_STREAM_END]
-    source: str  # Agent name
+    source: str
     data: StreamEndData
     traceparent: str | None
     tracestate: str | None

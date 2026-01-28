@@ -1,6 +1,8 @@
 # Building Agents Guide
 
-Build a new agent using DSPy ReAct in 5 minutes. This tutorial creates a hypothetical GDPR agent to demonstrate the pattern used by all agents in the system.
+Build a new agent using DSPy ReAct in 5 minutes. This tutorial creates a
+hypothetical GDPR agent to demonstrate the pattern used by all agents in the
+system.
 
 ## Step 1: Create the Agent Structure
 
@@ -222,7 +224,8 @@ uv run -m agents.gdpr.main
 A minimal GDPR agent following the same patterns as all production agents:
 
 - **ReAct reasoning**: DSPy TracedReAct with OpenTelemetry tracing
-- **Streaming responses**: Uses `stream_dspy_response()` for token-by-token output
+- **Streaming responses**: Uses `stream_dspy_response()` for token-by-token
+  output
 - **Kafka messaging**: Subscribes via `@subscribe` with `MessageType` filtering
 - **Ready to extend**: Add more GDPR articles or connect to real data sources
 
@@ -230,10 +233,14 @@ A minimal GDPR agent following the same patterns as all production agents:
 
 To integrate with the main system:
 
-1. Add `GDPR_REQUEST` to the `MessageType` enum in `libraries/communication/protocol/enums.py`
-2. Add `GDPRAgent` to the triage agent's `AGENT_REGISTRY` in `agents/triage/models.py`
+1. Add `GDPR_REQUEST` to the `MessageType` enum in
+   `libraries/communication/protocol/enums.py`
+2. Add `GDPRAgent` to the triage agent's `AGENT_REGISTRY` in
+   `agents/triage/models.py`
 3. Add routing logic in the triage classifier
 
 ---
 
-**Previous:** [Multi-Agent Communication](multi-agent-communication.md) | **Next:** [Document Ingestion with Temporal](ingestion-pipeline.md)
+**Previous:** [Vespa Search Guide](vespa-search-guide.md) | **Next:**
+[Retrieval Performance Testing](retrieval-performance-testing.md) |
+[Back to Index](README.md)

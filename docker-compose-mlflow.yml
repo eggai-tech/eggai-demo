@@ -8,7 +8,11 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: [ "/bin/sh", "-c", "sleep 5 && mc alias set minio http://minio:9000 user password && mc mb -p minio/mlflow && mc anonymous set download minio/mlflow && echo 'MinIO bucket setup completed successfully'" ]
+    entrypoint: [
+      "/bin/sh",
+      "-c",
+      "sleep 5 && mc alias set minio http://minio:9000 user password && mc mb -p minio/mlflow && mc anonymous set download minio/mlflow && echo 'MinIO bucket setup completed successfully'",
+    ]
   minio:
     container_name: minio
     image: minio/minio

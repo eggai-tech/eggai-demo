@@ -1,6 +1,7 @@
 # Frontend Agent
 
-The Frontend Agent provides a WebSocket gateway for real-time communication between users and the multi-agent system.
+The Frontend Agent provides a WebSocket gateway for real-time communication
+between users and the multi-agent system.
 
 - **Purpose**: Manages WebSocket connections between users and backend
 - **Key Features**:
@@ -36,6 +37,7 @@ The web interface will be available at http://localhost:8000
 ## Configuration
 
 Key environment variables:
+
 ```bash
 FRONTEND_PROMETHEUS_METRICS_PORT=9090
 FRONTEND_ENABLE_GUARDRAILS=false  # Enable content moderation
@@ -45,10 +47,12 @@ FRONTEND_GUARDRAILS_API_KEY=your-key  # If guardrails enabled
 ## API Endpoints
 
 ### WebSocket
+
 - **URL**: `ws://localhost:8000/ws`
 - **Protocol**: JSON messages
 
 ### REST Endpoints
+
 - **GET** `/`: Chat UI interface
 - **GET** `/health`: Health check endpoint
 - **GET** `/metrics`: Prometheus metrics
@@ -56,6 +60,7 @@ FRONTEND_GUARDRAILS_API_KEY=your-key  # If guardrails enabled
 ## WebSocket Message Format
 
 ### Client to Server
+
 ```json
 {
   "type": "user_message",
@@ -65,6 +70,7 @@ FRONTEND_GUARDRAILS_API_KEY=your-key  # If guardrails enabled
 ```
 
 ### Server to Client
+
 ```json
 {
   "type": "agent_message",
@@ -100,6 +106,7 @@ make start-frontend
 ### Custom UI Development
 
 The chat UI is located in `agents/frontend/static/`:
+
 - `index.html` - Main chat interface
 - Modify styles and behavior as needed
 

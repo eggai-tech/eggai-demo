@@ -1,6 +1,7 @@
 # Audit Agent
 
-The Audit Agent monitors all system activity for compliance, security, and operational insights.
+The Audit Agent monitors all system activity for compliance, security, and
+operational insights.
 
 - **Purpose**: Monitors and logs all system activity
 - **Key Features**:

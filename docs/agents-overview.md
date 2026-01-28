@@ -2,15 +2,15 @@
 
 ## Agent Roles
 
-| Agent | Purpose | Key Capabilities |
-|-------|---------|------------------|
-| **Frontend** | Web UI & WebSocket gateway | Serves chat interface, manages connections, handles reconnections |
-| **Triage** | Request routing | Classifies intent (ML), routes to specialists, handles greetings |
-| **Billing** | Payment & premiums | Retrieves/updates billing info, payment dates, amounts |
-| **Claims** | Claims processing | Files new claims, checks status, updates info, estimates |
-| **Policies** | Coverage & documents | Personal policy data, RAG document search, coverage Q&A |
-| **Escalation** | Complex issues | Multi-step workflows, support tickets, complaints |
-| **Audit** | Compliance tracking | Logs all messages, categorizes by domain, audit trail |
+| Agent          | Purpose                    | Key Capabilities                                                  |
+| -------------- | -------------------------- | ----------------------------------------------------------------- |
+| **Frontend**   | Web UI & WebSocket gateway | Serves chat interface, manages connections, handles reconnections |
+| **Triage**     | Request routing            | Classifies intent (ML), routes to specialists, handles greetings  |
+| **Billing**    | Payment & premiums         | Retrieves/updates billing info, payment dates, amounts            |
+| **Claims**     | Claims processing          | Files new claims, checks status, updates info, estimates          |
+| **Policies**   | Coverage & documents       | Personal policy data, RAG document search, coverage Q&A           |
+| **Escalation** | Complex issues             | Multi-step workflows, support tickets, complaints                 |
+| **Audit**      | Compliance tracking        | Logs all messages, categorizes by domain, audit trail             |
 
 ## Message Flow
 
@@ -22,7 +22,8 @@ User → Frontend → Triage → Specialized Agent → Response → User
 
 ## Agent Communication
 
-- **Channels**: `human` (user messages), `agents` (routed requests), `audit_logs` (compliance)
+- **Channels**: `human` (user messages), `agents` (routed requests),
+  `audit_logs` (compliance)
 - **Pattern**: Event-driven pub/sub via Redpanda
 - **Scaling**: Each agent runs independently, horizontally scalable
 
@@ -40,4 +41,6 @@ make start-billing
 
 ---
 
-**Previous:** [System Architecture](system-architecture.md) | **Next:** [Multi-Agent Communication](multi-agent-communication.md)
+**Previous:** [System Architecture](system-architecture.md) | **Next:**
+[Multi-Agent Communication](multi-agent-communication.md) |
+[Back to Index](README.md)

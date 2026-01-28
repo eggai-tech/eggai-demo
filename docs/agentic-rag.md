@@ -2,7 +2,10 @@
 
 ## Overview
 
-This document describes the Retrieval-Augmented Generation (RAG) system that powers the Policies Agent. The system combines **offline document ingestion** with **online agentic retrieval** to provide accurate, context-aware responses about insurance policies.
+This document describes the Retrieval-Augmented Generation (RAG) system that
+powers the Policies Agent. The system combines **offline document ingestion**
+with **online agentic retrieval** to provide accurate, context-aware responses
+about insurance policies.
 
 ## Architecture Overview
 
@@ -28,6 +31,7 @@ graph LR
 ## Two-Stage Architecture
 
 ### 1. Offline Stage: Document Ingestion
+
 [**Full Documentation**: Document Ingestion Pipeline](ingestion-pipeline.md)
 
 - **Temporal-orchestrated** workflow for durability and fault tolerance
@@ -37,7 +41,8 @@ graph LR
 
 ### 2. Online Stage: Agentic Retrieval
 
-The Policies Agent uses a **ReAct pattern** (Reasoning + Acting) to handle queries:
+The Policies Agent uses a **ReAct pattern** (Reasoning + Acting) to handle
+queries:
 
 ```python
 # Agent's decision flow
@@ -57,11 +62,12 @@ Our system uses **hybrid search** combining semantic and keyword matching:
 
 ```yaml
 Search Weights:
-  - Semantic (Vector): 70%  # Understanding intent
-  - Keyword (BM25): 30%     # Exact term matching
+  - Semantic (Vector): 70% # Understanding intent
+  - Keyword (BM25): 30% # Exact term matching
 ```
 
 ### Document Schema
+
 [`libraries/integrations/vespa/`](../libraries/integrations/vespa/)
 
 ```python
@@ -82,12 +88,14 @@ Search Weights:
 ## Key Components
 
 ### Agent Tools
+
 [`agents/policies/agent/tools/`](../agents/policies/agent/tools/)
 
 1. **`get_personal_policy_details`** - Database lookup for personal policy data
 2. **`search_policy_documentation`** - Vespa search for general information
 
 ### Retrieval Implementation
+
 [`agents/policies/agent/services/`](../agents/policies/agent/services/)
 
 - Embedding generation using `all-MiniLM-L6-v2`
@@ -95,6 +103,7 @@ Search Weights:
 - Result ranking and metadata extraction
 
 ### Agent Logic
+
 [`agents/policies/agent/main.py`](../agents/policies/agent/main.py)
 
 - ReAct loop implementation
@@ -104,21 +113,25 @@ Search Weights:
 ## Performance & Testing
 
 ### Retrieval Performance Test
+
 [**Test Suite**: `test_retrieval_performance.py`](../agents/policies/tests/test_retrieval_performance.py)
 
 Comprehensive 4-stage testing:
+
 1. **Collect** - Query all parameter combinations
 2. **Metrics** - Calculate performance statistics
 3. **Judge** - LLM evaluation of result quality
 4. **Report** - MLflow tracking and analysis
 
 ### RAGAS-Style Evaluation
+
 [`agents/policies/tests/retrieval_performance/`](../agents/policies/tests/retrieval_performance/)
 
 Uses [RAGAS](https://docs.ragas.io/)-inspired metrics with custom extensions:
+
 - **LLM Judge**: Answer relevancy, completeness, faithfulness (40% weight)
 - **Context Metrics**: Recall, Precision@K, NDCG (20% weight)
-- **Retrieval Metrics**: Success rate, speed, hit count (30% weight)  
+- **Retrieval Metrics**: Success rate, speed, hit count (30% weight)
 - **Position Metrics**: Best match position, top-3 hit rate (10% weight)
 
 Results tracked in MLflow for continuous optimization.
@@ -145,7 +158,7 @@ Results tracked in MLflow for continuous optimization.
    ```python
    # For general questions → Vespa search
    "What is covered?" → search_policy_documentation()
-   
+
    # For personal data → Database lookup  
    "My policy A12345" → get_personal_policy_details()
    ```
@@ -154,11 +167,12 @@ Results tracked in MLflow for continuous optimization.
    ```
    Agent: "For auto insurance, the standard deductible is $500 
    for collision coverage and $250 for comprehensive coverage.
-   
+
    Source: Auto Policy Document, Section 3.5"
    ```
 
 ### Quick Start
+
 ```bash
 # 1. Start everything
 make docker-up && make start-all
@@ -176,17 +190,19 @@ open http://localhost:8000
 ## Configuration
 
 ### Hybrid Search Strategy
+
 The Policies Agent uses a sophisticated hybrid search approach:
 
 - **70% Vector Similarity**: Semantic understanding of queries
 - **30% BM25 Keyword Matching**: Exact term matching for precision
-- **Multiple Ranking Profiles**: 
+- **Multiple Ranking Profiles**:
   - `default`: Pure BM25 for keyword search
   - `semantic`: Pure vector similarity
   - `hybrid`: Combined scoring (recommended)
   - `with_position`: Considers chunk position in document
 
 ### Tool Selection Logic
+
 ```python
 # DSPy ReAct pattern determines tool usage:
 if policy_number_detected:
@@ -198,6 +214,7 @@ else:
 ```
 
 ### Search Parameters
+
 ```python
 # agents/policies/agent/config.py
 hybrid_alpha = 0.7  # 70% semantic, 30% keyword
@@ -206,6 +223,7 @@ min_score = 0.7     # Relevance threshold
 ```
 
 ### Model Settings
+
 ```python
 # Embedding model for search
 embedding_model = "all-MiniLM-L6-v2"  # 384 dimensions
@@ -219,8 +237,10 @@ language_model = "gpt-4o-mini"
 
 - [Document Ingestion Pipeline](ingestion-pipeline.md) - Offline stage details
 - [Building Agents Guide](building-agents-eggai.md) - Agent development patterns
-- [Vespa Configuration](../agents/policies/vespa/) - Search configuration and deployment
+- [Vespa Configuration](../agents/policies/vespa/) - Search configuration and
+  deployment
 
 ---
 
-**Previous:** [Building Agents Guide](building-agents-eggai.md) | **Next:** [Document Ingestion Pipeline](ingestion-pipeline.md)
+**Previous:** [Model Flexibility](model-flexibility.md) | **Next:**
+[Ingestion Pipeline](ingestion-pipeline.md) | [Back to Index](README.md)

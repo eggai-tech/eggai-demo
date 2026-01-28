@@ -1,6 +1,7 @@
 # Vespa Search Guide
 
-This guide explains how to work with Vespa to explore policy data and utilize different search capabilities.
+This guide explains how to work with Vespa to explore policy data and utilize
+different search capabilities.
 
 ## Overview
 
@@ -237,6 +238,7 @@ curl -X POST http://localhost:8002/api/v1/kb/search/vector \
 The Policies Agent provides REST endpoints that handle the Vespa integration:
 
 ### Unified Search Endpoint (Recommended)
+
 ```bash
 POST http://localhost:8002/api/v1/kb/search/vector
 {
@@ -247,9 +249,11 @@ POST http://localhost:8002/api/v1/kb/search/vector
 }
 ```
 
-Note: Despite the endpoint path containing "vector", this endpoint handles all search types (vector, hybrid, and keyword) based on the `search_type` parameter.
+Note: Despite the endpoint path containing "vector", this endpoint handles all
+search types (vector, hybrid, and keyword) based on the `search_type` parameter.
 
 ### Direct Keyword Search
+
 ```bash
 GET http://localhost:8002/api/v1/kb/search?query=exact+terms&category=home
 ```
@@ -257,9 +261,11 @@ GET http://localhost:8002/api/v1/kb/search?query=exact+terms&category=home
 ## Related Documentation
 
 - [Ingestion Pipeline](ingestion-pipeline.md) - How documents are indexed
-- [Retrieval Performance Testing](retrieval-performance-testing.md) - Search quality metrics
+- [Retrieval Performance Testing](retrieval-performance-testing.md) - Search
+  quality metrics
 - Vespa Documentation: https://docs.vespa.ai
 
 ---
 
-**Previous:** [RAG with Vespa](agentic-rag.md) | **Next:** [Agent & Prompt Optimization](advanced-topics/agent-optimization.md)
+**Previous:** [Ingestion Pipeline](ingestion-pipeline.md) | **Next:**
+[Building Agents](building-agents-eggai.md) | [Back to Index](README.md)

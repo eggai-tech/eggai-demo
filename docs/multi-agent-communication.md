@@ -1,16 +1,20 @@
 # Multi-Agent Communication
 
-This document describes how agents communicate within the multi-agent insurance support system using event-driven architecture and the EggAI SDK.
+This document describes how agents communicate within the multi-agent insurance
+support system using event-driven architecture and the EggAI SDK.
 
 ## Overview
 
-The multi-agent system uses an event-driven architecture where agents communicate asynchronously through channels. This design enables loose coupling, scalability, and resilience.
+The multi-agent system uses an event-driven architecture where agents
+communicate asynchronously through channels. This design enables loose coupling,
+scalability, and resilience.
 
 ## Communication Infrastructure
 
 ### Kafka/Redpanda Message Bus
 
-The system uses Redpanda (Kafka-compatible) as the central message bus for all agent communication:
+The system uses Redpanda (Kafka-compatible) as the central message bus for all
+agent communication:
 
 - **Broker**: Kafka bootstrap servers
 - **Protocol**: Event streaming with consumer groups
@@ -78,6 +82,7 @@ class BillingInquiry(BaseMessage):
 ### Message Filtering
 
 Agents can filter messages by:
+
 - **Type**: Only receive specific message types
 - **Source**: Filter by sending agent
 - **Headers**: Custom routing logic
@@ -118,6 +123,7 @@ async for chunk in generate_response():
 ## Distributed Tracing
 
 All messages include distributed tracing headers:
+
 - **Trace ID**: Unique identifier for the entire conversation
 - **Span ID**: Identifier for individual operations
 - **Parent Span**: Links related operations
@@ -127,27 +133,32 @@ This enables end-to-end observability through Grafana and Tempo.
 ## Best Practices
 
 ### 1. Message Design
+
 - Keep messages small and focused
 - Include correlation IDs for request tracking
 - Use versioning for message schema evolution
 
 ### 2. Channel Usage
+
 - Use `agents` channel for internal communication
 - Reserve `human_stream` for user-facing responses
 - Implement proper error messages for user communication
 
 ### 3. Error Handling
+
 - Implement retry with exponential backoff (3 attempts)
 - Consider dead letter queues for failed messages
 - Use circuit breakers to prevent cascading failures
 - Log errors for debugging and monitoring
 
 ### 4. Performance
+
 - Batch messages when possible
 - Use streaming for large responses
 - Implement proper backpressure handling
 
 ### 5. Security
+
 - Validate all incoming messages
 - Sanitize user input
 - Use SSL/TLS for production deployments
@@ -170,6 +181,7 @@ KAFKA_SSL_KEY_LOCATION=/path/to/key
 ## Monitoring
 
 Monitor agent communication through:
+
 - **Redpanda Console**: Message flow visualization
 - **Grafana Dashboards**: Throughput and latency metrics
 - **Prometheus Metrics**: Consumer lag and error rates
@@ -177,4 +189,5 @@ Monitor agent communication through:
 
 ---
 
-**Previous:** [Agent Capabilities Overview](agents-overview.md) | **Next:** [Building Agents Guide](building-agents-eggai.md)
+**Previous:** [Agents Overview](agents-overview.md) | **Next:**
+[Classifier Strategies](classifier-strategies.md) | [Back to Index](README.md)
