@@ -113,6 +113,41 @@ graph TB
 - Temporal orchestrates document ingestion
 - Hybrid search (keyword + vector)
 
+## Interoperability
+
+In enterprise environments, diverse programming languages and frameworks create
+fragmentation. EggAI Agents serve as thin, flexible connectors, enabling seamless
+integration within the multi-agent system without costly re-platforming.
+
+### Framework Agnostic
+
+Agents can use any AI framework internally:
+
+- **DSPy**: Programmatic prompting and optimization
+- **LangChain**: Chains and retrieval pipelines
+- **LiteLLM**: Unified LLM API interface
+- **LlamaIndex**: Document indexing and retrieval
+
+### Language Interoperability
+
+Using Kafka transport, agents can be implemented in any language with a Kafka client:
+
+| Language | Library |
+|----------|---------|
+| Python | `confluent-kafka` |
+| JavaScript/TypeScript | `kafkajs` |
+| Java/Kotlin | `kafka-clients` |
+| Go | `sarama` |
+| C# | `Confluent.Kafka` |
+| Rust | `rdkafka` |
+
+### Standardized Message Format
+
+For structured communication, the system uses the CloudEvents specification
+(see [Multi-Agent Communication](multi-agent-communication.md)), ensuring
+consistency and interoperability across all agents regardless of implementation
+language or framework.
+
 ## Platform Services
 
 | Service    | Purpose                         | Port  |
