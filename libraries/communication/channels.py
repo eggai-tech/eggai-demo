@@ -5,38 +5,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ChannelConfig(BaseSettings):
-    """Configuration for channel names used throughout the system.
-
-    Supports deployment namespacing via DEPLOYMENT_NAMESPACE env var
-    to allow multiple deployments on the same infrastructure.
-    """
-
-    # Deployment namespace (e.g., "pr-123", "staging", "prod")
-    deployment_namespace: str | None = Field(
-        default=None,
-        description="Namespace prefix for all channels (e.g., pr-123, staging)"
-    )
-
-    # Base channel names (will be prefixed with namespace if provided)
-    agents_base: str = Field(
-        default="agents", description="Base name for inter-agent communication channel"
-    )
-    human_base: str = Field(
-        default="human", description="Base name for human-agent communication channel"
-    )
-    human_stream_base: str = Field(
-        default="human_stream",
-        description="Base name for streaming human-agent communication channel",
-    )
-    audit_logs_base: str = Field(
-        default="audit_logs", description="Base name for audit logging channel"
-    )
-    metrics_base: str = Field(
-        default="metrics", description="Base name for metrics and telemetry channel"
-    )
-    debug_base: str = Field(
-        default="debug", description="Base name for debug information channel"
-    )
+    deployment_namespace: str | None = Field(default=None)
+    agents_base: str = Field(default="agents")
+    human_base: str = Field(default="human")
+    human_stream_base: str = Field(default="human_stream")
+    audit_logs_base: str = Field(default="audit_logs")
+    metrics_base: str = Field(default="metrics")
+    debug_base: str = Field(default="debug")
 
     model_config = SettingsConfigDict(
         env_prefix="CHANNEL_", env_file=".env", env_ignore_empty=True, extra="ignore"
@@ -44,12 +19,10 @@ class ChannelConfig(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # If deployment namespace not set in CHANNEL_ vars, check DEPLOYMENT_NAMESPACE
         if not self.deployment_namespace:
             self.deployment_namespace = os.getenv("DEPLOYMENT_NAMESPACE")
 
     def _apply_namespace(self, base_name: str) -> str:
-        """Apply deployment namespace to channel name if configured."""
         if self.deployment_namespace:
             return f"{self.deployment_namespace}-{base_name}"
         return base_name
@@ -82,7 +55,6 @@ class ChannelConfig(BaseSettings):
 channels = ChannelConfig()
 
 
-# using FastStream empty topics
 async def clear_channels():
     from aiokafka.admin import AIOKafkaAdminClient
 

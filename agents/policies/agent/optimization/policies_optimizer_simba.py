@@ -10,21 +10,17 @@ from agents.policies.agent.optimization.policies_dataset import (
     create_policies_dataset,
 )
 
-# Direct use of dspy.SIMBA
 from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedReAct
 
 logger = get_console_logger("policies_optimizer_simba")
 
-# Type definitions
 PolicyCategory = Literal["auto", "life", "home", "health"]
 
-# Import the signature from the main agent module
 from agents.policies.agent.reasoning import PolicyAgentSignature
 
 
-# Mock tools for optimization
 def take_policy_by_number_from_database(policy_number: str):
     """Retrieve policy details from the database using the policy number."""
     return (
@@ -35,32 +31,19 @@ def take_policy_by_number_from_database(policy_number: str):
 
 
 def precision_metric(example, pred, trace=None) -> float:
-    """
-    Calculate precision score by comparing expected and predicted responses.
-
-    Args:
-        example: Example with expected output
-        pred: Model prediction
-        trace: Optional trace information
-
-    Returns:
-        float: Score between 0.0 and 1.0
-    """
     expected = getattr(example, "final_response", "").lower()
     predicted = getattr(pred, "final_response", "").lower()
 
     if not expected or not predicted:
         return 0.0
 
-    # For privacy requests, check for standard response
     if "need your policy number" in expected:
         return 1.0 if "need your policy number" in predicted else 0.0
 
-    # Initialize scoring
     score = 0.0
     total_checks = 0
 
-    # Check for policy numbers (format: letter followed by numbers)
+    # Extract policy numbers (format: letter followed by numbers)
     policy_numbers = [
         word
         for word in expected.split()
@@ -71,7 +54,6 @@ def precision_metric(example, pred, trace=None) -> float:
         if policy in predicted:
             score += 1.0
 
-    # Check for premium amount
     if "$" in expected:
         total_checks += 1
         try:
@@ -81,7 +63,6 @@ def precision_metric(example, pred, trace=None) -> float:
         except (IndexError, ValueError):
             pass
 
-    # Check for date
     if "due on" in expected:
         total_checks += 1
         try:
@@ -91,14 +72,13 @@ def precision_metric(example, pred, trace=None) -> float:
         except (IndexError, ValueError):
             pass
 
-    # Check for documentation references
     doc_refs = [word for word in expected.split() if "#" in word]
     for ref in doc_refs:
         total_checks += 1
         if ref in predicted:
             score += 1.0
 
-    # If no specific checks were made, compare general similarity
+    # Fall back to word overlap similarity when no structured checks apply
     if total_checks == 0:
         common_words_expected = set(expected.split())
         common_words_predicted = set(predicted.split())
@@ -110,32 +90,25 @@ def precision_metric(example, pred, trace=None) -> float:
             return 0.5
         return 0.0
 
-    # Calculate final score
     return score / total_checks
 
 
 def main():
-    """Run the SIMBA optimization process."""
-    # Initialize language model
     dspy_set_language_model(settings)
 
-    # Create datasets
     logger.info("Creating policies dataset...")
     raw_examples = create_policies_dataset()
     examples = as_dspy_examples(raw_examples)
 
-    # Split dataset
     logger.info(f"Created {len(examples)} examples, splitting into train/test...")
     train_set, _ = train_test_split(examples, test_size=0.2, random_state=42)
 
-    # Limit dataset size for faster optimization - use smaller values
     max_train = 5
 
     if len(train_set) > max_train:
         logger.info(f"Limiting training set to {max_train} examples")
         train_set = train_set[:max_train]
 
-    # Create agent for optimization
     agent = TracedReAct(
         PolicyAgentSignature,
         tools=[take_policy_by_number_from_database],
@@ -144,23 +117,19 @@ def main():
         max_iters=5,
     )
 
-    # Output path
     output_path = Path(__file__).resolve().parent / "optimized_policies_simba.json"
 
-    # Run optimization with SIMBA - use smaller steps and demos
     logger.info("Starting SIMBA optimization with minimal parameters...")
-    # Use a smaller batch size for faster optimization
-    batch_size = min(4, len(train_set))  # Smaller batch size
+    batch_size = min(4, len(train_set))
     logger.info(f"Using batch size of {batch_size} for {len(train_set)} examples")
     simba = dspy.SIMBA(
         metric=precision_metric,
-        max_steps=3,  # Reduced from 8 to 3
-        max_demos=2,  # Reduced from 5 to 2
+        max_steps=3,
+        max_demos=2,
         bsize=batch_size,
     )
     optimized_agent = simba.compile(agent, trainset=train_set, seed=42)
 
-    # Save the optimized agent
     optimized_agent.save(str(output_path))
 
     logger.info(f"Optimization complete! Model saved to {output_path}")

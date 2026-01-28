@@ -17,7 +17,6 @@ def event_loop():
 
 @pytest.fixture
 def mock_language_model(monkeypatch):
-    """Mock the language model to avoid initialization issues in tests."""
     # Mock the language model initialization
     mock_lm = MagicMock()
     monkeypatch.setattr("dspy.LM", lambda *args, **kwargs: mock_lm)
@@ -42,7 +41,6 @@ def mock_claims_response():
 
 @pytest.fixture
 def mock_stream_channel(monkeypatch):
-    """Mock the human stream channel for testing."""
     mock_publish = AsyncMock()
     monkeypatch.setattr(
         "agents.claims.agent.human_stream_channel.publish", mock_publish
@@ -52,7 +50,6 @@ def mock_stream_channel(monkeypatch):
 
 @pytest.fixture
 def mock_human_channel(monkeypatch):
-    """Mock the human channel for testing."""
     mock_publish = AsyncMock()
     monkeypatch.setattr("agents.claims.agent.human_channel.publish", mock_publish)
     return mock_publish

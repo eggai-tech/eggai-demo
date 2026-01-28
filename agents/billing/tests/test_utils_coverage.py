@@ -14,11 +14,9 @@ from agents.billing.utils import (
 
 
 class TestProcessBillingRequest:
-    """Test process_billing_request function with various scenarios."""
 
     @pytest.mark.asyncio
     async def test_process_billing_request_empty_conversation(self):
-        """Test process_billing_request with empty conversation."""
         mock_channel = AsyncMock()
 
         with pytest.raises(ValueError, match="Conversation history is too short"):
@@ -31,7 +29,6 @@ class TestProcessBillingRequest:
 
     @pytest.mark.asyncio
     async def test_process_billing_request_very_short_conversation(self):
-        """Test process_billing_request with very short conversation."""
         mock_channel = AsyncMock()
 
         with pytest.raises(ValueError, match="Conversation history is too short"):
@@ -44,7 +41,6 @@ class TestProcessBillingRequest:
 
     @pytest.mark.asyncio
     async def test_process_billing_request_with_custom_timeout(self):
-        """Test process_billing_request with custom timeout."""
         mock_channel = AsyncMock()
 
         conversation = "User: What's my premium?\nAgent: Please provide your policy number."
@@ -69,7 +65,6 @@ class TestProcessBillingRequest:
 
     @pytest.mark.asyncio
     async def test_process_billing_request_streaming(self):
-        """Test that streaming works correctly."""
         mock_channel = AsyncMock()
         conversation = "User: What's my premium?\nAgent: Please provide your policy number."
 
@@ -94,7 +89,6 @@ class TestProcessBillingRequest:
 
     @pytest.mark.asyncio
     async def test_process_billing_request_error_handling(self):
-        """Test error handling in process_billing_request."""
         mock_channel = AsyncMock()
         conversation = "User: What's my premium?\nAgent: Please provide your policy number."
 
@@ -124,7 +118,6 @@ class TestProcessBillingRequest:
 
     @pytest.mark.asyncio
     async def test_process_billing_request_timeout_handling(self):
-        """Test timeout handling in process_billing_request."""
         mock_channel = AsyncMock()
         conversation = "User: What's my premium?\nAgent: Please provide your policy number."
 
@@ -150,7 +143,6 @@ class TestProcessBillingRequest:
 
     @pytest.mark.asyncio
     async def test_process_billing_request_no_final_response(self):
-        """Test when no Prediction with final_response is received."""
         mock_channel = AsyncMock()
         conversation = "User: What's my premium?\nAgent: Please provide your policy number."
 
@@ -185,10 +177,8 @@ class TestProcessBillingRequest:
 
 
 class TestGetConversationString:
-    """Test get_conversation_string function edge cases."""
 
     def test_get_conversation_string_with_none_content(self):
-        """Test handling of None content in messages."""
         messages = [
             ChatMessage(role="user", content="Hello"),
             ChatMessage(role="assistant", content=None),  # None content
@@ -201,7 +191,6 @@ class TestGetConversationString:
         assert "user: Are you there?" in result
 
     def test_get_conversation_string_with_special_characters(self):
-        """Test handling of special characters in conversation."""
         messages = [
             ChatMessage(role="user", content="What's the status of policy #A12345?"),
             ChatMessage(role="assistant", content="Your premium is $120.50 & due on 01/15")
@@ -212,7 +201,6 @@ class TestGetConversationString:
         assert "$120.50 & due" in result
 
     def test_get_conversation_string_with_multiline_content(self):
-        """Test handling of multiline messages."""
         messages = [
             ChatMessage(role="user", content="Hello,\nI have multiple questions:\n1. Premium\n2. Due date"),
             ChatMessage(role="assistant", content="Sure!\nLet me help you.")
@@ -222,12 +210,10 @@ class TestGetConversationString:
         assert "Hello,\nI have multiple questions:\n1. Premium\n2. Due date" in result
 
     def test_get_conversation_string_empty_list(self):
-        """Test with empty message list."""
         result = get_conversation_string([])
         assert result == ""
 
     def test_get_conversation_string_missing_role(self):
-        """Test handling of messages with missing role."""
         messages = [
             {"content": "Hello"},  # Missing role
             ChatMessage(role="assistant", content="Hi there")
@@ -238,7 +224,6 @@ class TestGetConversationString:
         assert "assistant: Hi there" in result
 
     def test_get_conversation_string_missing_content_key(self):
-        """Test handling of messages without content key."""
         messages = [
             ChatMessage(role="user", content="Hello"),
             {"role": "assistant"},  # Missing content - will be skipped

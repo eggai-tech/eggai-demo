@@ -40,10 +40,7 @@ class FinetunedClassifier:
                 "Fine-tuned model not configured. Provide model_id or set TRIAGE_CLASSIFIER_V6_MODEL_ID."
             )
 
-        # Create fine-tuned language model
         self._lm = dspy.LM(f'openai/{self._model_id}', max_tokens=150)
-
-        # Create classifier (minimal prompt - knowledge is in weights)
         self._model = dspy.Predict(TriageSignature)
         self._model.lm = self._lm
 
@@ -71,7 +68,6 @@ class FinetunedClassifier:
         )
 
 
-# Global instance
 _classifier = FinetunedClassifier()
 
 
@@ -106,7 +102,6 @@ def classifier_v6(chat_history: str) -> ClassificationResult:
 
 
 if __name__ == "__main__":
-    # Test the classifier
     result = classifier_v6(chat_history="User: I want to know my policy due date.")
     print(f"Target Agent: {result.target_agent}")
     print(f"Metrics: {result.metrics}")

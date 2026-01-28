@@ -20,7 +20,6 @@ from ..agent import (
     websocket_manager,
 )
 
-# Internal imports
 from ..config import settings
 from ..websocket_manager import WebSocketManager
 
@@ -41,7 +40,6 @@ human_channel = Channel("human")
 
 @pytest.fixture
 def mock_websocket():
-    """Create a mock WebSocket for testing."""
     websocket = MagicMock(spec=WebSocket)
     websocket.accept = AsyncMock()
     websocket.send_json = AsyncMock()
@@ -55,7 +53,6 @@ def mock_websocket():
 
 @pytest.fixture
 def mock_server():
-    """Create a mock uvicorn server for testing."""
     server = MagicMock()
     server.should_exit = False
     server.server_state = MagicMock()
@@ -65,7 +62,6 @@ def mock_server():
 
 @pytest.fixture
 def test_app():
-    """Create a test FastAPI app."""
     return FastAPI()
 
 
@@ -123,7 +119,6 @@ async def test_frontend_agent():
 
 @pytest.mark.asyncio
 async def test_handle_human_stream_messages_start():
-    """Test handling stream start messages."""
     connection_id = str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
@@ -155,7 +150,6 @@ async def test_handle_human_stream_messages_start():
 
 @pytest.mark.asyncio
 async def test_handle_human_stream_messages_chunk():
-    """Test handling stream chunk messages."""
     connection_id = str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
@@ -189,11 +183,9 @@ async def test_handle_human_stream_messages_chunk():
 
 @pytest.mark.asyncio
 async def test_handle_human_stream_messages_end():
-    """Test handling stream end messages."""
     connection_id = str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
-    # Initialize chat history cache
     websocket_manager.chat_messages[connection_id] = []
 
     with patch.object(
@@ -229,7 +221,6 @@ async def test_handle_human_stream_messages_end():
 
 @pytest.mark.asyncio
 async def test_handle_human_stream_messages_waiting():
-    """Test handling stream waiting messages."""
     connection_id = str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
@@ -261,11 +252,9 @@ async def test_handle_human_stream_messages_waiting():
 
 @pytest.mark.asyncio
 async def test_handle_human_messages():
-    """Test handling regular human messages."""
     connection_id = str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
-    # Initialize chat history cache
     websocket_manager.chat_messages[connection_id] = []
 
     with patch.object(
@@ -302,7 +291,6 @@ async def test_handle_human_messages():
 
 @pytest.mark.asyncio
 async def test_handle_human_messages_new_connection():
-    """Test handling messages for new connections."""
     connection_id = str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
@@ -333,7 +321,6 @@ async def test_handle_human_messages_new_connection():
 
 
 def test_add_websocket_gateway(test_app, mock_server):
-    """Test adding websocket gateway to FastAPI app."""
     # Test that the function doesn't raise an error
     add_websocket_gateway("/ws", test_app, mock_server)
 
@@ -348,7 +335,6 @@ def test_add_websocket_gateway(test_app, mock_server):
 
 @pytest.mark.asyncio
 async def test_websocket_manager_connect(mock_websocket, connection_id):
-    """Test WebSocket manager connection."""
     manager = WebSocketManager()
 
     result = await manager.connect(mock_websocket, connection_id)
@@ -361,7 +347,6 @@ async def test_websocket_manager_connect(mock_websocket, connection_id):
 
 @pytest.mark.asyncio
 async def test_websocket_manager_disconnect(mock_websocket, connection_id):
-    """Test WebSocket manager disconnection."""
     manager = WebSocketManager()
     manager.active_connections[connection_id] = mock_websocket
 
@@ -375,7 +360,6 @@ async def test_websocket_manager_disconnect(mock_websocket, connection_id):
 
 @pytest.mark.asyncio
 async def test_websocket_manager_send_message(mock_websocket, connection_id):
-    """Test sending message through WebSocket manager."""
     manager = WebSocketManager()
     manager.active_connections[connection_id] = mock_websocket
 
@@ -391,7 +375,6 @@ async def test_websocket_manager_send_message(mock_websocket, connection_id):
 
 @pytest.mark.asyncio
 async def test_websocket_manager_send_message_no_connection(connection_id):
-    """Test sending message when connection doesn't exist."""
     manager = WebSocketManager()
 
     message_data = {"type": "test", "content": "Hello"}
@@ -406,7 +389,6 @@ async def test_websocket_manager_send_message_no_connection(connection_id):
 
 @pytest.mark.asyncio
 async def test_websocket_manager_attach_message_id(connection_id, message_id):
-    """Test attaching message ID to connection."""
     manager = WebSocketManager()
 
     await manager.attach_message_id(message_id, connection_id)
@@ -448,7 +430,6 @@ async def test_websocket_manager_get_connection_id_from_message_id(
 
 @pytest.mark.asyncio
 async def test_websocket_manager_broadcast_message():
-    """Test broadcasting message to all connections."""
     manager = WebSocketManager()
 
     # Create multiple mock websockets
@@ -469,7 +450,6 @@ async def test_websocket_manager_broadcast_message():
 
 @pytest.mark.asyncio
 async def test_websocket_manager_disconnect_all():
-    """Test disconnecting all connections."""
     manager = WebSocketManager()
 
     # Create multiple mock websockets
@@ -520,7 +500,6 @@ async def test_websocket_manager_connect_with_buffered_messages(
 
 @pytest.mark.asyncio
 async def test_websocket_manager_send_message_error(mock_websocket, connection_id):
-    """Test handling error when sending message."""
     manager = WebSocketManager()
     manager.active_connections[connection_id] = mock_websocket
 
@@ -540,7 +519,6 @@ async def test_websocket_manager_send_message_error(mock_websocket, connection_i
 
 @pytest.mark.asyncio
 async def test_websocket_manager_disconnect_already_closed(connection_id):
-    """Test disconnecting already closed connection."""
     manager = WebSocketManager()
 
     mock_websocket = MagicMock(spec=WebSocket)
@@ -559,7 +537,6 @@ async def test_websocket_manager_disconnect_already_closed(connection_id):
 
 
 def test_websocket_manager_initialization():
-    """Test WebSocket manager initialization."""
     manager = WebSocketManager()
 
     assert isinstance(manager.active_connections, dict)

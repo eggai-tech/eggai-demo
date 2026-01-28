@@ -2,19 +2,14 @@ from enum import Enum
 
 
 class ErrorCategory(Enum):
-    """Categories of errors for better organization and handling."""
-
-    USER_INPUT = "user_input"  # Error caused by invalid user input
-    DATA_ACCESS = "data_access"  # Error accessing or retrieving data
-    SYSTEM = "system"  # System or infrastructure error
-    MODEL = "model"  # Error from the language model
-    SECURITY = "security"  # Security-related error
+    USER_INPUT = "user_input"
+    DATA_ACCESS = "data_access"
+    SYSTEM = "system"
+    MODEL = "model"
+    SECURITY = "security"
 
 
 class ErrorResponse:
-    """Standardized error responses for consistent messaging."""
-
-    # User input errors
     INVALID_CLAIM_NUMBER = "Please provide a valid claim number."
     CLAIM_NOT_FOUND = "I couldn't find a claim with that number. Please verify the claim number and try again."
     INVALID_POLICY_NUMBER = "Please provide a valid policy number."
@@ -24,12 +19,10 @@ class ErrorResponse:
     FIELD_NOT_FOUND = "That field doesn't exist in our claims records. Available fields include contact information, incident details, and claim status."
     INVALID_FIELD_VALUE = "The value provided isn't valid for this field. Please try again with a proper format."
 
-    # System errors
     GENERIC_ERROR = "I apologize, but I'm experiencing a technical issue. Please try again in a moment."
     DATA_ERROR = "I'm having trouble accessing the claims database right now. Please try again shortly."
     MODEL_ERROR = "I'm having difficulty processing your request right now. Please try again or rephrase your question."
 
-    # Security errors
     SECURITY_FIELD_BLOCKED = "For security reasons, that field cannot be updated. Please contact customer service for assistance."
     SECURITY_INPUT_BLOCKED = "For security reasons, I cannot process that information. Please avoid including sensitive data like credit card numbers or social security numbers."
 
@@ -39,14 +32,11 @@ def get_user_friendly_error(
     category: ErrorCategory = ErrorCategory.SYSTEM,
     fallback_message: str | None = None,
 ) -> str:
-    """Convert exceptions to user-friendly error messages based on category."""
     error_str = str(error).lower()
 
-    # Use fallback message if provided
     if fallback_message:
         return fallback_message
 
-    # Map common error patterns to friendly messages
     if category == ErrorCategory.USER_INPUT:
         if "claim" in error_str and "not found" in error_str:
             return ErrorResponse.CLAIM_NOT_FOUND
@@ -68,5 +58,4 @@ def get_user_friendly_error(
     elif category == ErrorCategory.DATA_ACCESS:
         return ErrorResponse.DATA_ERROR
 
-    # Default system error
     return ErrorResponse.GENERIC_ERROR

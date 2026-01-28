@@ -16,14 +16,12 @@ from libraries.observability.tracing import TracedMessage
 
 @dataclass
 class MockMetrics:
-    """Simple mock for metrics."""
 
     latency_ms: float = 10.5
 
 
 @dataclass
 class MockClassifierResponse:
-    """Simple mock for classifier response."""
 
     target_agent: TargetAgent
     metrics: MockMetrics
@@ -31,7 +29,6 @@ class MockClassifierResponse:
 
 @pytest.mark.asyncio
 async def test_triage_agent_error_handling(monkeypatch):
-    """Test error handling in triage agent."""
     load_dotenv()
 
     def mock_classifier(*args, **kwargs):
@@ -57,7 +54,6 @@ async def test_triage_agent_error_handling(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_triage_agent_missing_data(monkeypatch):
-    """Test handling of messages with missing data."""
     load_dotenv()
 
     from agents.triage.agent import human_stream_channel
@@ -80,7 +76,6 @@ async def test_triage_agent_missing_data(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_triage_handle_other_messages():
-    """Test the handle_other_messages function for non-user messages."""
     test_message = TracedMessage(
         id=str(uuid4()),
         type="debug_message",
@@ -93,7 +88,6 @@ async def test_triage_handle_other_messages():
 
 @pytest.mark.asyncio
 async def test_triage_empty_conversation(monkeypatch):
-    """Test handling of empty conversation string."""
     load_dotenv()
 
     from agents.triage.agent import human_stream_channel
@@ -117,7 +111,6 @@ async def test_triage_empty_conversation(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_triage_malformed_chat_message(monkeypatch):
-    """Test handling of malformed chat messages."""
     load_dotenv()
 
     from agents.triage.agent import human_stream_channel
@@ -141,7 +134,6 @@ async def test_triage_malformed_chat_message(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_streaming_edge_cases(monkeypatch):
-    """Test edge cases in streaming responses."""
     import dspy
 
     from agents.triage.agent import human_stream_channel
@@ -185,7 +177,6 @@ async def test_streaming_edge_cases(monkeypatch):
 
 
 def test_classifier_version_imports():
-    """Test that main classifier versions can be imported."""
     try:
         from agents.triage.classifiers.v0.classifier import classifier_v0_program
 
@@ -220,7 +211,6 @@ def test_classifier_version_imports():
 
 
 def test_target_agent_enum():
-    """Test TargetAgent enum values."""
     assert TargetAgent.BillingAgent.value == "BillingAgent"
     assert TargetAgent.ClaimsAgent.value == "ClaimsAgent"
     assert TargetAgent.EscalationAgent.value == "EscalationAgent"
@@ -229,7 +219,6 @@ def test_target_agent_enum():
 
 @pytest.mark.asyncio
 async def test_triage_agent_classification_success(monkeypatch):
-    """Test successful classification and routing."""
     load_dotenv()
 
     from agents.triage.agent import agents_channel
@@ -272,7 +261,6 @@ async def test_triage_agent_classification_success(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_triage_agent_claims_routing(monkeypatch):
-    """Test routing to claims agent."""
     load_dotenv()
 
     from agents.triage.agent import agents_channel
@@ -315,7 +303,6 @@ async def test_triage_agent_claims_routing(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_triage_agent_escalation_routing(monkeypatch):
-    """Test routing to escalation agent."""
     load_dotenv()
 
     from agents.triage.agent import agents_channel
@@ -359,7 +346,6 @@ async def test_triage_agent_escalation_routing(monkeypatch):
 
 
 def test_mock_classes_structure():
-    """Test that mock classes have expected structure."""
     metrics = MockMetrics()
     assert hasattr(metrics, "latency_ms")
     assert abs(metrics.latency_ms - 10.5) < 1e-9

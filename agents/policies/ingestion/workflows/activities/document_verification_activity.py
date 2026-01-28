@@ -26,17 +26,13 @@ async def verify_document_activity(
                 "reason": "Force rebuild enabled",
             }
 
-        # Get document ID from file path
         filename = os.path.basename(file_path)
-
-        # Create Vespa client
         vespa_client = VespaClient()
 
-        # Search for documents with this source file
         try:
             existing_docs = await vespa_client.search_documents(
                 query=f"source_file:{filename}",
-                max_hits=400,  # Get all documents for this file (Vespa limit)
+                max_hits=400,
             )
 
             if existing_docs:
@@ -62,7 +58,6 @@ async def verify_document_activity(
 
         except Exception as search_error:
             logger.warning(f"Vespa search failed during verification: {search_error}")
-            # If search fails, proceed with processing to be safe
             return {
                 "success": True,
                 "file_exists": False,

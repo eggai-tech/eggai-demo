@@ -1,5 +1,3 @@
-"""Tests for the unified classifier interface."""
-
 import pytest
 
 from agents.triage.classifiers.base import (
@@ -10,10 +8,8 @@ from agents.triage.models import TargetAgent
 
 
 class TestClassificationResult:
-    """Tests for ClassificationResult dataclass."""
 
     def test_create_minimal(self):
-        """Test creating result with minimal fields."""
         result = ClassificationResult(
             target_agent=TargetAgent.BillingAgent,
             latency_ms=100.0,
@@ -24,7 +20,6 @@ class TestClassificationResult:
         assert result.total_tokens == 0
 
     def test_create_full(self):
-        """Test creating result with all fields."""
         result = ClassificationResult(
             target_agent=TargetAgent.PolicyAgent,
             latency_ms=250.5,
@@ -41,7 +36,6 @@ class TestClassificationResult:
         assert result.completion_tokens == 50
 
     def test_immutable(self):
-        """Test that result is immutable."""
         result = ClassificationResult(
             target_agent=TargetAgent.ClaimsAgent,
             latency_ms=100.0,
@@ -51,10 +45,8 @@ class TestClassificationResult:
 
 
 class TestClassifierInfo:
-    """Tests for ClassifierInfo dataclass."""
 
     def test_create_minimal(self):
-        """Test creating info with minimal fields."""
         info = ClassifierInfo(
             version="v0",
             name="Test Classifier",
@@ -66,7 +58,6 @@ class TestClassifierInfo:
         assert info.requires_training is False  # default
 
     def test_str_representation(self):
-        """Test string representation."""
         info = ClassifierInfo(
             version="v4",
             name="Zero-Shot COPRO",
@@ -75,7 +66,6 @@ class TestClassifierInfo:
         assert str(info) == "v4: Zero-Shot COPRO"
 
     def test_immutable(self):
-        """Test that info is immutable."""
         info = ClassifierInfo(
             version="v1",
             name="Test",

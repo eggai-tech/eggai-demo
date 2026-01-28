@@ -1,8 +1,3 @@
-"""
-Billing Agent API for Admin UI
-Provides REST endpoints for billing management and monitoring
-"""
-
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,7 +13,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
@@ -29,7 +23,6 @@ app.add_middleware(
 
 
 class BillingRecord(BaseModel):
-    """Billing record model"""
     policy_number: str
     customer_name: str
     amount_due: float
@@ -41,7 +34,6 @@ class BillingRecord(BaseModel):
 
 
 class BillingListResponse(BaseModel):
-    """Response model for billing list"""
     records: list[BillingRecord]
     total: int
     total_due: float
@@ -50,7 +42,6 @@ class BillingListResponse(BaseModel):
 
 
 class BillingStats(BaseModel):
-    """Statistics about billing"""
     total_records: int
     total_amount_due: float
     total_amount_paid: float
@@ -62,7 +53,6 @@ class BillingStats(BaseModel):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {"status": "healthy", "service": "billing-agent-api", "version": "1.0.0"}
 
 
@@ -74,9 +64,7 @@ async def list_billing_records(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    """List all billing records with optional filtering"""
     try:
-        # Filter records (BILLING_DATABASE is already a list)
         filtered_records = BILLING_DATABASE.copy()
 
         if status:
@@ -88,7 +76,6 @@ async def list_billing_records(
         if policy_number:
             filtered_records = [r for r in filtered_records if r["policy_number"] == policy_number]
 
-        # Calculate totals
         total_due = sum(r["amount_due"] for r in filtered_records if r["status"] == "Pending")
         total_paid = sum(r.get("last_payment_amount", 0) for r in filtered_records if r["status"] == "Paid")
 
@@ -96,10 +83,7 @@ async def list_billing_records(
         for record in filtered_records:
             by_status[record["status"]] = by_status.get(record["status"], 0) + 1
 
-        # Apply pagination
         paginated_records = filtered_records[offset:offset + limit]
-
-        # Convert to response models
         billing_records = [BillingRecord(**record) for record in paginated_records]
 
         return BillingListResponse(
@@ -116,7 +100,6 @@ async def list_billing_records(
 
 @app.get("/api/v1/billing/stats", response_model=BillingStats)
 async def get_billing_statistics():
-    """Get statistics about all billing records"""
     try:
         from datetime import datetime
 
@@ -129,16 +112,11 @@ async def get_billing_statistics():
         today = datetime.now().date()
 
         for record in BILLING_DATABASE:
-            # Status counts
             by_status[record["status"]] = by_status.get(record["status"], 0) + 1
-
-            # Cycle counts
             by_cycle[record["billing_cycle"]] = by_cycle.get(record["billing_cycle"], 0) + 1
 
-            # Calculate totals
             if record["status"] == "Pending":
                 total_due += record["amount_due"]
-                # Check if overdue
                 due_date = datetime.strptime(record["due_date"], "%Y-%m-%d").date()
                 if due_date < today:
                     overdue_count += 1
@@ -164,9 +142,7 @@ async def get_billing_statistics():
 
 @app.get("/api/v1/billing/{policy_number}", response_model=BillingRecord)
 async def get_billing_record(policy_number: str):
-    """Get billing information for a specific policy"""
     try:
-        # Find the record in the list
         record = None
         for billing_record in BILLING_DATABASE:
             if billing_record["policy_number"] == policy_number:

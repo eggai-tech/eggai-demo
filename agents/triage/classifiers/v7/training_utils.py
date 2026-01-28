@@ -38,14 +38,6 @@ from transformers import (
 
 
 def setup_mlflow_tracking(model_name: str) -> str:
-    """
-    Set up MLflow tracking for the training run.
-    Args:
-        model_name: Name of the model being trained.
-
-    Returns:
-        A unique run name based on the model name and current timestamp.
-    """
     mlflow.set_experiment("triage_classifier")
     mlflow.dspy.autolog()
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -65,11 +57,9 @@ def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     predictions = np.argmax(predictions, axis=1)
 
-    # Basic metrics
     accuracy = accuracy_score(labels, predictions)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average='weighted', zero_division=0)
 
-    # Per-class metrics
     agent_names = ["BillingAgent", "ClaimsAgent", "PolicyAgent", "EscalationAgent", "ChattyAgent"]
     precision_per_class, recall_per_class, f1_per_class, support = precision_recall_fscore_support(
         labels, predictions, average=None, zero_division=0
@@ -82,7 +72,6 @@ def compute_metrics(eval_pred):
         'recall': recall,
     }
 
-    # Add per-class metrics
     for i, agent_name in enumerate(agent_names):
         if i < len(precision_per_class):
             metrics[f'{agent_name.lower()}_precision'] = precision_per_class[i]
@@ -93,15 +82,6 @@ def compute_metrics(eval_pred):
     return metrics
 
 def perform_fine_tuning(trainset: list, testset: list):
-    """Perform fine-tuning of the Gemma3 model with LoRA adapters.
-
-    Args:
-        trainset: List of training examples
-        testset: List of evaluation examples
-
-    Returns:
-        Tuple of (best_model, tokenizer) after fine-tuning. `best_model` is the base model merged model with LoRA adapters.
-    """
     v7_settings = ClassifierV7Settings()
 
     logger.info(f"Starting HuggingFace Gemma3 fine-tuning with {len(trainset)} examples")
@@ -110,17 +90,15 @@ def perform_fine_tuning(trainset: list, testset: list):
 
     start_time = time.time()
 
-    # Load model and tokenizer
     model_name = v7_settings.get_model_name()
     logger.info(f"Loading model and tokenizer: {model_name}")
     if v7_settings.use_qat_model:
-        logger.info("Using QAT (Quantized Aware Training) model variant")
+        logger.info("Using QAT model variant")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Configure quantization
     quantization_config = None
     if v7_settings.use_4bit and not v7_settings.use_qat_model and torch.cuda.is_available():
         quantization_config = BitsAndBytesConfig(
@@ -132,10 +110,8 @@ def perform_fine_tuning(trainset: list, testset: list):
 
     device_map, dtype = get_device_config()
 
-    # Load the appropriate config class for this model
     config = AutoConfig.from_pretrained(model_name)
-    config.num_labels = v7_settings.n_classes  # Set number of classes for classification
-    # set the label mapping
+    config.num_labels = v7_settings.n_classes
     config.label2id = LABEL2ID
     config.id2label = ID2LABEL
 
@@ -145,16 +121,15 @@ def perform_fine_tuning(trainset: list, testset: list):
         quantization_config=quantization_config,
         torch_dtype=dtype,
         device_map=device_map,
-        attn_implementation="eager"  # More stable than flash attention
+        attn_implementation="eager"
     )
 
-    # add auto_map to config to ensure correct loading
+    # Needed for AutoModelForSequenceClassification.from_pretrained to find our class
     model.config.auto_map = {
         "AutoModel": "gemma3_seq_cls.Gemma3TextForSequenceClassification"
     }
 
-    # Configure LoRA
-    # we need to save the classifier layer together with the LoRA adapters, see Gemma3TextForSequenceClassification
+    # The classifier head must be saved alongside LoRA adapters
     assert hasattr(model, "classifier")
     modules_to_save = ["classifier"]
     lora_config = LoraConfig(
@@ -164,13 +139,10 @@ def perform_fine_tuning(trainset: list, testset: list):
         bias="none",
         target_modules="all-linear",
         task_type=TaskType.SEQ_CLS,
-        modules_to_save=modules_to_save,  # Save the classifier layer together with the LoRA adapters
+        modules_to_save=modules_to_save,
     )
-    # get PEFT model with LoRA configuration
     model = get_peft_model(model, lora_config)
-    # Move to appropriate device
     model = move_to_mps(model, device_map)
-    # set to train mode
     model.train()
     mlflow.log_params(lora_config.to_dict())
     model.print_trainable_parameters()
@@ -178,16 +150,13 @@ def perform_fine_tuning(trainset: list, testset: list):
     logger.info(f"Num train examples: {len(trainset)}")
     logger.info(f"Num eval examples: {len(testset)}")
 
-    # Prepare training data
     train_texts = [ex.chat_history for ex in trainset]
     train_labels = [LABEL2ID[ex.target_agent] for ex in trainset]
 
-    # Prepare evaluation data
     eval_texts = [ex.chat_history for ex in testset]
     eval_labels = [LABEL2ID[ex.target_agent] for ex in testset]
 
     def tokenize_function(examples):
-        # Tokenize the text
         model_inputs = tokenizer(
             examples["text"],
             truncation=True,
@@ -195,18 +164,15 @@ def perform_fine_tuning(trainset: list, testset: list):
             max_length=v7_settings.max_length,
             return_tensors=None
         )
-        # For sequence classification, labels are the class IDs
         model_inputs["labels"] = examples["labels"]
         return model_inputs
 
-    # Create datasets
     train_dataset = Dataset.from_dict({"text": train_texts, "labels": train_labels})
     eval_dataset = Dataset.from_dict({"text": eval_texts, "labels": eval_labels})
 
     tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
     tokenized_eval_dataset = eval_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
 
-    # Training arguments with evaluation
     training_args = TrainingArguments(
         output_dir=v7_settings.output_dir,
         num_train_epochs=v7_settings.num_epochs,
@@ -218,28 +184,25 @@ def perform_fine_tuning(trainset: list, testset: list):
         lr_scheduler_type="constant",
         **get_training_precision(),
         logging_steps=10,
-        save_total_limit=1,  # max of two checkpoints might be saved: # 1 for the best model, 1 for the last checkpoint
-        # Evaluation configuration
-        eval_strategy="epoch",  # Evaluate after each epoch
-        eval_steps=1,  # How often to evaluate (in epochs)
-        save_strategy="epoch",  # Save after each epoch
-        load_best_model_at_end=True,  # Load best model at end
-        metric_for_best_model="eval_accuracy",  # Use accuracy to determine best model
-        greater_is_better=True,  # Higher accuracy is better
-        gradient_checkpointing=False,  # Disable to avoid gradient issues
+        save_total_limit=1,
+        eval_strategy="epoch",
+        eval_steps=1,
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_accuracy",
+        greater_is_better=True,
+        gradient_checkpointing=False,
         dataloader_pin_memory=False,
         report_to="mlflow",
         remove_unused_columns=False,
     )
 
-    # Data collator for sequence classification
     data_collator = DataCollatorWithPadding(
         tokenizer=tokenizer,
-        padding='max_length',  # Specify explicit padding strategy
+        padding='max_length',
         max_length=v7_settings.max_length,
     )
 
-    # Use standard Trainer with evaluation
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -249,19 +212,13 @@ def perform_fine_tuning(trainset: list, testset: list):
         compute_metrics=compute_metrics,
     )
 
-    # Train the model
     logger.info("Starting training...")
     trainer.train()
 
-    # Save the model
-    logger.info(f"Saving the merged model (base_model + lora_adapters) to {v7_settings.output_dir}")
-    # get the best model from the trainer
+    logger.info(f"Saving merged model (base + LoRA) to {v7_settings.output_dir}")
     best_model = trainer.model
-    # merge LoRA adapters into the base model
     best_model = best_model.merge_and_unload()
-    # Save the merged model
     best_model.save_pretrained(v7_settings.output_dir)
-    # save the tokenizer
     tokenizer.save_pretrained(v7_settings.output_dir)
 
     logger.info("Gemma3 fine-tuning completed.")

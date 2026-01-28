@@ -35,7 +35,6 @@ def get_executor() -> ThreadPoolExecutor:
     global _EXECUTOR
 
     if _EXECUTOR is None:
-        # Use a small thread pool since embedding is CPU-intensive
         _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embedding")
         logger.info("Thread pool executor initialized for embedding operations")
 
@@ -127,14 +126,7 @@ async def generate_embedding_async(text: str) -> list[float]:
     try:
         loop = asyncio.get_event_loop()
         executor = get_executor()
-
-        # Run the CPU-intensive operation in a thread pool
-        embedding = await loop.run_in_executor(
-            executor,
-            generate_embedding,
-            text
-        )
-
+        embedding = await loop.run_in_executor(executor, generate_embedding, text)
         return embedding
     except Exception as e:
         logger.error(f"Error generating embedding asynchronously: {e}")
@@ -150,15 +142,9 @@ async def generate_embeddings_batch_async(
     try:
         loop = asyncio.get_event_loop()
         executor = get_executor()
-
-        # Run the CPU-intensive operation in a thread pool
         embeddings = await loop.run_in_executor(
-            executor,
-            generate_embeddings_batch,
-            texts,
-            batch_size
+            executor, generate_embeddings_batch, texts, batch_size
         )
-
         return embeddings
     except Exception as e:
         logger.error(f"Error generating batch embeddings asynchronously: {e}")

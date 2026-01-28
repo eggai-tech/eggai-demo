@@ -33,7 +33,6 @@ class AgentClassificationSignature(dspy.Signature):
     )
 
 
-# Improved zero-shot prompt with detailed classification rules
 ZERO_SHOT_INSTRUCTIONS = (
     """
 You are an intelligent classifier in a multi-agent insurance support system. Your task is to analyze the chat history and determine which specialized agent should handle the user's query.
@@ -84,7 +83,6 @@ if os.path.exists(optimizations_json):
     with open(optimizations_json) as f:
         optimizations = json.load(f)
         if "instructions" in optimizations:
-            # Create a new program with the optimized instructions
             classifier_v4_program = dspy.Predict(
                 signature=AgentClassificationSignature.with_instructions(
                     optimizations["instructions"]
@@ -101,7 +99,6 @@ def classifier_v4(chat_history: str) -> AgentClassificationSignature:
         latency_ms=lm.latency_ms,
     )
 
-    # Log token usage when in debug mode
     if os.environ.get("TRIAGE_DEBUG") == "1":
         logger.debug(
             f"Token usage - Total: {lm.total_tokens}, "

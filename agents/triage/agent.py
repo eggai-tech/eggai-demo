@@ -35,7 +35,6 @@ logger = get_console_logger("triage_agent.handler")
 
 
 def get_current_classifier() -> Callable[..., Any]:
-    """Get the classifier based on the configured version using the unified registry."""
     return get_classifier(settings.classifier_version)
 
 
@@ -43,19 +42,13 @@ current_classifier = get_current_classifier()
 
 
 def build_conversation_string(chat_messages: list[dict[str, str]]) -> str:
-    """Build a conversation history string from a list of chat entries.
-
-    Delegates to the shared ``get_conversation_string`` helper using
-    the ``"agent"`` key so that conversation lines show the real agent
-    name (e.g. ``"Billing: ..."`` instead of ``"assistant: ..."``).
-    """
+    # Use "agent" key so conversation lines show real agent names instead of "assistant"
     return get_conversation_string(chat_messages, role_key="agent")
 
 
 async def _publish_to_agent(
     conversation_string: str, target_agent: TargetAgent, msg: TracedMessage
 ) -> None:
-    """Publish a single classified user message to a specialized agent."""
     logger.info(f"Routing message to {target_agent}")
     with tracer.start_as_current_span("publish_to_agent") as span:
         safe_set_attribute(span, "target_agent", str(target_agent))
@@ -85,7 +78,6 @@ async def _publish_to_agent(
 async def _stream_chatty_response(
     conversation_string: str, msg: TracedMessage
 ) -> None:
-    """Stream a 'chatty' (small-talk) response back to the human stream channel."""
     chunks = chatty(chat_history=conversation_string)
     await stream_dspy_response(
         chunks=chunks,
@@ -108,7 +100,6 @@ async def _stream_chatty_response(
 )
 @traced_handler("handle_user_message")
 async def handle_user_message(msg: TracedMessage) -> None:
-    """Main handler for user messages: classify and route or stream chatty responses."""
     chat_messages: list[dict[str, Any]] = msg.data.get("chat_messages", [])
     connection_id: str = msg.data.get("connection_id", "unknown")
 
@@ -136,7 +127,6 @@ async def handle_user_message(msg: TracedMessage) -> None:
     conversation_string = build_conversation_string(chat_messages)
     safe_set_attribute(span, "conversation_length", len(conversation_string))
 
-    # Send immediate feedback so the user doesn't see a dead silence
     await publish_waiting_message(
         channel=human_stream_channel,
         agent_name=AGENT_NAME,
@@ -188,7 +178,6 @@ async def handle_user_message(msg: TracedMessage) -> None:
 
     if target_agent != TargetAgent.ChattyAgent:
         try:
-            # Let the user know which agent will handle their request
             await publish_waiting_message(
                 channel=human_stream_channel,
                 agent_name=AGENT_NAME,
@@ -231,5 +220,4 @@ async def handle_user_message(msg: TracedMessage) -> None:
 
 @triage_agent.subscribe(channel=human_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
-    """Fallback handler for other message types on the human channel."""
     logger.debug("Received message: %s", msg)

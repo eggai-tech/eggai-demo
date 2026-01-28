@@ -32,7 +32,7 @@ class MLflowTracker:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         mlflow.end_run()
-        return False  # Don't suppress exceptions
+        return False
 
 
 def setup_mlflow_tracking(

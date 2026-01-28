@@ -61,7 +61,6 @@ async def run_policy_documentation_worker(
             chunk_document_activity,
             verify_document_activity,
             index_document_activity,
-            # MinIO activities
             scan_minio_inbox_activity,
             check_document_exists_activity,
             move_to_processed_activity,
@@ -85,7 +84,6 @@ async def main():
     try:
         await run_policy_documentation_worker()
 
-        # Keep the worker running
         await asyncio.Event().wait()
 
     except KeyboardInterrupt:

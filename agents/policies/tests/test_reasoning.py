@@ -14,10 +14,8 @@ from agents.policies.agent.types import ModelConfig
 
 
 class TestTruncateLongHistory:
-    """Test conversation history truncation functionality."""
 
     def test_truncate_short_history(self):
-        """Test that short history is not truncated."""
         short_history = "User: Hello\nAgent: Hi there!"
         result = truncate_long_history(short_history)
 
@@ -27,7 +25,6 @@ class TestTruncateLongHistory:
         assert result["truncated_length"] == len(short_history)
 
     def test_truncate_long_history_default(self):
-        """Test truncation with default config."""
         # Create a very long history that exceeds default 15000 char limit
         lines = [f"User: Question {i} with some long text to make it longer\nAgent: Answer {i} with detailed response" for i in range(200)]
         long_history = "\n".join(lines)
@@ -42,7 +39,6 @@ class TestTruncateLongHistory:
         assert result["truncated_length"] < result["original_length"]
 
     def test_truncate_with_custom_config(self):
-        """Test truncation with custom config."""
         config = ModelConfig(truncation_length=1000)  # Minimum allowed
 
         # Create history that exceeds 1000 characters with 40 lines
@@ -60,7 +56,6 @@ class TestTruncateLongHistory:
         assert result["truncated_length"] < result["original_length"]
 
     def test_truncate_empty_history(self):
-        """Test handling of empty history."""
         result = truncate_long_history("")
 
         assert result["history"] == ""
@@ -69,7 +64,6 @@ class TestTruncateLongHistory:
         assert result["truncated_length"] == 0
 
     def test_truncate_preserves_recent_context(self):
-        """Test that truncation preserves the most recent context."""
         # Create history that exceeds 15000 char limit
         lines = [f"Message {i} with additional text to make it longer" for i in range(500)]
         history = "\n".join(lines)
@@ -86,10 +80,8 @@ class TestTruncateLongHistory:
 
 
 class TestPolicyAgentSignature:
-    """Test the PolicyAgentSignature class."""
 
     def test_signature_fields(self):
-        """Test that signature has required fields."""
 
         # DSPy signatures store fields differently
         # Check if the signature has the expected docstring and is a proper DSPy signature
@@ -104,7 +96,6 @@ class TestPolicyAgentSignature:
         assert PolicyAgentSignature.__name__ == "PolicyAgentSignature"
 
     def test_signature_docstring(self):
-        """Test that signature has proper instructions."""
         # Import here to get fresh instance
 
         docstring = PolicyAgentSignature.__doc__
@@ -116,11 +107,9 @@ class TestPolicyAgentSignature:
 
 
 class TestPoliciesReactDspy:
-    """Test the main process_policies function."""
 
     @pytest.mark.asyncio
     async def test_policies_react_basic_flow(self):
-        """Test basic flow of process_policies."""
         test_history = "User: What is my policy number?\nAgent: I need your policy number."
 
         # Mock the streamify function and model
@@ -134,10 +123,8 @@ class TestPoliciesReactDspy:
             # streamify should return a function that when called with chat_history returns the stream
             mock_streamify.return_value = mock_stream
 
-            # Execute
             process_policies(test_history)
 
-            # Verify streamify was called with correct parameters
             mock_streamify.assert_called_once()
             call_args = mock_streamify.call_args
             assert "stream_listeners" in call_args[1]
@@ -146,7 +133,6 @@ class TestPoliciesReactDspy:
 
     @pytest.mark.asyncio
     async def test_policies_react_with_truncation(self):
-        """Test process_policies with history truncation."""
         # Create long history that will be truncated
         long_history = "\n".join([f"User: Question {i}\nAgent: Answer {i}" for i in range(50)])
 
@@ -164,7 +150,6 @@ class TestPoliciesReactDspy:
 
                 mock_streamify.return_value = mock_stream
 
-                # Execute
                 process_policies(long_history)
 
                 # Verify truncation was called
@@ -172,7 +157,6 @@ class TestPoliciesReactDspy:
 
     @pytest.mark.asyncio
     async def test_policies_react_streaming_response(self):
-        """Test handling of streaming responses."""
         test_history = "User: Test\nAgent: Response"
 
         with patch("agents.policies.agent.reasoning.dspy.streamify") as mock_streamify:
@@ -193,7 +177,6 @@ class TestPoliciesReactDspy:
                 if isinstance(item, Prediction):
                     final_prediction = item
 
-            # Verify
             assert final_prediction is not None, "No final prediction received"
             assert final_prediction.final_response == "Hello there! How can I help?"
             assert final_prediction.policy_category == "auto"
@@ -201,10 +184,8 @@ class TestPoliciesReactDspy:
 
 
 class TestOptimizedPrompts:
-    """Test optimized prompt loading functionality."""
 
     def test_optimized_prompts_not_loaded_by_default(self):
-        """Test that optimized prompts are not loaded by default."""
         # The using_optimized_prompts flag should be False unless explicitly enabled
 
         # By default, should not use optimized prompts unless env var is set
@@ -212,7 +193,6 @@ class TestOptimizedPrompts:
 
     @patch.dict("os.environ", {"POLICIES_USE_OPTIMIZED_PROMPTS": "true"})
     def test_load_optimized_prompts_when_enabled(self):
-        """Test loading optimized prompts when enabled."""
         # Create a mock optimized JSON file
         mock_json_data = {
             "react": {
@@ -233,7 +213,6 @@ class TestOptimizedPrompts:
                     assert True  # Placeholder for actual test
 
     def test_handle_missing_optimized_file(self):
-        """Test handling when optimized file doesn't exist."""
         with patch("pathlib.Path.exists") as mock_exists:
             mock_exists.return_value = False
 
@@ -246,10 +225,8 @@ class TestOptimizedPrompts:
 
 
 class TestModelIntegration:
-    """Test integration with the DSPy model."""
 
     def test_policies_model_configuration(self):
-        """Test that the policies model is properly configured."""
         from agents.policies.agent.reasoning import policies_model
 
         assert policies_model is not None
@@ -260,7 +237,6 @@ class TestModelIntegration:
         assert policies_model.max_iters == 5
 
     def test_tools_configuration(self):
-        """Test that tools are properly configured."""
         from agents.policies.agent.reasoning import policies_model
 
         # Check if tools exist in some form

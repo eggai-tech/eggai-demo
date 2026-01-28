@@ -46,10 +46,8 @@ async def wait_for_agent_response(
         except asyncio.QueueEmpty:
             break
 
-    # Keep checking for matching responses
     while (time.perf_counter() - start_wait) < timeout:
         try:
-            # Use a shorter timeout for the queue get to check more frequently
             event = await asyncio.wait_for(response_queue.get(), timeout=1.0)
 
             logger.info(
@@ -57,12 +55,10 @@ async def wait_for_agent_response(
                 f"connection {event.get('data', {}).get('connection_id', 'unknown')}"
             )
 
-            # Check if this response matches our request
             event_connection_id = event.get("data", {}).get("connection_id")
             event_source = event.get("source")
 
             if event_connection_id == connection_id:
-                # If expected_source is specified, check it matches
                 if expected_source is None or event_source == expected_source:
                     logger.info(f"Found matching response for {connection_id}")
                     return event
@@ -77,10 +73,8 @@ async def wait_for_agent_response(
                     f"{event_connection_id}"
                 )
         except TimeoutError:
-            # Wait a little and try again but don't log every attempt
             await asyncio.sleep(0.1)
 
-        # Regularly report waiting status
         if (time.perf_counter() - start_wait) % 5 < 0.1:
             logger.info(
                 f"Still waiting for response from {expected_source or 'any agent'} "

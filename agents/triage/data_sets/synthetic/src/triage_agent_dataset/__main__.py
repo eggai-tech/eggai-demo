@@ -15,9 +15,6 @@ async def generate_dataset(
     turns: list[int] | None = None,
     total_target: int | None = None,
 ) -> None:
-    """
-    Generate a dataset using the specified parameters
-    """
     if temperatures is None:
         temperatures = [0.7, 0.8, 0.9]
     if turns is None:
@@ -26,11 +23,9 @@ async def generate_dataset(
     dataset = []
     config = AppConfig()
 
-    # Override config values if provided
     if total_target is not None:
         config.TOTAL_TARGET = total_target
 
-    # Calculate total examples for progress tracking
     total_examples = 0
     for agent in Agents:
         agent_frac = config.AGENT_DISTRIBUTION.get(agent.value, 0)
@@ -62,9 +57,6 @@ async def generate_dataset(
 
 
 def main():
-    """
-    Main entry point for the triage-generate command
-    """
     dotenv.load_dotenv()
 
     parser = argparse.ArgumentParser(description="Generate a triage agent dataset")
@@ -98,7 +90,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Run the dataset generation
     asyncio.run(
         generate_dataset(
             output_file=args.output,

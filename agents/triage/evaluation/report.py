@@ -13,7 +13,6 @@ def generate_report(results, report_name):
     token_counts = {"prompt": [], "completion": [], "total": []}
 
     for example, pred, score in results:
-        # Extract token count metrics if available
         if hasattr(pred, "metrics") and pred.metrics:
             token_counts["prompt"].append(pred.metrics.prompt_tokens)
             token_counts["completion"].append(pred.metrics.completion_tokens)
@@ -51,7 +50,6 @@ def generate_report(results, report_name):
         "success_percentage": f"{success_percentage:.2f}",
     }
 
-    # Add token usage statistics to summary if available
     if token_counts["total"]:
         import statistics
 
@@ -182,7 +180,6 @@ def write_html_report(test_results, summary, report_name):
 
     template = env.from_string(template_str)
 
-    # Render the template with context
     html_content = template.render(
         current_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         test_results=test_results,
@@ -190,12 +187,10 @@ def write_html_report(test_results, summary, report_name):
         report_name=report_name,
     )
 
-    # Define the filename
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     filename = f"{timestamp}-{report_name}.html"
     filepath = os.path.join(abs_output_dir, filename)
 
-    # Save the HTML content to the file
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(html_content)
 

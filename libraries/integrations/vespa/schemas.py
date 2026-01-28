@@ -5,49 +5,25 @@ from pydantic import BaseModel, Field
 
 
 class PolicyDocument(BaseModel):
-    """Enhanced document model for policy documents in Vespa."""
-
-    # Core fields
-    id: str = Field(..., description="Unique document identifier")
-    title: str = Field(..., description="Document title")
-    text: str = Field(..., description="Document content")
-    category: str = Field(..., description="Policy category (auto, home, life, health)")
-    chunk_index: int = Field(..., description="Chunk index within the document")
-    source_file: str = Field(..., description="Original source file name")
-
-    # Enhanced metadata fields
-    page_numbers: list[int] = Field(
-        default_factory=list, description="List of page numbers this chunk spans"
-    )
-    page_range: str | None = Field(
-        None, description="Page range as string (e.g., '1-3')"
-    )
-    headings: list[str] = Field(
-        default_factory=list, description="Section headings hierarchy"
-    )
-    char_count: int = Field(0, description="Character count of the chunk")
-    token_count: int = Field(0, description="Token count of the chunk")
-
-    # Relationship fields
-    document_id: str = Field(..., description="Parent document identifier")
-    previous_chunk_id: str | None = Field(
-        None, description="ID of the previous chunk"
-    )
-    next_chunk_id: str | None = Field(None, description="ID of the next chunk")
-    chunk_position: float = Field(
-        0.0, description="Relative position in document (0.0-1.0)"
-    )
-
-    # Additional context
-    section_path: list[str] = Field(
-        default_factory=list, description="Path of sections/subsections"
-    )
-
-    # Vector embedding for semantic search
-    embedding: list[float] | None = Field(None, description="Text embedding vector")
+    id: str = Field(...)
+    title: str = Field(...)
+    text: str = Field(...)
+    category: str = Field(...)
+    chunk_index: int = Field(...)
+    source_file: str = Field(...)
+    page_numbers: list[int] = Field(default_factory=list)
+    page_range: str | None = Field(None)
+    headings: list[str] = Field(default_factory=list)
+    char_count: int = Field(0)
+    token_count: int = Field(0)
+    document_id: str = Field(...)
+    previous_chunk_id: str | None = Field(None)
+    next_chunk_id: str | None = Field(None)
+    chunk_position: float = Field(0.0)
+    section_path: list[str] = Field(default_factory=list)
+    embedding: list[float] | None = Field(None)
 
     def to_vespa_dict(self) -> dict[str, Any]:
-        """Convert to dictionary format for Vespa indexing."""
         data = {
             "id": self.id,
             "title": self.title,
@@ -67,7 +43,6 @@ class PolicyDocument(BaseModel):
             "section_path": self.section_path,
         }
 
-        # Convert embedding to Vespa tensor format if present
         if self.embedding:
             data["embedding"] = {
                 "cells": [
@@ -80,39 +55,22 @@ class PolicyDocument(BaseModel):
 
 
 class DocumentMetadata(BaseModel):
-    """Document-level metadata for tracking whole documents."""
-
-    id: str = Field(..., description="Unique document identifier")
-    file_path: str = Field(..., description="Full path to the source file")
-    file_name: str = Field(..., description="Original file name")
-    category: str = Field(..., description="Policy category")
-
-    # Document statistics
-    total_pages: int = Field(0, description="Total number of pages")
-    total_chunks: int = Field(0, description="Total number of chunks")
-    total_characters: int = Field(0, description="Total character count")
-    total_tokens: int = Field(0, description="Total token count")
-
-    # Metadata
-    document_type: str = Field("pdf", description="Document type (pdf, docx, etc.)")
-    file_size: int = Field(0, description="File size in bytes")
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Ingestion timestamp"
-    )
-    last_modified: datetime | None = Field(
-        None, description="Document last modified time"
-    )
-
-    # Document structure
-    outline: list[dict[str, Any]] = Field(
-        default_factory=list, description="Document outline/TOC"
-    )
-    key_sections: list[str] = Field(
-        default_factory=list, description="Important section identifiers"
-    )
+    id: str = Field(...)
+    file_path: str = Field(...)
+    file_name: str = Field(...)
+    category: str = Field(...)
+    total_pages: int = Field(0)
+    total_chunks: int = Field(0)
+    total_characters: int = Field(0)
+    total_tokens: int = Field(0)
+    document_type: str = Field("pdf")
+    file_size: int = Field(0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_modified: datetime | None = Field(None)
+    outline: list[dict[str, Any]] = Field(default_factory=list)
+    key_sections: list[str] = Field(default_factory=list)
 
     def to_vespa_dict(self) -> dict[str, Any]:
-        """Convert to dictionary format for Vespa indexing."""
         return {
             "id": self.id,
             "file_path": self.file_path,
@@ -134,12 +92,10 @@ class DocumentMetadata(BaseModel):
 
 
 def create_vespa_schema_definition() -> dict[str, Any]:
-    """Create Vespa schema definition for the enhanced policy documents."""
     return {
         "schema": "policy_document",
         "document": {
             "fields": [
-                # Core fields
                 {"name": "id", "type": "string", "indexing": "summary | attribute"},
                 {"name": "title", "type": "string", "indexing": "index | summary"},
                 {"name": "text", "type": "string", "indexing": "index | summary"},
@@ -158,7 +114,6 @@ def create_vespa_schema_definition() -> dict[str, Any]:
                     "type": "string",
                     "indexing": "attribute | summary",
                 },
-                # Enhanced metadata fields
                 {
                     "name": "page_numbers",
                     "type": "array<int>",
@@ -184,7 +139,6 @@ def create_vespa_schema_definition() -> dict[str, Any]:
                     "type": "int",
                     "indexing": "attribute | summary",
                 },
-                # Relationship fields
                 {
                     "name": "document_id",
                     "type": "string",
@@ -205,7 +159,6 @@ def create_vespa_schema_definition() -> dict[str, Any]:
                     "type": "float",
                     "indexing": "attribute | summary",
                 },
-                # Additional context
                 {
                     "name": "section_path",
                     "type": "array<string>",
@@ -235,7 +188,6 @@ def create_vespa_schema_definition() -> dict[str, Any]:
 
 
 def create_document_metadata_schema() -> dict[str, Any]:
-    """Create Vespa schema for document-level metadata."""
     return {
         "schema": "document_metadata",
         "document": {
@@ -296,7 +248,7 @@ def create_document_metadata_schema() -> dict[str, Any]:
                     "name": "outline",
                     "type": "string",
                     "indexing": "summary",
-                },  # Store as JSON string
+                },
                 {
                     "name": "key_sections",
                     "type": "array<string>",

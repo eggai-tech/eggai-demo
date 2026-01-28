@@ -6,18 +6,11 @@ import dspy
 
 @dataclass
 class BillingExample:
-    """Example for Billing Agent dataset."""
     chat_history: str
     expected_response: str
 
 
 def create_billing_dataset() -> list[BillingExample]:
-    """Create a dataset of billing examples.
-
-    Returns:
-        List[BillingExample]: A list of examples for billing scenarios.
-    """
-    # Known policy data from the mock database
     billing_data = [
         {
             "policy_number": "A12345",
@@ -44,7 +37,6 @@ def create_billing_dataset() -> list[BillingExample]:
 
     examples = []
 
-    # Payment due date inquiries
     for policy in billing_data:
         chat = f"""User: When is my next payment due?
 BillingAgent: I'd be happy to help you with that. Could you please provide your policy number?
@@ -54,7 +46,6 @@ User: It's {policy["policy_number"]}."""
 
         examples.append(BillingExample(chat_history=chat, expected_response=expected))
 
-    # Amount due inquiries
     for policy in billing_data:
         chat = f"""User: How much do I owe on my policy?
 BillingAgent: I'd be happy to check that for you. Could you please provide your policy number?
@@ -64,7 +55,6 @@ User: {policy["policy_number"]}"""
 
         examples.append(BillingExample(chat_history=chat, expected_response=expected))
 
-    # Billing cycle inquiries
     for policy in billing_data:
         chat = f"""User: What's my billing cycle?
 BillingAgent: I can check that for you. May I have your policy number please?
@@ -74,7 +64,6 @@ User: {policy["policy_number"]}"""
 
         examples.append(BillingExample(chat_history=chat, expected_response=expected))
 
-    # Payment status inquiries
     for policy in billing_data:
         chat = f"""User: Has my payment gone through?
 BillingAgent: I can check that for you. Could you please provide your policy number?
@@ -91,14 +80,6 @@ User: {policy["policy_number"]}"""
 
 
 def as_dspy_examples(examples: list[BillingExample]) -> list[dspy.Example]:
-    """Convert BillingExample objects to dspy.Example objects.
-
-    Args:
-        examples (List[BillingExample]): List of billing examples.
-
-    Returns:
-        List[dspy.Example]: List of dspy.Example objects.
-    """
     dspy_examples = []
     for example in examples:
         dspy_examples.append(
@@ -111,11 +92,9 @@ def as_dspy_examples(examples: list[BillingExample]) -> list[dspy.Example]:
 
 
 if __name__ == "__main__":
-    # Generate examples and print them
     examples = create_billing_dataset()
     print(f"Generated {len(examples)} examples")
 
-    # Print a sample
     random.seed(42)
     sample = random.sample(examples, min(3, len(examples)))
     for i, example in enumerate(sample):

@@ -12,11 +12,9 @@ from libraries.ml.mlflow import find_model
 load_dotenv()
 settings = Settings()
 
-# Lazy loading of the model to avoid import-time failures
 _few_shots_classifier = None
 
 def get_classifier():
-    """Get or initialize the few shots classifier."""
     global _few_shots_classifier
     if _few_shots_classifier is None:
         _few_shots_classifier = FewShotsClassifier.load(
@@ -24,7 +22,7 @@ def get_classifier():
                 settings.classifier_v3_model_name, version=settings.classifier_v3_model_version
             )
         )
-        # running the classifier to warm up the model
+        # Warm up the model on first load
         _few_shots_classifier(["User: I want to know my policy due date"])
     return _few_shots_classifier
 

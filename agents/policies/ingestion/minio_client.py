@@ -59,7 +59,6 @@ class MinIOClient:
                 await s3.create_bucket(Bucket=self.bucket_name)
                 logger.info(f"Created bucket {self.bucket_name}")
 
-            # Create folder structure by uploading empty objects
             folders = ["inbox/", "processed/", "failed/", "archive/"]
             for folder in folders:
                 try:
@@ -126,11 +125,9 @@ class MinIOClient:
                 Delimiter="/"
             ):
                 for obj in page.get('Contents', []):
-                    # Skip the folder itself
                     if obj['Key'] == prefix:
                         continue
 
-                    # Get object metadata
                     head_response = await s3.head_object(
                         Bucket=self.bucket_name,
                         Key=obj['Key']
@@ -151,14 +148,12 @@ class MinIOClient:
         dest_key = f"{destination_folder}/{filename}"
 
         async with self._get_client() as s3:
-            # Copy to new location
             await s3.copy_object(
                 Bucket=self.bucket_name,
                 CopySource={'Bucket': self.bucket_name, 'Key': source_key},
                 Key=dest_key
             )
 
-            # Delete from original location
             await s3.delete_object(
                 Bucket=self.bucket_name,
                 Key=source_key
@@ -202,17 +197,15 @@ class MinIOClient:
 
     async def add_error_metadata(self, key: str, error: str):
         async with self._get_client() as s3:
-            # Get existing object
             response = await s3.head_object(
                 Bucket=self.bucket_name,
                 Key=key
             )
 
             metadata = response.get('Metadata', {})
-            metadata['error'] = error[:1024]  # S3 metadata value limit
+            metadata['error'] = error[:1024]
             metadata['failed_timestamp'] = datetime.utcnow().isoformat()
 
-            # Copy object with new metadata
             await s3.copy_object(
                 Bucket=self.bucket_name,
                 CopySource={'Bucket': self.bucket_name, 'Key': key},

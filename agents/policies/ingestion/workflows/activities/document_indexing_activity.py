@@ -39,18 +39,14 @@ async def index_document_activity(
                 "reason": "No chunks to index",
             }
 
-        # Create Vespa client
         vespa_client = VespaClient()
 
-        # Get document ID from first chunk or generate one
         document_id = chunks_data[0].get(
             "document_id", os.path.splitext(os.path.basename(file_path))[0]
         )
 
-        # Prepare texts for batch embedding generation
         texts_for_embedding = []
         for chunk_data in chunks_data:
-            # Combine text with metadata for richer embeddings
             combined_text = combine_text_for_embedding(
                 text=chunk_data["text"],
                 title=f"Policy Document - {os.path.basename(file_path)}",
@@ -59,49 +55,39 @@ async def index_document_activity(
             )
             texts_for_embedding.append(combined_text)
 
-        # Generate embeddings for all chunks in batch
         logger.info(f"Generating embeddings for {len(texts_for_embedding)} chunks")
         embeddings = generate_embeddings_batch(texts_for_embedding)
 
-        # Convert chunks to enhanced PolicyDocument objects
         documents = []
         for i, chunk_data in enumerate(chunks_data):
             doc = PolicyDocument(
-                # Core fields
                 id=chunk_data["id"],
                 title=f"Policy Document - {os.path.basename(file_path)}",
                 text=chunk_data["text"],
                 category=category,
                 chunk_index=chunk_data["chunk_index"],
                 source_file=os.path.basename(file_path),
-                # Enhanced metadata fields
                 page_numbers=chunk_data.get("page_numbers", []),
                 page_range=chunk_data.get("page_range"),
                 headings=chunk_data.get("headings", []),
                 char_count=chunk_data.get("char_count", len(chunk_data["text"])),
                 token_count=chunk_data.get("token_count", 0),
-                # Relationship fields
                 document_id=document_id,
                 previous_chunk_id=chunk_data.get("previous_chunk_id"),
                 next_chunk_id=chunk_data.get("next_chunk_id"),
                 chunk_position=chunk_data.get("chunk_position", 0.0),
-                # Additional context
                 section_path=chunk_data.get("section_path", []),
-                # Vector embedding
                 embedding=embeddings[i] if i < len(embeddings) else None,
             )
             documents.append(doc)
 
         logger.info(f"Indexing {len(documents)} enhanced documents to Vespa")
 
-        # Index documents to Vespa
         result = await vespa_client.index_documents(documents)
 
-        # Create and index document-level metadata if we have stats
         doc_metadata_indexed = False
         if document_stats:
             try:
-                # Get file stats
                 file_stats = os.stat(file_path) if os.path.exists(file_path) else None
 
                 doc_metadata = DocumentMetadata(
@@ -121,7 +107,6 @@ async def index_document_activity(
                     last_modified=datetime.fromtimestamp(file_stats.st_mtime)
                     if file_stats
                     else None,
-                    # Convert outline strings to dictionaries if needed
                     outline=[
                         {"heading": heading, "level": idx + 1}
                         for idx, heading in enumerate(document_stats.get("outline", []))
@@ -129,10 +114,9 @@ async def index_document_activity(
                     ]
                     if document_stats.get("outline")
                     else [],
-                    key_sections=[],  # Could be enhanced with section detection
+                    key_sections=[],
                 )
 
-                # For now, log the document metadata (would need separate index in production)
                 logger.info(
                     f"Document metadata created: {doc_metadata.id} with {doc_metadata.total_pages} pages"
                 )
@@ -146,7 +130,6 @@ async def index_document_activity(
             f"{result['failed']} failed out of {result['total_documents']} total"
         )
 
-        # Log sample of indexed metadata for verification
         if documents and documents[0].page_numbers:
             logger.info(
                 f"Sample metadata - First chunk pages: {documents[0].page_numbers}, "

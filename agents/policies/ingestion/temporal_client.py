@@ -65,7 +65,6 @@ class TemporalClient:
             clean_filename = re.sub(r"[^a-zA-Z0-9]", "-", os.path.splitext(filename)[0])
             clean_filename = re.sub(r"-+", "-", clean_filename).strip("-")
 
-            # Execute the workflow and wait for result
             result = await client.execute_workflow(
                 DocumentIngestionWorkflow.run,
                 workflow_input,
@@ -97,5 +96,4 @@ class TemporalClient:
             )
 
     async def close(self):
-        # No need to explicitly close the client in newer Temporal SDK versions
         self._client = None

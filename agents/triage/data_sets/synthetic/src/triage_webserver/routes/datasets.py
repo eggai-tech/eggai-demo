@@ -24,10 +24,6 @@ async def create_new_dataset(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """
-    Create a new dataset with specified parameters
-    """
-    # Start dataset generation in background
     background_tasks.add_task(
         create_dataset,
         db=db,
@@ -49,9 +45,6 @@ async def create_new_dataset(
 
 @router.get("/{dataset_id}", response_model=DatasetResponse)
 def get_dataset_by_id(dataset_id: int, db: Session = Depends(get_db)):
-    """
-    Get a dataset by ID
-    """
     db_dataset = get_dataset(db, dataset_id)
     if db_dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -60,18 +53,12 @@ def get_dataset_by_id(dataset_id: int, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=DatasetList)
 def get_all_datasets(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """
-    Get all datasets
-    """
     datasets = get_datasets(db, skip=skip, limit=limit)
     return {"datasets": datasets, "total": len(datasets)}
 
 
 @router.delete("/{dataset_id}")
 def delete_dataset_by_id(dataset_id: int, db: Session = Depends(get_db)):
-    """
-    Delete a dataset by ID
-    """
     result = delete_dataset(db, dataset_id)
     if not result:
         raise HTTPException(status_code=404, detail="Dataset not found")

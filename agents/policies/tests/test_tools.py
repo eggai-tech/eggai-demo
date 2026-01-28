@@ -18,10 +18,8 @@ from agents.policies.agent.tools.retrieval.policy_search import (
 
 
 class TestPolicyDatabase:
-    """Test policy database access tool."""
 
     def test_get_personal_policy_details_with_example_data(self):
-        """Test retrieving policy details using example data."""
         # Ensure we're using example data
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", True):
             # Test valid policy number
@@ -37,13 +35,11 @@ class TestPolicyDatabase:
             assert "$" in policy_data["premium_amount_usd"]
 
     def test_get_personal_policy_details_not_found(self):
-        """Test handling of non-existent policy."""
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", True):
             result = get_personal_policy_details("INVALID123")
             assert result == "Policy not found."
 
     def test_get_personal_policy_details_empty_input(self):
-        """Test handling of empty policy number."""
         result = get_personal_policy_details("")
         assert result == "Policy not found."
 
@@ -51,7 +47,6 @@ class TestPolicyDatabase:
         assert result == "Policy not found."
 
     def test_get_personal_policy_details_case_insensitive(self):
-        """Test that policy lookup is case-insensitive."""
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", True):
             # Test lowercase input
             result = get_personal_policy_details("a12345")
@@ -60,7 +55,6 @@ class TestPolicyDatabase:
             assert policy_data["policy_number"] == "A12345"
 
     def test_get_personal_policy_details_strips_whitespace(self):
-        """Test that policy number is stripped of whitespace."""
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", True):
             result = get_personal_policy_details("  A12345  ")
             assert result != "Policy not found."
@@ -68,7 +62,6 @@ class TestPolicyDatabase:
             assert policy_data["policy_number"] == "A12345"
 
     def test_get_personal_policy_details_formats_premium(self):
-        """Test that premium amount is properly formatted."""
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", True):
             result = get_personal_policy_details("B67890")
             policy_data = json.loads(result)
@@ -79,14 +72,12 @@ class TestPolicyDatabase:
             assert policy_data["premium_amount_usd"] == "$300.00"
 
     def test_get_personal_policy_details_production_mode(self):
-        """Test behavior when not using example data."""
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", False):
             # Should return not found since no real database is configured
             result = get_personal_policy_details("A12345")
             assert result == "Policy not found."
 
     def test_get_personal_policy_details_error_handling(self):
-        """Test error handling in policy retrieval."""
         with patch("agents.policies.agent.tools.database.policy_data.USE_EXAMPLE_DATA", True):
             with patch("agents.policies.agent.tools.database.policy_data.EXAMPLE_POLICIES", side_effect=Exception("Database error")):
                 result = get_personal_policy_details("A12345")
@@ -94,17 +85,14 @@ class TestPolicyDatabase:
 
 
 class TestPolicySearch:
-    """Test policy search functionality."""
 
     def test_search_policy_documentation_basic(self):
-        """Test basic policy documentation search."""
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
         agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
 
         with patch("agents.policies.agent.tools.retrieval.policy_search.VespaClient") as MockVespaClient:
             with patch("agents.policies.agent.tools.retrieval.policy_search.generate_embedding_async") as mock_embedding:
-                # Setup mocks
                 mock_instance = MockVespaClient.return_value
                 mock_instance.hybrid_search = AsyncMock(return_value=[
                     {
@@ -124,7 +112,6 @@ class TestPolicySearch:
                 # Execute search
                 result = search_policy_documentation("collision damage")
 
-                # Verify
                 # Result is JSON-formatted string
                 parsed_result = json.loads(result)
                 assert len(parsed_result) > 0
@@ -132,7 +119,6 @@ class TestPolicySearch:
                 assert parsed_result[0]["category"] == "auto"
 
     def test_search_policy_documentation_with_category(self):
-        """Test search with category filter."""
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
         agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
@@ -166,7 +152,6 @@ class TestPolicySearch:
                 assert call_args[1]["category"] == "home"
 
     def test_search_policy_documentation_no_results(self):
-        """Test search with no results."""
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
         agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
@@ -182,7 +167,6 @@ class TestPolicySearch:
                 assert result == "Policy information not found."
 
     def test_search_policy_documentation_multiple_results(self):
-        """Test search with multiple results."""
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
         agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
@@ -236,7 +220,6 @@ class TestPolicySearch:
                 assert "Coverage type 2" in parsed_result[1]["content"]
 
     def test_search_policy_documentation_error_handling(self):
-        """Test error handling in search."""
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
         agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
@@ -254,11 +237,9 @@ class TestPolicySearch:
 
 
 class TestFullDocumentRetrieval:
-    """Test full document retrieval functionality."""
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_success(self):
-        """Test successful full document retrieval."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
             mock_instance = MockVespaClient.return_value
 
@@ -293,10 +274,8 @@ class TestFullDocumentRetrieval:
                 }
             ])
 
-            # Execute
             result = await retrieve_full_document_async("auto_policy")
 
-            # Verify
             assert result is not None
             assert "error" not in result
             assert result["document_id"] == "auto_policy"
@@ -308,7 +287,6 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_not_found(self):
-        """Test retrieval of non-existent document."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
             mock_instance = MockVespaClient.return_value
             mock_instance.search_documents = AsyncMock(return_value=[])
@@ -321,7 +299,6 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_single_chunk(self):
-        """Test retrieval of document with single chunk."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
             mock_instance = MockVespaClient.return_value
             mock_instance.search_documents = AsyncMock(return_value=[
@@ -344,7 +321,6 @@ class TestFullDocumentRetrieval:
             assert result["metadata"]["title"] == "Policy Document"  # Default title
 
     def test_get_document_chunk_range_full_document(self):
-        """Test getting full document range."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.retrieve_full_document") as mock_retrieve:
             # Mock a full document response
             mock_retrieve.return_value = {
@@ -365,7 +341,6 @@ class TestFullDocumentRetrieval:
             assert "Chunk 2" in result["text"]
 
     def test_get_document_chunk_range_partial(self):
-        """Test getting partial chunk range."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.retrieve_full_document") as mock_retrieve:
             # Mock a full document response
             mock_retrieve.return_value = {
@@ -389,7 +364,6 @@ class TestFullDocumentRetrieval:
             assert "Chunk 3" not in result["text"]
 
     def test_get_document_chunk_range_out_of_bounds(self):
-        """Test chunk range with out of bounds indices."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.retrieve_full_document") as mock_retrieve:
             # Mock a full document response with 2 chunks
             mock_retrieve.return_value = {
@@ -410,7 +384,6 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_error_handling(self):
-        """Test error handling in document retrieval."""
         with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
             mock_instance = MockVespaClient.return_value
             mock_instance.search_documents = AsyncMock(side_effect=Exception("Database error"))
@@ -422,10 +395,8 @@ class TestFullDocumentRetrieval:
 
 
 class TestExampleData:
-    """Test example data module."""
 
     def test_example_policies_structure(self):
-        """Test that example policies have correct structure."""
         assert isinstance(EXAMPLE_POLICIES, list)
         assert len(EXAMPLE_POLICIES) > 0
 
@@ -437,13 +408,11 @@ class TestExampleData:
             assert "due_date" in policy
 
     def test_example_policies_categories(self):
-        """Test that all categories are represented."""
         categories = {policy["policy_category"] for policy in EXAMPLE_POLICIES}
         expected_categories = {"auto", "home", "life"}
         assert categories == expected_categories
 
     def test_use_example_data_flag(self):
-        """Test USE_EXAMPLE_DATA flag exists."""
         assert isinstance(USE_EXAMPLE_DATA, bool)
 
 

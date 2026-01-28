@@ -1,18 +1,13 @@
-"""Tests for the channels module."""
-
 import pytest
 
 from libraries.communication.channels import ChannelConfig, channels, clear_channels
 
 
 class TestChannels:
-    """Test the Channels configuration class."""
 
     def test_channels_initialization(self):
-        """Test that channels object has all required attributes."""
         # channels is already instantiated in the module
 
-        # Verify all channel attributes exist
         assert hasattr(channels, "agents")
         assert hasattr(channels, "human")
         assert hasattr(channels, "human_stream")
@@ -20,24 +15,20 @@ class TestChannels:
         assert hasattr(channels, "metrics")
         assert hasattr(channels, "debug")
 
-        # Verify channel names
         assert channels.agents == "agents"
         assert channels.human == "human"
         assert channels.human_stream == "human_stream"
         assert channels.audit_logs == "audit_logs"
 
     def test_channel_config_class(self):
-        """Test that ChannelConfig can be instantiated."""
         config = ChannelConfig()
 
-        # Verify default values
         assert config.agents == "agents"
         assert config.human == "human"
         assert config.human_stream == "human_stream"
         assert config.audit_logs == "audit_logs"
 
     def test_channels_are_strings(self):
-        """Test that all channel names are strings."""
         assert isinstance(channels.agents, str)
         assert isinstance(channels.human, str)
         assert isinstance(channels.human_stream, str)
@@ -45,8 +36,6 @@ class TestChannels:
 
     @pytest.mark.asyncio
     async def test_clear_channels_import(self):
-        """Test that clear_channels is importable and callable."""
-        # This just verifies the function exists and is callable
         assert callable(clear_channels)
 
         # We can't test the actual clearing without a real Kafka setup,
@@ -62,14 +51,12 @@ class TestChannels:
 
 
     def test_channel_names_are_not_empty(self):
-        """Test that channel names are not empty."""
         assert len(channels.agents) > 0
         assert len(channels.human) > 0
         assert len(channels.human_stream) > 0
         assert len(channels.audit_logs) > 0
 
     def test_channel_names_are_unique(self):
-        """Test that all channel names are unique."""
         channel_names = [
             channels.agents,
             channels.human,
@@ -79,19 +66,15 @@ class TestChannels:
             channels.debug
         ]
 
-        # Convert to set to check uniqueness
         assert len(channel_names) == len(set(channel_names))
 
     def test_channels_module_exports(self):
-        """Test that the module exports the expected items."""
-        # Import the items directly
         from libraries.communication.channels import (
             ChannelConfig,
             channels,
             clear_channels,
         )
 
-        # Verify they exist
         assert ChannelConfig is not None
         assert channels is not None
         assert clear_channels is not None
@@ -108,7 +91,6 @@ class TestChannelsIntegration:
     """Integration tests for channels with mocked dependencies."""
 
     def test_channels_usage_pattern(self):
-        """Test the typical usage pattern of channels."""
         from libraries.communication.channels import channels
 
         # Simulate how channels are used in the codebase
@@ -119,7 +101,6 @@ class TestChannelsIntegration:
         assert isinstance(agent_channel, str)
         assert isinstance(human_channel, str)
 
-        # Simulate passing to a messaging system
         mock_publish_data = {
             "channel": agent_channel,
             "message": "test message"
@@ -128,10 +109,8 @@ class TestChannelsIntegration:
         assert mock_publish_data["channel"] == "agents"
 
     def test_channels_in_different_contexts(self):
-        """Test channels work correctly in different contexts."""
         from libraries.communication.channels import channels
 
-        # Test in agent context
         class MockAgent:
             def __init__(self):
                 self.channel = channels.agents
@@ -139,7 +118,6 @@ class TestChannelsIntegration:
         agent = MockAgent()
         assert agent.channel == "agents"
 
-        # Test in service context
         class MockService:
             def __init__(self):
                 self.human_channel = channels.human

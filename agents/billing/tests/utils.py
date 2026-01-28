@@ -64,7 +64,6 @@ def get_test_cases():
 
     return test_cases
 
-# Import wait_for_agent_response from shared test utils
 from libraries.testing.utils import wait_for_agent_response as _wait_for_agent_response
 
 
@@ -80,7 +79,6 @@ async def evaluate_response_with_llm(
     chat_history, expected_response, agent_response, dspy_lm
 ):
     """Evaluate agent response against the expected response using LLM."""
-    # Evaluate using LLM
     eval_model = dspy.asyncify(dspy.Predict(BillingEvaluationSignature))
     with dspy.context(lm=dspy_lm):
         evaluation_result = await eval_model(

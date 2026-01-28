@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -15,9 +14,6 @@ router = APIRouter()
 
 @router.get("/{example_id}", response_model=ExampleResponse)
 def get_example(example_id: int, db: Session = Depends(get_db)):
-    """
-    Get a single example by ID
-    """
     example = db.query(Example).filter(Example.id == example_id).first()
     if example is None:
         raise HTTPException(status_code=404, detail="Example not found")
@@ -28,27 +24,15 @@ def get_example(example_id: int, db: Session = Depends(get_db)):
 def get_examples(
     dataset_id: int | None = None,
     target_agent: str | None = None,
-    special_case: str | None | None = None,
+    special_case: str | None = None,
     turns: int | None = None,
     search: str | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    """
-    Get examples with optional filtering
-
-    - dataset_id: Filter by dataset ID
-    - target_agent: Filter by target agent
-    - special_case: Filter by special case (use "null" for examples with no special case)
-    - turns: Filter by number of turns
-    - search: Search in conversation text
-    - skip: Number of examples to skip (for pagination)
-    - limit: Maximum number of examples to return
-    """
     query = db.query(Example)
 
-    # Apply filters
     if dataset_id is not None:
         query = query.filter(Example.dataset_id == dataset_id)
 
@@ -64,15 +48,11 @@ def get_examples(
     if turns is not None:
         query = query.filter(Example.turns == turns)
 
-    # Apply search filter
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(Example.conversation.ilike(search_pattern))
 
-    # Get total count for pagination
     total = query.count()
-
-    # Apply pagination
     examples = query.order_by(Example.id.desc()).offset(skip).limit(limit).all()
 
     return {"examples": examples, "total": total}
@@ -82,14 +62,10 @@ def get_examples(
 def update_example(
     example_id: int, example_data: ExampleUpdate, db: Session = Depends(get_db)
 ):
-    """
-    Update an example
-    """
     example = db.query(Example).filter(Example.id == example_id).first()
     if example is None:
         raise HTTPException(status_code=404, detail="Example not found")
 
-    # Update fields
     for field, value in example_data.model_dump(exclude_unset=True).items():
         setattr(example, field, value)
 
@@ -100,9 +76,6 @@ def update_example(
 
 @router.delete("/{example_id}")
 def delete_example(example_id: int, db: Session = Depends(get_db)):
-    """
-    Delete an example
-    """
     example = db.query(Example).filter(Example.id == example_id).first()
     if example is None:
         raise HTTPException(status_code=404, detail="Example not found")

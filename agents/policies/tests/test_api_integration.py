@@ -30,10 +30,8 @@ app = FastAPI()
 app.include_router(router, prefix="/api/v1")
 
 
-# Mock fixtures
 @pytest.fixture
 def mock_vespa_client():
-    """Create a mock Vespa client."""
     client = MagicMock(spec=VespaClient)
 
     # Mock search_documents for keyword search
@@ -56,25 +54,21 @@ def mock_vespa_client():
 
 @pytest.fixture
 def mock_document_service(mock_vespa_client):
-    """Create a mock document service."""
     return DocumentService(mock_vespa_client)
 
 
 @pytest.fixture
 def mock_search_service(mock_vespa_client):
-    """Create a mock search service."""
     return SearchService(mock_vespa_client)
 
 
 @pytest.fixture
 def mock_reindex_service(mock_vespa_client):
-    """Create a mock reindex service."""
     return ReindexService(mock_vespa_client)
 
 
 @pytest.fixture
 def test_client(mock_document_service, mock_search_service, mock_reindex_service, mock_vespa_client):
-    """Create test client with dependency overrides."""
     app.dependency_overrides[get_document_service] = lambda: mock_document_service
     app.dependency_overrides[get_search_service] = lambda: mock_search_service
     app.dependency_overrides[get_reindex_service] = lambda: mock_reindex_service
@@ -87,9 +81,7 @@ def test_client(mock_document_service, mock_search_service, mock_reindex_service
     app.dependency_overrides.clear()
 
 
-# Test data
 def create_mock_documents() -> list[dict]:
-    """Create mock document data for testing."""
     return [
         {
             "id": "auto_policy_001",
@@ -130,19 +122,15 @@ def create_mock_documents() -> list[dict]:
     ]
 
 
-# Integration Tests
 class TestDocumentEndpoints:
-    """Test document-related endpoints."""
 
     def test_list_documents_success(self, test_client, mock_vespa_client, mock_document_service):
-        """Test successful document listing."""
         # Setup mock - mock the service method, not vespa client
         mock_docs = create_mock_documents()
         mock_document_service.list_documents = AsyncMock(return_value=[
             PolicyDocument(**doc) for doc in mock_docs
         ])
 
-        # Make request
         response = test_client.get("/api/v1/kb/documents")
 
         # Verify response
@@ -153,15 +141,12 @@ class TestDocumentEndpoints:
         assert any(doc["document_id"] == "home_policy" for doc in documents)
 
     def test_list_documents_with_category_filter(self, test_client, mock_document_service):
-        """Test document listing with category filter."""
-        # Setup mock
         all_docs = create_mock_documents()
         auto_docs = [doc for doc in all_docs if doc["category"] == "auto"]
         mock_document_service.list_documents = AsyncMock(return_value=[
             PolicyDocument(**doc) for doc in auto_docs
         ])
 
-        # Make request
         response = test_client.get("/api/v1/kb/documents?category=auto")
 
         # Verify response
@@ -171,14 +156,12 @@ class TestDocumentEndpoints:
         assert all(doc["category"] == "auto" for doc in documents)
 
     def test_list_documents_invalid_category(self, test_client):
-        """Test document listing with invalid category."""
         response = test_client.get("/api/v1/kb/documents?category=invalid")
 
         assert response.status_code == 400
         assert "Invalid category" in response.json()["detail"]
 
     def test_list_documents_pagination(self, test_client, mock_document_service):
-        """Test document listing with pagination."""
         # Setup mock - return only 1 document for pagination test
         mock_document_service.list_documents = AsyncMock(return_value=[
             PolicyDocument(**create_mock_documents()[0])
@@ -194,7 +177,6 @@ class TestDocumentEndpoints:
 
     @pytest.mark.asyncio
     async def test_get_full_document_success(self, test_client):
-        """Test retrieving a full document."""
         document_id = "auto_policy"
 
         # Mock the retrieval function
@@ -223,7 +205,6 @@ class TestDocumentEndpoints:
             assert "Full auto insurance" in data["full_text"]
 
     def test_get_full_document_not_found(self, test_client):
-        """Test retrieving non-existent document."""
         with patch("agents.policies.agent.api.routes.retrieve_full_document_async") as mock_retrieve:
             mock_retrieve.return_value = None
 
@@ -233,10 +214,8 @@ class TestDocumentEndpoints:
             assert "Document not found" in response.json()["detail"]
 
     def test_get_document_range_success(self, test_client):
-        """Test retrieving document range."""
         document_id = "auto_policy"
 
-        # Setup mock
         with patch("agents.policies.agent.api.routes.get_document_chunk_range") as mock_get_range:
             # Return a dict that matches FullDocumentResponse fields
             mock_get_range.return_value = {
@@ -264,10 +243,8 @@ class TestDocumentEndpoints:
 
 
 class TestSearchEndpoints:
-    """Test search-related endpoints."""
 
     def test_search_documents_success(self, test_client, mock_search_service, mock_vespa_client):
-        """Test basic document search."""
         # Setup mock - mock the hybrid_search method (default search type)
         mock_results = create_mock_documents()[:1]
         mock_vespa_client.hybrid_search.return_value = mock_results
@@ -283,7 +260,6 @@ class TestSearchEndpoints:
         assert "Auto insurance" in data["documents"][0]["text"]
 
     def test_search_documents_with_category(self, test_client, mock_search_service, mock_vespa_client):
-        """Test search with category filter."""
         # Setup mock - return empty results for category search
         mock_query_result = MagicMock()
         mock_query_result.hits = []
@@ -300,7 +276,6 @@ class TestSearchEndpoints:
         assert data["category"] == "home"
 
     def test_search_documents_empty_query(self, test_client):
-        """Test search with empty query."""
         response = test_client.post(
             "/api/v1/kb/search/vector",
             json={"query": ""}
@@ -312,7 +287,6 @@ class TestSearchEndpoints:
         assert any("at least 1 character" in str(error) for error in errors)
 
     def test_search_documents_long_query(self, test_client):
-        """Test search with query exceeding max length."""
         long_query = "a" * 501  # Exceeds 500 char limit
         response = test_client.post(
             "/api/v1/kb/search/vector",
@@ -325,7 +299,6 @@ class TestSearchEndpoints:
         assert any("at most 500 characters" in str(error) for error in errors)
 
     def test_vector_search_success(self, test_client, mock_search_service, mock_vespa_client):
-        """Test vector search endpoint."""
         # Setup mock - mock the hybrid_search method (default search type)
         mock_result = {
             "id": "auto_001",
@@ -352,12 +325,9 @@ class TestSearchEndpoints:
 
 
 class TestReindexEndpoints:
-    """Test reindex-related endpoints."""
 
     @pytest.mark.asyncio
     async def test_reindex_all_documents(self, test_client, mock_reindex_service):
-        """Test reindexing all documents."""
-        # Setup mock
         mock_reindex_service.reindex_documents = AsyncMock(return_value=ReindexResponse(
             status="success",
             workflow_id="workflow_123",
@@ -389,8 +359,6 @@ class TestReindexEndpoints:
 
     @pytest.mark.asyncio
     async def test_reindex_specific_policies(self, test_client, mock_reindex_service):
-        """Test reindexing specific policy categories."""
-        # Setup mock
         mock_reindex_service.reindex_documents = AsyncMock(return_value=ReindexResponse(
             status="success",
             workflow_id="workflow_456",
@@ -421,7 +389,6 @@ class TestReindexEndpoints:
 
     @pytest.mark.asyncio
     async def test_reindex_failure(self, test_client, mock_reindex_service):
-        """Test reindex failure handling."""
         # Setup mock to simulate failure
         mock_reindex_service.reindex_documents = AsyncMock(return_value=ReindexResponse(
             status="failed",
@@ -452,8 +419,6 @@ class TestReindexEndpoints:
             assert data["total_documents_submitted"] == 0
 
     def test_get_indexing_status(self, test_client, mock_reindex_service):
-        """Test getting indexing status."""
-        # Setup mock
         mock_reindex_service.get_indexing_status = AsyncMock(return_value={
             "is_indexed": True,
             "total_chunks": 10,
@@ -479,10 +444,8 @@ class TestReindexEndpoints:
 
 
 class TestCategoryStats:
-    """Test category statistics endpoint."""
 
     def test_get_category_stats_success(self, test_client, mock_document_service):
-        """Test retrieving category statistics."""
         # Setup mock - get_categories_stats returns list of dicts
         mock_document_service.get_categories_stats = AsyncMock(return_value=[
             {"name": "auto", "document_count": 2},
@@ -500,10 +463,8 @@ class TestCategoryStats:
 
 
 class TestErrorHandling:
-    """Test API error handling."""
 
     def test_internal_server_error(self, test_client, mock_search_service):
-        """Test handling of internal server errors."""
         # Setup mock to raise exception
         mock_search_service.search = AsyncMock(side_effect=Exception("Database connection failed"))
 
@@ -517,7 +478,6 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_timeout_handling(self, test_client, mock_vespa_client):
-        """Test handling of timeout errors."""
         # Setup mock to simulate timeout
         async def slow_search(*args, **kwargs):
             await asyncio.sleep(10)  # Simulate slow operation
@@ -536,10 +496,8 @@ class TestErrorHandling:
 
 
 class TestHealthCheck:
-    """Test health check endpoint."""
 
     def test_health_check(self, test_client):
-        """Test the health check endpoint."""
         response = test_client.get("/api/v1/health")
 
         assert response.status_code == 200

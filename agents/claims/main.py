@@ -27,7 +27,6 @@ logger = get_console_logger("claims_agent")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Handle application lifecycle events."""
     logger.info(f"Starting {settings.app_name}...")
 
     init_telemetry(app_name=settings.app_name, endpoint=settings.otel_endpoint)
@@ -49,7 +48,6 @@ async def lifespan(app: FastAPI):
     logger.info(f"{settings.app_name} shutdown complete")
 
 
-# Import API routes from claims API
 from agents.claims.api_main import (
     get_claim,
     get_claims_statistics,
@@ -64,7 +62,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
@@ -73,8 +70,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add the API routes directly
-# Note: Order matters - more specific routes should come before parameterized routes
+# More specific routes must come before parameterized routes
 app.add_api_route("/health", health_check, methods=["GET"])
 app.add_api_route("/api/v1/claims", list_claims, methods=["GET"])
 app.add_api_route("/api/v1/claims/stats", get_claims_statistics, methods=["GET"])

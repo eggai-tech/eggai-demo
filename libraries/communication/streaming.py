@@ -1,27 +1,3 @@
-"""
-Shared streaming utilities for agent response delivery.
-
-Provides common patterns for streaming DSPy responses to the frontend
-via Kafka channels. All domain agents (billing, claims, escalation,
-policies) use the same streaming protocol:
-
-  1. Publish stream_start
-  2. Publish stream_chunk for each DSPy StreamResponse
-  3. Publish stream_end with the final Prediction
-
-Usage:
-    from libraries.communication.streaming import stream_dspy_response
-
-    await stream_dspy_response(
-        chunks=process_billing(chat_history=conversation),
-        agent_name="Billing",
-        connection_id=connection_id,
-        message_id=message_id,
-        stream_channel=human_stream_channel,
-        tracer=tracer,
-    )
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -49,19 +25,6 @@ def get_conversation_string(
     *,
     role_key: str = "role",
 ) -> str:
-    """
-    Format chat messages into a conversation string for DSPy input.
-
-    Args:
-        chat_messages: List of chat message dicts with 'role' and 'content' keys.
-        tracer: Optional OpenTelemetry tracer for span creation.
-        role_key: Dict key to use for the speaker identifier.
-            Defaults to ``"role"`` (e.g. ``"user"``/``"assistant"``).
-            The triage agent passes ``"agent"`` to get the actual agent name.
-
-    Returns:
-        Formatted conversation string like "User: hello\\nAssistant: hi\\n".
-    """
     if tracer is not None:
         with tracer.start_as_current_span("get_conversation_string") as span:
             return _build_conversation_string(chat_messages, span, role_key=role_key)
@@ -114,24 +77,6 @@ async def stream_dspy_response(
     span_name: str | None = None,
     response_field: str = "final_response",
 ) -> None:
-    """
-    Stream a DSPy async generator response to the frontend.
-
-    Publishes stream_start, stream_chunk, and stream_end messages
-    following the standard EggAI streaming protocol.
-
-    Args:
-        chunks: Async iterator from a DSPy streaming call.
-        agent_name: Name of the agent (e.g. "Billing", "Claims").
-        connection_id: WebSocket connection ID.
-        message_id: Unique message ID.
-        stream_channel: Channel to publish streaming messages to.
-        tracer: OpenTelemetry tracer for the calling agent.
-        span_name: Optional custom span name (defaults to "stream_response").
-        response_field: Prediction attribute containing the final response.
-            Defaults to ``"final_response"``.  The triage chatty module
-            uses ``"response"`` instead.
-    """
     _span_name = span_name or "stream_response"
 
     with tracer.start_as_current_span(_span_name) as span:
@@ -139,7 +84,6 @@ async def stream_dspy_response(
         safe_set_attribute(span, "connection_id", connection_id)
         safe_set_attribute(span, "message_id", message_id)
 
-        # 1. Stream start
         await stream_channel.publish(
             TracedMessage(
                 type=MessageType.AGENT_MESSAGE_STREAM_START,
@@ -229,12 +173,6 @@ async def publish_error_message(
     traceparent: str | None = None,
     tracestate: str | None = None,
 ) -> None:
-    """
-    Publish a standardized error message to a channel.
-
-    Used by domain agents to send user-facing error messages when
-    chat history is empty or an exception occurs during processing.
-    """
     await channel.publish(
         TracedMessage(
             type=MessageType.AGENT_MESSAGE,
@@ -257,12 +195,6 @@ async def publish_waiting_message(
     message_id: str,
     message: str = "Thinking...",
 ) -> None:
-    """
-    Publish a waiting message to give the user immediate feedback.
-
-    Sends an ``AGENT_MESSAGE_STREAM_WAITING_MESSAGE`` so the frontend can
-    display a "thinking" or "connecting" indicator while the agent processes.
-    """
     await channel.publish(
         TracedMessage(
             type=MessageType.AGENT_MESSAGE_STREAM_WAITING_MESSAGE,
@@ -277,17 +209,6 @@ async def publish_waiting_message(
 
 
 def validate_conversation(conversation_string: str, tracer: Any, span: Any) -> None:
-    """
-    Validate that a conversation string is non-empty and long enough.
-
-    Args:
-        conversation_string: The conversation to validate.
-        tracer: OpenTelemetry tracer.
-        span: Current span for attribute recording.
-
-    Raises:
-        ValueError: If conversation is empty or too short.
-    """
     safe_set_attribute(span, "conversation_length", len(conversation_string))
     if not conversation_string or len(conversation_string.strip()) < 5:
         safe_set_attribute(span, "error", "Empty or too short conversation")

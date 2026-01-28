@@ -1,8 +1,3 @@
-"""
-Claims Agent API for Admin UI
-Provides REST endpoints for claims management and monitoring
-"""
-
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,7 +17,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
@@ -33,7 +27,6 @@ app.add_middleware(
 
 
 class ClaimSummary(BaseModel):
-    """Summary model for claim listings"""
     claim_number: str
     policy_number: str
     status: str
@@ -44,14 +37,12 @@ class ClaimSummary(BaseModel):
 
 
 class ClaimsListResponse(BaseModel):
-    """Response model for claims list"""
     claims: list[ClaimSummary]
     total: int
     by_status: dict
 
 
 class ClaimStats(BaseModel):
-    """Statistics about claims"""
     total_claims: int
     total_estimated: float
     by_status: dict
@@ -61,7 +52,6 @@ class ClaimStats(BaseModel):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {"status": "healthy", "service": "claims-agent-api", "version": "1.0.0"}
 
 
@@ -72,9 +62,7 @@ async def list_claims(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    """List all claims with optional filtering"""
     try:
-        # Filter claims
         filtered_claims = CLAIMS_DATABASE
 
         if status:
@@ -83,15 +71,12 @@ async def list_claims(
         if policy_number:
             filtered_claims = [c for c in filtered_claims if c.policy_number == policy_number]
 
-        # Calculate statistics
         by_status = {}
         for claim in filtered_claims:
             by_status[claim.status] = by_status.get(claim.status, 0) + 1
 
-        # Apply pagination
         paginated_claims = filtered_claims[offset:offset + limit]
 
-        # Convert to summary format
         claim_summaries = [
             ClaimSummary(
                 claim_number=claim.claim_number,
@@ -117,7 +102,6 @@ async def list_claims(
 
 @app.get("/api/v1/claims/stats", response_model=ClaimStats)
 async def get_claims_statistics():
-    """Get statistics about all claims"""
     try:
         total_estimated = 0
         count_with_estimate = 0
@@ -125,13 +109,8 @@ async def get_claims_statistics():
         by_policy = {}
 
         for claim in CLAIMS_DATABASE:
-            # Status counts
             by_status[claim.status] = by_status.get(claim.status, 0) + 1
-
-            # Policy counts
             by_policy[claim.policy_number] = by_policy.get(claim.policy_number, 0) + 1
-
-            # Sum estimates
             if claim.estimate:
                 total_estimated += claim.estimate
                 count_with_estimate += 1
@@ -152,7 +131,6 @@ async def get_claims_statistics():
 
 @app.get("/api/v1/claims/{claim_number}", response_model=ClaimRecord)
 async def get_claim(claim_number: str):
-    """Get detailed information about a specific claim"""
     try:
         claim = get_claim_record(claim_number)
         if not claim:

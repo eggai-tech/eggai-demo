@@ -26,8 +26,8 @@ class DocumentIngestionWorkflowInput(BaseModel):
     index_name: str | None = "policies_index"
     force_rebuild: bool = False
     request_id: str | None = None
-    source: str | None = "filesystem"  # "filesystem" or "minio"
-    metadata: dict[str, Any] | None = None  # Additional metadata for MinIO documents
+    source: str | None = "filesystem"
+    metadata: dict[str, Any] | None = None
 
 
 class DocumentIngestionResult(BaseModel):
@@ -47,9 +47,6 @@ class DocumentIngestionResult(BaseModel):
 
 @workflow.defn
 class DocumentIngestionWorkflow:
-    """Workflow for ingesting policy documents into the Vespa search index."""
-
-    # Retry policy for activities that interact with external services
     _default_retry_policy = RetryPolicy(
         initial_interval=timedelta(seconds=1),
         backoff_coefficient=2.0,
@@ -61,7 +58,6 @@ class DocumentIngestionWorkflow:
     async def run(
         self, input_data: DocumentIngestionWorkflowInput
     ) -> DocumentIngestionResult:
-        # Handle both dict and object inputs for backward compatibility
         if isinstance(input_data, dict):
             input_data = DocumentIngestionWorkflowInput(**input_data)
 
@@ -74,7 +70,6 @@ class DocumentIngestionWorkflow:
             f"source: {input_data.source}"
         )
 
-        # Step 1: Verify if file already exists in index
         verification_result = await workflow.execute_activity(
             verify_document_activity,
             args=[
@@ -86,7 +81,6 @@ class DocumentIngestionWorkflow:
             retry_policy=self._default_retry_policy,
         )
 
-        # If file should be skipped, return early
         if verification_result.get("should_skip", False):
             workflow.logger.info(
                 f"File verification indicates skip: {verification_result.get('reason')}"
@@ -104,7 +98,6 @@ class DocumentIngestionWorkflow:
                 skip_reason=verification_result.get("reason"),
             )
 
-        # Step 2: Load document with DocLing
         workflow.logger.info("Starting document loading")
         load_result = await workflow.execute_activity(
             load_document_activity,
@@ -119,7 +112,6 @@ class DocumentIngestionWorkflow:
             )
             raise Exception(f"Document loading failed: {load_result.get('error_message')}")
 
-        # Step 3: Chunk document hierarchically
         workflow.logger.info("Starting document chunking")
         chunk_result = await workflow.execute_activity(
             chunk_document_activity,
@@ -147,17 +139,15 @@ class DocumentIngestionWorkflow:
                 skip_reason="No chunks generated from document",
             )
 
-        # Step 4: Index chunks with Vespa
         workflow.logger.info(
             f"Starting indexing of {len(chunk_result['chunks'])} chunks"
         )
 
-        # Auto-generate category from filename if using default "general" category
-        # This ensures consistency with test expectations and categorization logic
+        # Auto-generate category from filename when using default "general"
         from pathlib import Path
         category = input_data.category
         if category == "general":
-            category = Path(input_data.file_path).stem  # Gets "life" from "life.md"
+            category = Path(input_data.file_path).stem
             workflow.logger.info(f"Auto-generated category '{category}' from filename")
 
         indexing_result = await workflow.execute_activity(
@@ -165,11 +155,11 @@ class DocumentIngestionWorkflow:
             args=[
                 chunk_result["chunks"],
                 input_data.file_path,
-                category,  # Use auto-generated or explicit category
+                category,
                 input_data.index_name,
                 input_data.force_rebuild,
-                chunk_result.get("document_stats"),  # Pass document stats
-                load_result.get("metadata"),  # Pass workflow metadata
+                chunk_result.get("document_stats"),
+                load_result.get("metadata"),
             ],
             start_to_close_timeout=timedelta(minutes=10),
             retry_policy=self._default_retry_policy,
@@ -181,7 +171,6 @@ class DocumentIngestionWorkflow:
             )
             raise Exception(f"Final indexing failed: {indexing_result.get('error_message')}")
 
-        # Success!
         workflow.logger.info(
             f"Document ingestion workflow completed successfully. "
             f"Processed {indexing_result['documents_processed']} document, "

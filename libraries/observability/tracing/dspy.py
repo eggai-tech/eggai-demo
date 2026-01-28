@@ -63,14 +63,9 @@ def traced_dspy_function(name=None, span_namer=None):
         tracer = trace.get_tracer(f"dspy.{name or fn.__name__}")
 
         def set_gen_ai_attributes(span: trace.Span, **kwargs):
-            # Extract relevant attributes from kwargs
             extracted_attrs = {}
-
-            # Service tier is commonly passed in kwargs
             if "service_tier" in kwargs:
                 extracted_attrs["service_tier"] = kwargs.get("service_tier")
-
-            # Use the common helper function for attribute setting
             add_gen_ai_attributes_to_span(span, **extracted_attrs)
 
         @functools.wraps(fn)
@@ -84,10 +79,8 @@ def traced_dspy_function(name=None, span_namer=None):
 
             with tracer.start_as_current_span(span_name) as span:
                 try:
-                    # Set default gen_ai attributes
                     set_gen_ai_attributes(span, **kwargs)
 
-                    # Trace a subset of kwargs for context
                     if "chat_history" in kwargs:
                         chat_excerpt = (
                             kwargs["chat_history"][:200] + "..."
@@ -114,10 +107,8 @@ def traced_dspy_function(name=None, span_namer=None):
 
             with tracer.start_as_current_span(span_name) as span:
                 try:
-                    # Set default gen_ai attributes
                     set_gen_ai_attributes(span, **kwargs)
 
-                    # Trace a subset of kwargs for context
                     if "chat_history" in kwargs:
                         chat_excerpt = (
                             kwargs["chat_history"][:200] + "..."
@@ -133,7 +124,6 @@ def traced_dspy_function(name=None, span_namer=None):
                     logger.error(f"Error in {fn.__name__}: {e}")
                     raise
 
-        # Choose which wrapper to return based on whether fn is a coroutine function
         if asyncio.iscoroutinefunction(fn):
             return async_wrapper
         else:

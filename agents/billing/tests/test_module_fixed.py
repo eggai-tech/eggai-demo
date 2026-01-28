@@ -11,7 +11,6 @@ logger = get_console_logger("billing_agent.tests.module")
 
 @pytest.mark.asyncio
 async def test_billing_module_without_streaming():
-    """Test billing module functionality with proper mocking."""
     # Reset module state
     import agents.billing.dspy_modules.billing as billing_module
     billing_module._initialized = False
@@ -67,7 +66,6 @@ async def test_billing_module_without_streaming():
 
 @pytest.mark.asyncio
 async def test_billing_module_error_handling():
-    """Test billing module error handling."""
     import agents.billing.dspy_modules.billing as billing_module
     billing_module._initialized = False
     billing_module._billing_model = None

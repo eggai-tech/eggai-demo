@@ -1,5 +1,4 @@
 def markdown_table(rows: list[list[str]], headers: list[str]) -> str:
-    """Generate a markdown table from rows and headers."""
     widths = [len(h) for h in headers]
     for row in rows:
         for i, cell in enumerate(row):
@@ -19,7 +18,6 @@ def markdown_table(rows: list[list[str]], headers: list[str]) -> str:
 
 
 def generate_test_report(test_results):
-    """Generate a markdown report from test results."""
     headers = [
         "ID",
         "Policy",
@@ -49,7 +47,6 @@ def generate_test_report(test_results):
 
 
 def generate_module_test_report(test_results):
-    """Generate a markdown report from module test results."""
     headers = ["ID", "Policy", "Expected", "Response", "Latency", "Precision", "Result"]
     rows = [
         [

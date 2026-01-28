@@ -80,7 +80,6 @@ class FinetunedRobertaClassifier:
             padding=True
         )
 
-        # move inputs to the same device as the model
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
 
         with torch.no_grad():

@@ -10,14 +10,12 @@ from agents.escalation.dspy_modules.escalation import (
 
 @pytest.fixture
 def mock_dspy_react():
-    """Mock dspy.ReAct for testing."""
     with patch("dspy.ReAct") as mock_react:
         yield mock_react
 
 
 @pytest.fixture
 def mock_escalation_tools():
-    """Mock escalation tools for testing."""
     with (
         patch(
             "agents.escalation.dspy_modules.escalation.get_tickets_by_policy"
@@ -30,7 +28,6 @@ def mock_escalation_tools():
 
 
 def test_ticketing_signature():
-    """Test TicketingSignature class structure."""
     # Test that the signature class exists and has the right structure
     assert hasattr(TicketingSignature, "__annotations__")
     assert hasattr(TicketingSignature, "__doc__")
@@ -40,7 +37,6 @@ def test_ticketing_signature():
     assert "chat_history" in annotations
     assert "final_response" in annotations
 
-    # Check docstring contains key information
     docstring = TicketingSignature.__doc__
     assert docstring is not None
     assert len(docstring) > 0
@@ -48,7 +44,6 @@ def test_ticketing_signature():
 
 @pytest.mark.asyncio
 async def test_escalation_optimized_dspy_basic():
-    """Test basic process_escalation function call."""
     chat_history = "User: I need to speak to a manager about my policy."
 
     # Mock the ReAct response
@@ -79,7 +74,6 @@ async def test_escalation_optimized_dspy_basic():
 
 @pytest.mark.asyncio
 async def test_escalation_optimized_dspy_empty_chat():
-    """Test escalation function with empty chat history."""
     chat_history = ""
 
     mock_response = MagicMock()
@@ -101,7 +95,6 @@ async def test_escalation_optimized_dspy_empty_chat():
 
 @pytest.mark.asyncio
 async def test_escalation_optimized_dspy_error_handling():
-    """Test escalation function error handling."""
     chat_history = "User: Test error handling"
 
     async def mock_generator_with_error(*args, **kwargs):
@@ -122,7 +115,6 @@ async def test_escalation_optimized_dspy_error_handling():
 
 
 def test_ticketing_signature_docstring():
-    """Test TicketingSignature docstring contains required information."""
     docstring = TicketingSignature.__doc__
 
     # Check for key elements in the docstring
@@ -133,7 +125,6 @@ def test_ticketing_signature_docstring():
 
 @pytest.mark.asyncio
 async def test_escalation_optimized_dspy_conversation_context():
-    """Test escalation function with conversation context."""
     conversation = """User: Hi, I've been trying to resolve an issue with my claim.
 TicketingAgent: I can help you with that. What seems to be the problem?
 User: My claim has been pending for weeks without any update."""
@@ -144,7 +135,6 @@ User: My claim has been pending for weeks without any update."""
     )
 
     async def mock_generator(*args, **kwargs):
-        # Verify the chat_history parameter was passed correctly
         assert len(args) > 0 or "chat_history" in kwargs
         yield mock_response
 
@@ -160,11 +150,8 @@ User: My claim has been pending for weeks without any update."""
 
 
 def test_ticketing_signature_field_types():
-    """Test TicketingSignature field types and properties."""
-    # Test that the signature class has the expected structure
     assert hasattr(TicketingSignature, "__annotations__")
 
-    # Check field annotations
     annotations = TicketingSignature.__annotations__
     assert "chat_history" in annotations
     assert "final_response" in annotations
@@ -175,7 +162,6 @@ def test_ticketing_signature_field_types():
 
 
 def test_escalation_module_imports():
-    """Test that escalation module imports work correctly."""
     # Test that we can import the main components
     from agents.escalation.dspy_modules.escalation import (
         TicketingSignature,
@@ -195,7 +181,6 @@ def test_escalation_module_imports():
 
 @pytest.mark.asyncio
 async def test_escalation_optimized_dspy_with_config():
-    """Test escalation function with custom config."""
     from agents.escalation.types import ModelConfig
 
     chat_history = "User: Test with config"

@@ -33,7 +33,6 @@ async def process_escalation_request(
     message_id: str,
     timeout_seconds: float | None = None,
 ) -> None:
-    """Generate a response to an escalation request with streaming output."""
     from .config import model_config
 
     config = model_config
@@ -62,7 +61,6 @@ async def process_escalation_request(
 )
 @traced_handler("handle_ticketing_request")
 async def handle_ticketing_request(msg: TracedMessage) -> None:
-    """Handle incoming ticketing request messages with intelligent streaming."""
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id: str = msg.data.get("connection_id", "unknown")
@@ -101,7 +99,6 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
 
 @escalation_agent.subscribe(channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
-    """Handle non-ticketing messages received on the agent channel."""
     logger.debug("Received non-ticketing message: %s", msg)
 
 

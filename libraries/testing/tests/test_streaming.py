@@ -1,5 +1,3 @@
-"""Tests for shared streaming utilities in libraries/communication/streaming.py."""
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,7 +16,6 @@ from libraries.communication.streaming import (
 
 
 class TestGetConversationString:
-    """Tests for the get_conversation_string helper."""
 
     def test_empty_list_returns_empty_string(self):
         assert get_conversation_string([]) == ""
@@ -88,12 +85,10 @@ class TestGetConversationString:
 
 
 class TestValidateConversation:
-    """Tests for conversation validation."""
 
     def test_valid_conversation_passes(self):
         mock_tracer = MagicMock()
         mock_span = MagicMock()
-        # Should not raise
         validate_conversation("User: Hello, I need help with my policy", mock_tracer, mock_span)
 
     def test_empty_string_raises(self):
@@ -117,7 +112,6 @@ class TestValidateConversation:
     def test_exactly_5_chars_passes(self):
         mock_tracer = MagicMock()
         mock_span = MagicMock()
-        # 5 non-whitespace chars should pass
         validate_conversation("Hello", mock_tracer, mock_span)
 
     def test_sets_span_attributes(self):
@@ -133,7 +127,6 @@ class TestValidateConversation:
 
 
 class TestStreamDspyResponse:
-    """Tests for the streaming response publisher."""
 
     @pytest.mark.asyncio
     async def test_stream_start_published(self):
@@ -160,7 +153,6 @@ class TestStreamDspyResponse:
                 tracer=mock_tracer,
             )
 
-        # At minimum, stream_start should be published
         call_types = [call[0][0].type for call in mock_channel.publish.call_args_list]
         assert "agent_message_stream_start" in call_types
 

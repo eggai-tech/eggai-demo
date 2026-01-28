@@ -26,7 +26,6 @@ dspy_lm = dspy_set_language_model(settings, overwrite_cache_enabled=False)
 
 @pytest.mark.asyncio
 async def test_billing_response_evaluation():
-    """Test detailed evaluation of billing agent responses using LLM evaluators."""
     # Enable DSPy autologging for full trace information
     mlflow.dspy.autolog(
         log_compiles=True,
@@ -49,17 +48,14 @@ async def test_billing_response_evaluation():
         test_results = []
         evaluation_results = []
 
-        # Process each test case
         for i, case in enumerate(test_cases):
             logger.info(f"Running evaluation for test case {i + 1}/{len(test_cases)}")
 
-            # Get the model's response to evaluate
             start_time = time.perf_counter()
             response_generator = process_billing(
                 chat_history=case["chat_history"]
             )
 
-            # Extract the final response from the async generator
             agent_response = ""
             async for chunk in response_generator:
                 from dspy import Prediction
@@ -74,18 +70,15 @@ async def test_billing_response_evaluation():
 
             response_time = (time.perf_counter() - start_time) * 1000
 
-            # Calculate algorithmic precision
             precision_score = precision_metric(
                 case["expected_response"], agent_response
             )
 
-            # Get LLM evaluation
             evaluation_result = await evaluate_response_with_llm(
                 case["chat_history"], case["expected_response"], agent_response, dspy_lm
             )
             evaluation_time = (time.perf_counter() - start_time) * 1000 - response_time
 
-            # Log metrics
             mlflow.log_metric(f"precision_case_{i + 1}", precision_score)
             mlflow.log_metric(
                 f"eval_precision_case_{i + 1}", evaluation_result.precision_score
@@ -93,7 +86,6 @@ async def test_billing_response_evaluation():
             mlflow.log_metric(f"response_time_case_{i + 1}", response_time)
             mlflow.log_metric(f"evaluation_time_case_{i + 1}", evaluation_time)
 
-            # Record test result
             test_result = {
                 "id": f"test-{i + 1}",
                 "policy": case["policy_number"],
@@ -116,7 +108,6 @@ async def test_billing_response_evaluation():
                 }
             )
 
-            # Log detailed evaluation for analysis
             mlflow.log_text(
                 f"## Response Evaluation: Test Case {i + 1}\n\n"
                 f"**Expected:** {case['expected_response']}\n\n"
@@ -128,7 +119,6 @@ async def test_billing_response_evaluation():
                 f"evaluation_case_{i + 1}.md",
             )
 
-        # Calculate and log overall metrics
         if evaluation_results:
             overall_llm_precision = sum(
                 e["evaluation"].precision_score for e in evaluation_results
@@ -141,7 +131,6 @@ async def test_billing_response_evaluation():
                 "overall_calculated_precision", overall_calculated_precision
             )
 
-            # Generate and log report
             report = generate_test_report(test_results)
             mlflow.log_text(report, "evaluation_results.md")
 

@@ -15,13 +15,12 @@ logger.info(f"Connecting to database at: {config.DATABASE_URL}")
 
 engine = create_engine(
     config.DATABASE_URL,
-    pool_pre_ping=True,  # Check connection liveness
-    echo=config.DEBUG,  # Log SQL in debug mode
+    pool_pre_ping=True,
+    echo=config.DEBUG,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Add engine connection debugging
 if config.DEBUG:
 
     @event.listens_for(engine, "connect")
@@ -46,13 +45,9 @@ def get_db():
 
 
 def init_db():
-    """Initialize the database by creating all tables."""
     try:
-        # Import all models here to ensure they are registered with Base
-
         Base.metadata.create_all(bind=engine)
         logger.info("Database initialized successfully.")
     except Exception as e:
         logger.error(f"Database initialization failed: {str(e)}")
-        # Re-raise for proper application error handling
         raise

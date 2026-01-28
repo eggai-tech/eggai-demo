@@ -1,5 +1,3 @@
-"""Shared test utilities for classifier tests."""
-
 import random
 import statistics
 from typing import Any
@@ -23,7 +21,6 @@ def calculate_test_metrics(results: list[dict[str, Any]]) -> dict[str, float]:
     all_scores = [res['correct'] for res in results]
     accuracy = sum(all_scores) / len(all_scores) if all_scores else 0
 
-    # Filter out results with errors for token metrics
     valid_results = [res for res in results if res.get("metrics") is not None]
 
     if valid_results:
@@ -73,7 +70,6 @@ def log_failing_examples(results: list[dict[str, Any]], logger, max_failures: in
     if failing_indices:
         logger.error(f"Found {len(failing_indices)} failing tests:")
 
-        # Log first few failures for debugging
         for i in failing_indices[:max_failures]:
             if i < len(results):
                 logger.error(f"\n{'=' * 80}\nFAILING TEST #{i}:")
@@ -156,12 +152,10 @@ def run_basic_classifier_test(classifier_func, logger, test_cases=None):
         try:
             result = classifier_func(chat_history=chat_history)
 
-            # Check that we get a valid response
             assert result is not None
             assert hasattr(result, 'target_agent')
             assert hasattr(result, 'metrics')
 
-            # Check that metrics are populated
             assert result.metrics is not None
             assert result.metrics.latency_ms >= 0
 
@@ -193,7 +187,6 @@ def run_basic_classifier_test(classifier_func, logger, test_cases=None):
 
 
 class MockMLflowRun:
-    """Mock MLflow run context manager for testing."""
 
     def __init__(self, run_name: str):
         self.run_name = run_name
@@ -207,15 +200,12 @@ class MockMLflowRun:
         pass
 
     def log_param(self, key: str, value: Any):
-        """Mock parameter logging."""
         self.logged_params[key] = value
 
     def log_metric(self, key: str, value: float):
-        """Mock metric logging."""
         self.logged_metrics[key] = value
 
     def log_metrics(self, metrics: dict[str, float]):
-        """Mock metrics logging."""
         self.logged_metrics.update(metrics)
 
 

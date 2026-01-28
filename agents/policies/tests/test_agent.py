@@ -365,7 +365,6 @@ async def _handle_stream_response(event: TracedMessage):
 
 @pytest.mark.asyncio
 async def test_policies_agent_single():
-    """Test the policies agent with a single request to debug streaming."""
 
     await clear_channels()
 
@@ -415,7 +414,6 @@ async def test_policies_agent_single():
 @pytest.mark.asyncio
 @pytest.mark.skip(reason="Requires Kafka infrastructure to be running")
 async def test_policies_agent():
-    """Test the policies agent with standardized test cases."""
 
     await clear_channels()
 

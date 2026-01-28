@@ -13,19 +13,11 @@ logger = get_console_logger("claims_agent.dataset")
 
 @dataclass
 class ClaimsExample:
-    """Example for Claims Agent dataset."""
-
     chat_history: str
     expected_response: str
 
 
 def create_claims_dataset() -> list[ClaimsExample]:
-    """Create a dataset of claims examples.
-
-    Returns:
-        List[ClaimsExample]: A list of examples for claims scenarios.
-    """
-    # Known claims data from the mock database
     claims_data = [
         {
             "claim_number": "1001",
@@ -59,7 +51,6 @@ def create_claims_dataset() -> list[ClaimsExample]:
     logger.info("Creating claims dataset examples")
     examples = []
 
-    # Claim status inquiries
     for claim in claims_data:
         chat = f"""User: I want to check my claim status.
 ClaimsAgent: I'd be happy to help you check your claim status. Could you please provide your claim number?
@@ -90,7 +81,6 @@ User: It's {claim["claim_number"]}."""
             ClaimsExample(chat_history=chat, expected_response=expected.strip())
         )
 
-    # Filing new claim inquiries
     policy_numbers = ["A12345", "B67890", "C24680"]
     incident_types = [
         "car accident",
@@ -101,9 +91,7 @@ User: It's {claim["claim_number"]}."""
     ]
 
     for policy in policy_numbers:
-        for incident in random.sample(
-            incident_types, 2
-        ):  # Each policy gets 2 random incidents
+        for incident in random.sample(incident_types, 2):
             chat = f"""User: I need to file a new claim.
 ClaimsAgent: I'd be happy to help you file a new claim. Could you please provide your policy number and details about the incident?
 User: My policy number is {policy}, and I had a {incident} yesterday."""
@@ -117,7 +105,6 @@ User: My policy number is {policy}, and I had a {incident} yesterday."""
                 ClaimsExample(chat_history=chat, expected_response=expected)
             )
 
-    # Updating claim information inquiries
     fields_to_update = ["address", "phone", "damage_description", "incident date"]
     new_values = {
         "address": "123 Main St, Anytown, USA",
@@ -127,23 +114,19 @@ User: My policy number is {policy}, and I had a {incident} yesterday."""
     }
 
     for claim in claims_data:
-        for field in random.sample(
-            fields_to_update, 2
-        ):  # Each claim gets 2 random field updates
+        for field in random.sample(fields_to_update, 2):
             chat = f"""User: I need to update information on my claim.
 ClaimsAgent: I'd be happy to help you update your claim information. Could you please provide your claim number?
 User: It's {claim["claim_number"]}.
 ClaimsAgent: What information would you like to update?
 User: I need to change the {field}."""
 
-            # For first interaction, ask for the new value
             expected = f"What is the new {field} you'd like to update on your claim?"
 
             examples.append(
                 ClaimsExample(chat_history=chat, expected_response=expected)
             )
 
-            # Add a follow-up example with the new value provided
             follow_up_chat = (
                 chat
                 + f"\nClaimsAgent: {expected}\nUser: The new {field} is {new_values[field]}."
@@ -162,14 +145,6 @@ User: I need to change the {field}."""
 
 
 def as_dspy_examples(examples: list[ClaimsExample]) -> list[dspy.Example]:
-    """Convert ClaimsExample objects to dspy.Example objects.
-
-    Args:
-        examples (List[ClaimsExample]): List of claims examples.
-
-    Returns:
-        List[dspy.Example]: List of dspy.Example objects.
-    """
     dspy_examples = []
     for example in examples:
         dspy_examples.append(
@@ -183,12 +158,6 @@ def as_dspy_examples(examples: list[ClaimsExample]) -> list[dspy.Example]:
 
 
 def export_dataset(examples: list[ClaimsExample], output_path: str = None):
-    """Export dataset to a JSON file.
-
-    Args:
-        examples: List of examples to export
-        output_path: Path to save JSON file (defaults to module directory)
-    """
     if not output_path:
         output_path = Path(__file__).resolve().parent / "claims_dataset.json"
 
@@ -206,14 +175,6 @@ def export_dataset(examples: list[ClaimsExample], output_path: str = None):
 
 
 def load_dataset(input_path: str = None) -> list[ClaimsExample]:
-    """Load dataset from a JSON file.
-
-    Args:
-        input_path: Path to load JSON file from (defaults to module directory)
-
-    Returns:
-        List[ClaimsExample]: Loaded examples
-    """
     if not input_path:
         input_path = Path(__file__).resolve().parent / "claims_dataset.json"
 
@@ -240,14 +201,11 @@ def load_dataset(input_path: str = None) -> list[ClaimsExample]:
 
 
 if __name__ == "__main__":
-    # Generate examples and print them
     examples = create_claims_dataset()
     print(f"Generated {len(examples)} examples")
 
-    # Export examples to JSON
     export_dataset(examples)
 
-    # Print a sample
     random.seed(42)
     sample = random.sample(examples, min(3, len(examples)))
     for i, example in enumerate(sample):

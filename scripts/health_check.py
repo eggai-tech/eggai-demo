@@ -3,15 +3,6 @@
 # requires-python = ">=3.11"
 # dependencies = ["httpx", "rich"]
 # ///
-"""
-Health check utilities for EggAI Demo.
-
-Can be run standalone or imported as a module.
-
-Usage:
-    uv run scripts/health_check.py           # Check all services
-    uv run scripts/health_check.py --wait    # Wait until all healthy
-"""
 
 from __future__ import annotations
 
@@ -45,7 +36,6 @@ class ServiceHealth:
     latency_ms: float = 0
 
 
-# Service definitions: (name, url, optional_validator)
 INFRASTRUCTURE_SERVICES: list[tuple[str, str, Callable | None]] = [
     ("Redpanda", "http://localhost:19644/v1/status/ready", None),
     ("Redpanda Console", "http://localhost:8082/", None),
@@ -69,7 +59,6 @@ async def check_http_service(
     validator: Callable[[dict], bool] | None = None,
     timeout: float = 5.0,
 ) -> ServiceHealth:
-    """Check health of an HTTP service."""
     start = time.perf_counter()
 
     try:
@@ -94,7 +83,6 @@ async def check_http_service(
                                 latency,
                             )
                     except Exception:
-                        # Non-JSON response but status OK
                         return ServiceHealth(
                             name, HealthStatus.HEALTHY, url, latency_ms=latency
                         )
@@ -126,7 +114,6 @@ async def check_http_service(
 async def check_all_services(
     include_agents: bool = True,
 ) -> list[ServiceHealth]:
-    """Check all services and return their health status."""
     services = INFRASTRUCTURE_SERVICES.copy()
     if include_agents:
         services.extend(AGENT_SERVICES)
@@ -140,7 +127,6 @@ async def wait_for_services(
     poll_interval: float = 2.0,
     include_agents: bool = False,
 ) -> bool:
-    """Wait until all services are healthy."""
     console.print(f"[yellow]Waiting for services (timeout: {timeout}s)...[/]")
 
     start = time.time()
@@ -166,7 +152,6 @@ async def wait_for_services(
 
 
 def print_results(results: list[ServiceHealth]) -> bool:
-    """Print results in a table and return overall status."""
     table = Table(title="Service Health Check")
     table.add_column("Status", style="bold", width=3)
     table.add_column("Service", style="cyan")
@@ -203,13 +188,11 @@ def print_results(results: list[ServiceHealth]) -> bool:
 
 
 async def verify_all(include_agents: bool = True) -> bool:
-    """Run all health checks and print results."""
     results = await check_all_services(include_agents=include_agents)
     return print_results(results)
 
 
 def main():
-    """CLI entry point."""
     parser = argparse.ArgumentParser(description="Check EggAI Demo service health")
     parser.add_argument(
         "--wait",

@@ -9,7 +9,6 @@ from agents.escalation.dspy_modules.escalation import (
 
 
 def test_get_tickets_by_policy_existing():
-    """Test getting tickets for existing policy."""
     result = get_tickets_by_policy("A12345")
     data = json.loads(result)
 
@@ -28,7 +27,6 @@ def test_get_tickets_by_policy_existing():
 
 
 def test_get_tickets_by_policy_nonexistent():
-    """Test getting tickets for non-existent policy."""
     result = get_tickets_by_policy("NONEXISTENT")
     data = json.loads(result)
 
@@ -40,7 +38,6 @@ def test_get_tickets_by_policy_nonexistent():
 
 
 def test_get_tickets_by_policy_with_whitespace():
-    """Test getting tickets with whitespace in policy number (normalized)."""
     result = get_tickets_by_policy("  A12345  ")
     data = json.loads(result)
 
@@ -52,7 +49,6 @@ def test_get_tickets_by_policy_with_whitespace():
 
 
 def test_create_ticket_success():
-    """Test creating a new ticket successfully."""
     original_count = len(ticket_database)
 
     result = create_ticket(
@@ -76,7 +72,6 @@ def test_create_ticket_success():
 
 
 def test_create_ticket_valid_departments():
-    """Test creating tickets with all valid departments."""
     valid_departments = ["Technical Support", "Billing", "Sales"]
     len(ticket_database)
 
@@ -91,7 +86,6 @@ def test_create_ticket_valid_departments():
 
 
 def test_create_ticket_generates_unique_ids():
-    """Test that create_ticket generates unique ticket IDs."""
     original_count = len(ticket_database)
 
     # Create multiple tickets with valid departments
@@ -111,7 +105,6 @@ def test_create_ticket_generates_unique_ids():
 
 
 def test_create_ticket_timestamp():
-    """Test that create_ticket adds proper timestamp."""
     before_creation = datetime.now()
 
     result = create_ticket("D12345", "Sales", "Timestamp test", "time@example.com")
@@ -133,7 +126,6 @@ def test_create_ticket_timestamp():
 
 
 def test_ticket_database_structure():
-    """Test that ticket database has expected structure."""
     assert isinstance(ticket_database, list)
 
     for ticket in ticket_database:
@@ -147,7 +139,6 @@ def test_ticket_database_structure():
 
 
 def test_get_tickets_multiple_policies():
-    """Test getting tickets for multiple policies."""
     # Create tickets for different policies with valid departments
     create_ticket("MULTI1", "Technical Support", "Test 1", "multi1@example.com")
     create_ticket("MULTI2", "Billing", "Test 2", "multi2@example.com")
@@ -176,7 +167,6 @@ def test_get_tickets_multiple_policies():
 
 
 def test_ticket_id_format():
-    """Test that ticket IDs follow expected format."""
     result = create_ticket(
         "FORMAT", "Technical Support", "ID format test", "format@example.com"
     )
@@ -194,7 +184,6 @@ def test_ticket_id_format():
 
 
 def test_api_response_structure():
-    """Test that API responses have consistent structure."""
     # Test get_tickets_by_policy response structure
     result = get_tickets_by_policy("TEST")
     data = json.loads(result)
@@ -223,7 +212,6 @@ def test_api_response_structure():
 
 
 def test_department_validation():
-    """Test that only valid departments are accepted."""
     # Valid departments should work (tested in other tests)
     valid_departments = ["Technical Support", "Billing", "Sales"]
 

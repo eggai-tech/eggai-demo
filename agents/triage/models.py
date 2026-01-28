@@ -45,7 +45,6 @@ AGENT_REGISTRY = {
 
 
 def formatted_agent_registry() -> str:
-    """Format the AGENT_REGISTRY dictionary into a string representation for display."""
     return "".join(
         f"{agent.value}: {details['description']}\n"
         for agent, details in AGENT_REGISTRY.items()

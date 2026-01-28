@@ -2,7 +2,6 @@ import json
 
 from agents.claims.types import ClaimRecord
 
-# Logging and tracing setup
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
 from libraries.observability.tracing.otel import safe_set_attribute
@@ -13,7 +12,6 @@ from .claims_validators import ALLOWED_FIELDS, FIELD_VALIDATORS, FieldValidators
 logger = get_console_logger("claims_agent.data")
 tracer = create_tracer("claims_agent_data")
 
-# Sample in-memory claims database
 CLAIMS_DATABASE = [
     ClaimRecord(
         claim_number="1001",
@@ -46,8 +44,6 @@ CLAIMS_DATABASE = [
 
 
 class ClaimDataException(Exception):
-    """Custom exception for claim data operations."""
-
     def __init__(self, message: str, category: ErrorCategory = ErrorCategory.SYSTEM):
         self.message = message
         self.category = category
@@ -55,7 +51,6 @@ class ClaimDataException(Exception):
 
 
 def get_claim_record(claim_number: str) -> ClaimRecord | None:
-    """Find a claim record by claim number."""
     with tracer.start_as_current_span("get_claim_record") as span:
         safe_set_attribute(span, "claim_number", claim_number)
 
@@ -75,7 +70,6 @@ def get_claim_record(claim_number: str) -> ClaimRecord | None:
 
 
 def format_error_response(error_message: str) -> str:
-    """Create standardized JSON error response."""
     return json.dumps({"error": error_message})
 
 
@@ -83,7 +77,6 @@ def format_error_response(error_message: str) -> str:
 def get_claim_status(claim_number: str) -> str:
     """Retrieve claim status and details for a given claim_number."""
     try:
-        # Validate claim number
         if not claim_number or claim_number.lower() == "unknown":
             logger.warning("Invalid or missing claim number")
             raise ClaimDataException(
@@ -113,7 +106,6 @@ def get_claim_status(claim_number: str) -> str:
 def file_claim(policy_number: str, claim_details: str) -> str:
     """File a new claim under the given policy with provided details."""
     try:
-        # Validate policy number
         if not policy_number or policy_number.lower() == "unknown":
             logger.warning("Invalid or missing policy number")
             raise ClaimDataException(
@@ -126,7 +118,6 @@ def file_claim(policy_number: str, claim_details: str) -> str:
 
         logger.info(f"Filing new claim for policy: {policy_number}")
 
-        # Create new claim
         try:
             claim_numbers = [int(r.claim_number) for r in CLAIMS_DATABASE]
             new_number = str(max(claim_numbers) + 1 if claim_numbers else 1001)
@@ -144,7 +135,6 @@ def file_claim(policy_number: str, claim_details: str) -> str:
             logger.info(f"New claim filed: {new_number}")
             return new_claim.to_json()
         except ValueError as ve:
-            # Handle Pydantic validation errors
             logger.error(f"Validation error creating claim: {ve}")
             raise ClaimDataException(
                 f"Invalid claim data: {ve}", ErrorCategory.USER_INPUT
@@ -157,35 +147,23 @@ def file_claim(policy_number: str, claim_details: str) -> str:
         return format_error_response(ErrorResponse.GENERIC_ERROR)
 
 
-
-
 @tracer.start_as_current_span("update_field_value")
 def update_field_value(
     record: ClaimRecord, field: str, new_value: str
 ) -> tuple[bool, str | None]:
-    """Update a field in a claim record with validation and type conversion."""
-    # Security check - only allow specific fields
     if field not in ALLOWED_FIELDS:
         return False, ErrorResponse.SECURITY_FIELD_BLOCKED
 
-    # Get appropriate validator
     validator = FIELD_VALIDATORS.get(field, FieldValidators.validate_text)
-
-    # Validate and convert value
     success, result = validator(new_value)
     if not success:
         return False, result
 
-    # Update record field with validated value
     try:
-        # Create update dict with the single field to update
         update_data = {field: result}
-
-        # Use model_copy to create a new instance with the updated field
         updated_record = record.model_copy(update=update_data)
 
-        # Copy updated values back to original record
-        # This approach is needed because we're modifying a shared database record
+        # Copy back to the original record since we're modifying a shared database entry
         for key, value in updated_record.model_dump().items():
             setattr(record, key, value)
 
@@ -199,7 +177,6 @@ def update_field_value(
 def update_claim_info(claim_number: str, field: str, new_value: str) -> str:
     """Update a given field in the claim record for the specified claim number."""
     try:
-        # Validate parameters
         if not claim_number or claim_number.lower() == "unknown":
             logger.warning("Invalid or missing claim number")
             raise ClaimDataException(
@@ -218,7 +195,7 @@ def update_claim_info(claim_number: str, field: str, new_value: str) -> str:
                 "Missing value for update", ErrorCategory.USER_INPUT
             )
 
-        # Check if field is allowed BEFORE checking if claim exists
+        # Check field allowlist before claim lookup to avoid information leakage
         if field not in ALLOWED_FIELDS:
             logger.warning(f"Security: Attempted to update disallowed field '{field}'")
             raise ClaimDataException(

@@ -1,5 +1,3 @@
-"""Tests for claims dataset module."""
-
 import json
 import os
 import tempfile
@@ -18,7 +16,6 @@ from agents.claims.dspy_modules.claims_dataset import (
 
 
 def test_claims_example_dataclass():
-    """Test ClaimsExample dataclass structure."""
     example = ClaimsExample(
         chat_history="User: Hello", expected_response="Hello! How can I help?"
     )
@@ -28,7 +25,6 @@ def test_claims_example_dataclass():
 
 
 def test_create_claims_dataset():
-    """Test creating claims dataset."""
     dataset = create_claims_dataset()
 
     # Should have examples
@@ -46,7 +42,6 @@ def test_create_claims_dataset():
 
 
 def test_dataset_contains_status_inquiries():
-    """Test that dataset contains claim status inquiry examples."""
     dataset = create_claims_dataset()
 
     status_examples = [
@@ -68,7 +63,6 @@ def test_dataset_contains_status_inquiries():
 
 
 def test_dataset_contains_filing_examples():
-    """Test that dataset contains claim filing examples."""
     dataset = create_claims_dataset()
 
     filing_examples = [
@@ -91,7 +85,6 @@ def test_dataset_contains_filing_examples():
 
 
 def test_dataset_contains_update_examples():
-    """Test that dataset contains claim update examples."""
     dataset = create_claims_dataset()
 
     update_examples = [
@@ -113,7 +106,6 @@ def test_dataset_contains_update_examples():
 
 
 def test_dataset_example_types():
-    """Test that dataset contains different types of claims inquiries."""
     dataset = create_claims_dataset()
 
     # Check for different inquiry types
@@ -133,7 +125,6 @@ def test_dataset_example_types():
 
 
 def test_as_dspy_examples():
-    """Test converting ClaimsExample to dspy.Example."""
     claims_examples = [
         ClaimsExample(
             chat_history="User: What's my claim status?",
@@ -158,7 +149,6 @@ def test_as_dspy_examples():
 
 
 def test_as_dspy_examples_empty_list():
-    """Test converting empty list to dspy examples."""
     dspy_examples = as_dspy_examples([])
 
     assert len(dspy_examples) == 0
@@ -166,7 +156,6 @@ def test_as_dspy_examples_empty_list():
 
 
 def test_export_dataset():
-    """Test exporting dataset to JSON file."""
     examples = [
         ClaimsExample(
             chat_history="User: Test chat", expected_response="Test response"
@@ -202,7 +191,6 @@ def test_export_dataset():
 
 
 def test_export_dataset_default_path():
-    """Test exporting dataset with default path."""
     examples = [ClaimsExample(chat_history="User: Test", expected_response="Response")]
 
     # Mock the default path to avoid creating files in the actual module directory
@@ -224,7 +212,6 @@ def test_export_dataset_default_path():
 
 
 def test_export_dataset_error_handling():
-    """Test export dataset error handling."""
     examples = [ClaimsExample(chat_history="User: Test", expected_response="Response")]
 
     # Use an invalid path to trigger an error
@@ -235,7 +222,6 @@ def test_export_dataset_error_handling():
 
 
 def test_load_dataset():
-    """Test loading dataset from JSON file."""
     # Create test data
     test_data = [
         {"chat_history": "User: Load test", "expected_response": "Loaded response"},
@@ -267,7 +253,6 @@ def test_load_dataset():
 
 
 def test_load_dataset_file_not_found():
-    """Test loading dataset when file doesn't exist."""
     non_existent_path = "/path/that/does/not/exist.json"
 
     # Should fall back to creating new dataset
@@ -278,7 +263,6 @@ def test_load_dataset_file_not_found():
 
 
 def test_load_dataset_default_path():
-    """Test loading dataset with default path when file doesn't exist."""
     # Mock the default path to a non-existent file
     with patch("os.path.exists", return_value=False):
         with patch(
@@ -298,7 +282,6 @@ def test_load_dataset_default_path():
 
 
 def test_load_dataset_invalid_json():
-    """Test loading dataset with invalid JSON."""
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".json", delete=False
     ) as tmp_file:
@@ -318,7 +301,6 @@ def test_load_dataset_invalid_json():
 
 
 def test_dataset_claim_numbers():
-    """Test that dataset uses expected claim numbers."""
     dataset = create_claims_dataset()
 
     # Should contain references to known claim numbers
@@ -334,7 +316,6 @@ def test_dataset_claim_numbers():
 
 
 def test_dataset_policy_numbers():
-    """Test that dataset uses expected policy numbers."""
     dataset = create_claims_dataset()
 
     # Should contain references to known policy numbers
@@ -350,7 +331,6 @@ def test_dataset_policy_numbers():
 
 
 def test_dataset_incident_types():
-    """Test that dataset includes various incident types."""
     dataset = create_claims_dataset()
 
     incident_types = ["accident", "damage", "stolen", "hurricane", "vandalism"]
@@ -366,7 +346,6 @@ def test_dataset_incident_types():
 
 
 def test_dataset_conversation_structure():
-    """Test that dataset examples have proper conversation structure."""
     dataset = create_claims_dataset()
 
     for example in dataset:
@@ -379,7 +358,6 @@ def test_dataset_conversation_structure():
 
 
 def test_dataset_randomization():
-    """Test that dataset includes randomized elements."""
     # Create dataset multiple times to check for randomization
     dataset1 = create_claims_dataset()
     dataset2 = create_claims_dataset()
@@ -394,7 +372,6 @@ def test_dataset_randomization():
 
 
 def test_dataset_field_updates():
-    """Test that dataset includes field update examples."""
     dataset = create_claims_dataset()
 
     update_fields = ["address", "phone", "damage_description", "incident date"]
@@ -410,7 +387,6 @@ def test_dataset_field_updates():
 
 
 def test_dataset_follow_up_examples():
-    """Test that dataset includes follow-up conversation examples."""
     dataset = create_claims_dataset()
 
     # Look for examples that have multiple exchanges
@@ -435,7 +411,6 @@ def test_dataset_follow_up_examples():
 
 
 def test_export_load_roundtrip():
-    """Test that export and load work together correctly."""
     original_examples = [
         ClaimsExample(
             chat_history="User: Roundtrip test", expected_response="Roundtrip response"

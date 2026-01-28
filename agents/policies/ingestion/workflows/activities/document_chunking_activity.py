@@ -31,19 +31,15 @@ def extract_headings(chunk: Any) -> list[str]:
     headings = []
 
     try:
-        # First try to get from metadata
         if hasattr(chunk, "meta") and chunk.meta:
             if hasattr(chunk.meta, "headings") and chunk.meta.headings:
                 headings = [str(h) for h in chunk.meta.headings if h]
 
-        # If no headings from metadata, parse markdown from text
         if not headings and hasattr(chunk, "text") and chunk.text:
             lines = chunk.text.split("\n")
             for line in lines:
                 line = line.strip()
-                # Match markdown headings (### or #### or #####)
                 if line.startswith("#"):
-                    # Count the number of # symbols
                     heading_level = 0
                     for char in line:
                         if char == "#":
@@ -51,13 +47,11 @@ def extract_headings(chunk: Any) -> list[str]:
                         else:
                             break
 
-                    # Extract the heading text (remove # symbols and ** formatting)
                     heading_text = line[heading_level:].strip()
                     heading_text = heading_text.replace("**", "").strip()
 
                     if heading_text and heading_text not in headings:
                         headings.append(heading_text)
-                        # Only keep the first few headings to avoid too many
                         if len(headings) >= 3:
                             break
     except Exception as e:
@@ -70,12 +64,10 @@ def extract_section_path(chunk: Any, document: DoclingDocument) -> list[str]:
     section_path = []
 
     try:
-        # Try to get section information from chunk metadata
         if hasattr(chunk, "meta") and chunk.meta:
-            # If chunk has parent references, try to build the path
             if hasattr(chunk.meta, "parent_id"):
-                # This would require traversing the document structure
-                # For now, we'll use headings as a proxy
+                # Use headings as a proxy for section path since traversing
+                # the full document structure isn't currently supported
                 section_path = extract_headings(chunk)
     except Exception as e:
         logger.warning(f"Error extracting section path: {e}")
@@ -99,10 +91,8 @@ async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]
         metadata = load_result.get("metadata", {})
         document_id = metadata.get("document_id", "unknown")
 
-        # Initialize tokenizer for accurate token counting
         tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 
-        # Configure chunker with parameters
         chunker = HierarchicalChunker(
             tokenizer="gpt2",
             max_tokens=500,
@@ -115,7 +105,6 @@ async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]
         chunks = list(chunker.chunk(document))
         total_chunks = len(chunks)
 
-        # Document-level statistics
         total_characters = 0
         total_tokens = 0
         all_page_numbers: set[int] = set()
@@ -128,12 +117,10 @@ async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]
 
             chunk_id = f"{document_id}_chunk_{i}"
 
-            # Extract metadata
             page_numbers = extract_page_numbers(chunk)
             headings = extract_headings(chunk)
             section_path = extract_section_path(chunk, document)
 
-            # Log what we found
             if headings:
                 logger.info(f"Found headings for chunk {i}: {headings}")
             else:
@@ -141,12 +128,10 @@ async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]
                     f"No headings found for chunk {i}. First 100 chars: {chunk.text[:100]}"
                 )
 
-            # Calculate metrics
             char_count = len(chunk.text)
             token_count = len(tokenizer.encode(chunk.text))
             chunk_position = i / max(1, total_chunks - 1) if total_chunks > 1 else 0.0
 
-            # Build page range string
             page_range = None
             if page_numbers:
                 if len(page_numbers) == 1:
@@ -154,18 +139,15 @@ async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]
                 else:
                     page_range = f"{page_numbers[0]}-{page_numbers[-1]}"
 
-            # Track relationships
             previous_chunk_id = f"{document_id}_chunk_{i - 1}" if i > 0 else None
             next_chunk_id = (
                 f"{document_id}_chunk_{i + 1}" if i < total_chunks - 1 else None
             )
 
-            # Update document statistics
             total_characters += char_count
             total_tokens += token_count
             all_page_numbers.update(page_numbers)
 
-            # Add to outline if this chunk has headings
             if headings and headings not in document_outline:
                 document_outline.extend(headings)
 

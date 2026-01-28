@@ -1,9 +1,3 @@
-"""
-DSPy-specific test helpers.
-
-These utilities help with testing DSPy modules and signatures.
-"""
-
 from collections.abc import Callable
 from unittest.mock import patch
 
@@ -11,7 +5,6 @@ import pytest
 
 
 def test_truncate_long_history_edge_cases(truncate_func: Callable, model_config_class: type) -> None:
-    """Shared test for truncate_long_history edge cases."""
     result = truncate_func("")
     assert result["history"] == ""
     assert not result["truncated"]
@@ -36,7 +29,6 @@ def test_truncate_long_history_edge_cases(truncate_func: Callable, model_config_
 
 
 def test_signature_structure(signature_class: type, test_data: str = "test") -> None:
-    """Shared test for signature structure."""
     signature = signature_class(chat_history=test_data, final_response=test_data)
 
     assert hasattr(signature, "chat_history")
@@ -47,7 +39,6 @@ def test_signature_structure(signature_class: type, test_data: str = "test") -> 
 
 
 def test_signature_fields(signature_class: type) -> None:
-    """Shared test for signature fields."""
     fields = signature_class.fields
     field_names = set(fields.keys())
 
@@ -66,7 +57,6 @@ def test_signature_fields(signature_class: type) -> None:
 async def test_optimized_dspy_basic(
     dspy_func: Callable, conversation: str, expected_response: str
 ) -> None:
-    """Shared test for basic DSPy functionality."""
 
     async def mock_generator(*args, **kwargs):
         from dspy import Prediction
@@ -86,7 +76,6 @@ async def test_optimized_dspy_basic(
 
 
 async def test_optimized_dspy_empty_conversation(dspy_func: Callable, expected_response: str) -> None:
-    """Shared test for empty conversation handling."""
 
     async def mock_generator(*args, **kwargs):
         from dspy import Prediction
@@ -105,7 +94,6 @@ async def test_optimized_dspy_empty_conversation(dspy_func: Callable, expected_r
 
 
 def test_model_config_validation(model_config_class: type) -> None:
-    """Shared test for ModelConfig validation."""
     config = model_config_class()
     assert config.truncation_length >= 1000
     assert config.timeout_seconds >= 1.0
@@ -124,7 +112,6 @@ def test_model_config_validation(model_config_class: type) -> None:
 def test_truncate_long_history_with_config(
     truncate_func: Callable, model_config_class: type, agent_name: str
 ) -> None:
-    """Shared test for truncate_long_history with custom config."""
     long_conversation = "\n".join(
         [
             f"User: This is {agent_name} question {i}\n{agent_name}Agent: This is response {i}"
@@ -142,7 +129,6 @@ def test_truncate_long_history_with_config(
 
 
 def test_truncate_long_history_return_structure(truncate_func: Callable) -> None:
-    """Shared test for truncate_long_history return structure."""
     result = truncate_func("Short text")
 
     assert "history" in result

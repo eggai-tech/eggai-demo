@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-Development script for running the webserver directly.
-For production use, install the package and use the `triage-server` command.
-"""
-
 import argparse
 import os
 import sys
@@ -11,14 +6,11 @@ import sys
 import uvicorn
 from dotenv import load_dotenv
 
-# Add src directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
 
 if __name__ == "__main__":
-    # Load environment variables
     load_dotenv()
 
-    # Parse command line arguments
     parser = argparse.ArgumentParser(
         description="Start the Triage Dataset Manager web server"
     )

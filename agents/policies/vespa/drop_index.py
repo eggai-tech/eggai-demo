@@ -4,7 +4,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -18,7 +17,6 @@ async def get_all_document_ids(vespa_client: VespaClient) -> list[str]:
     logger.info("Fetching all document IDs from Vespa...")
 
     try:
-        # Use YQL to select all documents
         async with vespa_client.vespa_app.asyncio(connections=1) as session:
             response = await session.query(
                 yql=f"select * from {vespa_client.config.schema_name} where true",
@@ -56,14 +54,13 @@ async def delete_documents_batch(
         async with httpx.AsyncClient(timeout=30.0) as client:
             for doc_id in document_ids:
                 try:
-                    # Extract the actual document ID from the full Vespa ID
-                    # Format: "id:policy_document:policy_document::auto_chunk_3" -> "auto_chunk_3"
+                    # Extract doc ID from full Vespa ID format:
+                    # "id:policy_document:policy_document::auto_chunk_3" -> "auto_chunk_3"
                     if "::" in doc_id:
                         actual_doc_id = doc_id.split("::")[-1]
                     else:
                         actual_doc_id = doc_id
 
-                    # Use Document API HTTP DELETE
                     delete_url = f"{base_url}/document/v1/{vespa_client.config.schema_name}/{vespa_client.config.schema_name}/docid/{actual_doc_id}"
 
                     response = await client.delete(delete_url)
@@ -101,15 +98,12 @@ async def drop_index() -> bool:
     logger.info("Starting Vespa index drop operation")
 
     try:
-        # Create Vespa client
         vespa_client = VespaClient()
 
-        # Check connectivity
         if not await vespa_client.check_connectivity():
             logger.error("Cannot connect to Vespa. Is it running?")
             return False
 
-        # Get all document IDs
         document_ids = await get_all_document_ids(vespa_client)
 
         if not document_ids:
@@ -118,7 +112,6 @@ async def drop_index() -> bool:
 
         logger.info(f"Found {len(document_ids)} documents to delete")
 
-        # Delete all documents
         result = await delete_documents_batch(vespa_client, document_ids)
 
         if result["success"]:

@@ -222,7 +222,6 @@ async def _handle_test_stream_message(event: TracedMessage):
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_triage_agent():
-    """Send all test conversations, validate classifier, then use LLM judge with controlled concurrency, then generate report."""
 
     await clear_channels()
 
@@ -410,7 +409,6 @@ async def test_triage_agent():
                     }
                 )
 
-        # Calculate overall metrics
         classification_accuracy = (
             0
             if len(judge_results) == 0
@@ -526,7 +524,6 @@ async def test_triage_agent_simple(monkeypatch):
             await handle_user_message(test_message)
             latency_ms = (time.perf_counter() - start_time) * 1000
 
-            # Log metrics
             mlflow.log_metric("latency", latency_ms)
 
             # Verify we got the expected stream messages
@@ -604,7 +601,6 @@ async def test_triage_agent_intent_change(monkeypatch):
             await handle_user_message(test_message)
             latency_ms = (time.perf_counter() - start_time) * 1000
 
-            # Log metrics
             mlflow.log_metric("latency", latency_ms)
 
             # Check which channel got the message

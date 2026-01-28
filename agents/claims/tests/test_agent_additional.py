@@ -17,7 +17,6 @@ from libraries.observability.tracing import TracedMessage
 
 @pytest.mark.asyncio
 async def test_claims_agent_error_handling(monkeypatch):
-    """Test error handling in claims agent."""
     load_dotenv()
 
     def mock_claims_error(*args, **kwargs):
@@ -58,7 +57,6 @@ async def test_claims_agent_error_handling(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_claims_empty_chat_messages(monkeypatch):
-    """Test handling of empty chat messages."""
     load_dotenv()
 
     from agents.claims.agent import human_channel
@@ -91,7 +89,6 @@ async def test_claims_empty_chat_messages(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_claims_missing_connection_id(monkeypatch):
-    """Test handling of missing connection_id."""
     load_dotenv()
 
     from agents.claims.agent import human_stream_channel
@@ -119,7 +116,6 @@ async def test_claims_missing_connection_id(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_other_messages():
-    """Test the handle_other_messages function."""
     test_message = TracedMessage(
         id=str(uuid4()),
         type="debug_message",
@@ -131,13 +127,11 @@ async def test_handle_other_messages():
 
 
 def test_get_conversation_string_empty():
-    """Test get_conversation_string with empty messages."""
     result = get_conversation_string([])
     assert result == ""
 
 
 def test_get_conversation_string_missing_content():
-    """Test get_conversation_string skips messages without content."""
     messages = [{"role": "user"}, {"role": "assistant", "content": "Hello"}]
     result = get_conversation_string(messages)
     # Messages without content are skipped, only valid messages included
@@ -145,7 +139,6 @@ def test_get_conversation_string_missing_content():
 
 
 def test_get_conversation_string_normal():
-    """Test get_conversation_string with normal messages."""
     messages = [
         {"role": "user", "content": "Hi"},
         {"role": "assistant", "content": "Hello"},
@@ -156,7 +149,6 @@ def test_get_conversation_string_normal():
 
 
 def test_claims_specific_functionality():
-    """Test claims-specific functionality."""
     from libraries.communication.streaming import get_conversation_string
 
     messages = [
@@ -174,7 +166,6 @@ def test_claims_specific_functionality():
 
 @pytest.mark.asyncio
 async def test_claims_exception_in_handler(monkeypatch):
-    """Test exception handling in main handler."""
     load_dotenv()
 
     from agents.claims.agent import human_channel
@@ -210,7 +201,6 @@ async def test_claims_exception_in_handler(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_claims_missing_data_fields(monkeypatch):
-    """Test handling of missing various data fields."""
     load_dotenv()
 
     from agents.claims.agent import human_channel
@@ -232,7 +222,6 @@ async def test_claims_missing_data_fields(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_process_claims_request_short_conversation():
-    """Test process_claims_request with conversation too short."""
     connection_id = str(uuid4())
     message_id = str(uuid4())
 
@@ -241,7 +230,6 @@ async def test_process_claims_request_short_conversation():
 
 
 def test_get_conversation_string_special_characters():
-    """Test conversation string with special characters."""
     messages = [
         {"role": "user", "content": "My car was damaged! The repair cost is $2,500."},
         {"role": "assistant", "content": "I'll help you file that claim."},
@@ -253,7 +241,6 @@ def test_get_conversation_string_special_characters():
 
 
 def test_get_conversation_string_role_formatting():
-    """Test that roles are properly formatted in conversation string."""
     messages = [
         {"role": "User", "content": "Hello"},
         {"role": "ClaimsAgent", "content": "Hi there"},

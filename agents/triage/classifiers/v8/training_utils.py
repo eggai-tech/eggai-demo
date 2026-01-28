@@ -60,9 +60,7 @@ def perform_fine_tuning(trainset: list[dspy.Example], testset: list[dspy.Example
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    # Load the appropriate config class for this model
     config = AutoConfig.from_pretrained(model_name)
-    # set the label mapping
     config.label2id = LABEL2ID
     config.id2label = ID2LABEL
     config.num_labels = len(ID2LABEL)
@@ -72,7 +70,6 @@ def perform_fine_tuning(trainset: list[dspy.Example], testset: list[dspy.Example
         config=config,
     )
 
-    # Move model to specified device
     device = v8_settings.device
     model = model.to(device)
     logger.info(f"Model moved to device: {device}")
@@ -85,20 +82,16 @@ def perform_fine_tuning(trainset: list[dspy.Example], testset: list[dspy.Example
         target_modules=v8_settings.lora_target_modules
     )
 
-    # get PEFT model with LoRA configuration
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
     model.train()
 
-    # Prepare training data
     train_texts = [ex.chat_history for ex in trainset]
     train_labels = [LABEL2ID[ex.target_agent] for ex in trainset]
 
-    # Prepare evaluation data
     eval_texts = [ex.chat_history for ex in testset]
     eval_labels = [LABEL2ID[ex.target_agent] for ex in testset]
 
-    # Create datasets
     train_dataset = Dataset.from_dict({"text": train_texts, "labels": train_labels})
     eval_dataset = Dataset.from_dict({"text": eval_texts, "labels": eval_labels})
 
@@ -120,15 +113,14 @@ def perform_fine_tuning(trainset: list[dspy.Example], testset: list[dspy.Example
         learning_rate=v8_settings.learning_rate,
         warmup_ratio=0.1,
         logging_steps=50,
-        save_total_limit=1,  # max of two checkpoints might be saved: # 1 for the best model, 1 for the last checkpoint
-        # Evaluation configuration
-        eval_strategy="epoch",  # Evaluate after each epoch
-        eval_steps=1,  # How often to evaluate (in epochs)
-        save_strategy="epoch",  # Save after each epoch
-        load_best_model_at_end=True,  # Load best model at end
-        metric_for_best_model="eval_accuracy",  # Use accuracy to determine best model
-        greater_is_better=True,  # Higher accuracy is better
-        gradient_checkpointing=False,  # Disable to avoid gradient issues
+        save_total_limit=1,
+        eval_strategy="epoch",
+        eval_steps=1,
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_accuracy",
+        greater_is_better=True,
+        gradient_checkpointing=False,
         report_to="mlflow",
         label_names=["labels"]
     )
@@ -156,15 +148,10 @@ def perform_fine_tuning(trainset: list[dspy.Example], testset: list[dspy.Example
         "final_recall": eval_results["eval_recall"],
     })
 
-    # save the model
-    logger.info(f"Saving the merged model (base_model + lora_adapters) to {v8_settings.output_dir}")
-    # get the best model from the trainer
+    logger.info(f"Saving merged model (base + LoRA) to {v8_settings.output_dir}")
     best_model = trainer.model
-    # merge LoRA adapters into the base model
     best_model = best_model.merge_and_unload()
-    # save the merged model
     best_model.save_pretrained(v8_settings.output_dir)
-    # save the tokenizer
     tokenizer.save_pretrained(v8_settings.output_dir)
 
     logger.info(f"Model saved to {v8_settings.output_dir}")

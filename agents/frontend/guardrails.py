@@ -21,12 +21,6 @@ if ToxicLanguage:
 
 
 async def toxic_language_guard(text: str) -> str | None:
-    """
-    Validate and filter text via ToxicLanguage guardrail.
-
-    Returns the sanitized text if passed, otherwise None.
-    If ToxicLanguage is unavailable, returns text unchanged.
-    """
     if _toxic_language_guard is None:
         return text
     result = await _toxic_language_guard.validate(text)

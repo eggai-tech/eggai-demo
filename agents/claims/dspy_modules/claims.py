@@ -111,17 +111,14 @@ class ClaimsSignature(dspy.Signature):
     final_response: str = dspy.OutputField(desc="Claims response to the user.")
 
 
-# Import needed tools for the claims agent
 from agents.claims.dspy_modules.claims_data import (
     file_claim,
     get_claim_status,
     update_claim_info,
 )
 
-# Create tracer for the optimized claims module
 claims_tracer = create_tracer("claims_agent_optimized")
 
-# Create base model with tracing that we'll use
 claims_optimized = TracedReAct(
     ClaimsSignature,
     tools=[get_claim_status, file_claim, update_claim_info],
@@ -132,11 +129,6 @@ claims_optimized = TracedReAct(
 
 
 def load_optimized_prompts() -> bool:
-    """Load optimized instructions from SIMBA JSON, updating ClaimsSignature doc.
-
-    Returns:
-        bool: True if optimized prompts were loaded, False otherwise.
-    """
     optimized_model_path = Path(__file__).resolve().parent / "optimized_claims_simba.json"
     using_optimized = False
 
@@ -168,7 +160,6 @@ def load_optimized_prompts() -> bool:
 
 
 def get_prediction_from_model(model, chat_history: str):
-    """Get prediction from a DSPy model."""
     with claims_tracer.start_as_current_span("get_prediction_from_model") as span:
         safe_set_attribute(
             span, "chat_history_length", len(chat_history) if chat_history else 0
@@ -195,7 +186,6 @@ def get_prediction_from_model(model, chat_history: str):
 def truncate_long_history(
     chat_history: str, config: ModelConfig | None = None
 ) -> dict[str, Any]:
-    """Truncate conversation history if it exceeds maximum length."""
     config = config or DEFAULT_CONFIG
     max_length = config.truncation_length
 
@@ -209,12 +199,10 @@ def truncate_long_history(
     if len(chat_history) <= max_length:
         return result
 
-    # Perform truncation
     lines = chat_history.split("\n")
     truncated_lines = lines[-30:]  # Keep last 30 lines
     truncated_history = "\n".join(truncated_lines)
 
-    # Update result
     result["history"] = truncated_history
     result["truncated"] = True
     result["truncated_length"] = len(truncated_history)
@@ -226,14 +214,11 @@ def truncate_long_history(
 async def process_claims(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:
-    """Process a claims inquiry using the DSPy model with streaming output."""
     config = config or DEFAULT_CONFIG
 
-    # Handle long conversations
     truncation_result = truncate_long_history(chat_history, config)
     chat_history = truncation_result["history"]
 
-    # Create a streaming version of the claims model
     streamify_func = dspy.streamify(
         claims_optimized,
         stream_listeners=[
@@ -254,10 +239,8 @@ if __name__ == "__main__":
         from libraries.observability.tracing import init_telemetry
 
         init_telemetry(settings.app_name, endpoint=settings.otel_endpoint)
-        # Initialize the DSPy model with the configured language model
         dspy_set_language_model(settings)
 
-        # Test the claims DSPy module
         test_conversation = (
             "User: Hi, I'd like to check my claim status.\n"
             "ClaimsAgent: Sure! Could you please provide your claim number?\n"

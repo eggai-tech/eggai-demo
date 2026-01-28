@@ -17,7 +17,6 @@ class PoliciesExample:
 
 
 def create_policies_dataset() -> list[PoliciesExample]:
-    # Known policies data from the mock database
     policies_data = [
         {
             "policy_number": "A12345",
@@ -44,7 +43,6 @@ def create_policies_dataset() -> list[PoliciesExample]:
 
     examples = []
 
-    # Premium payment inquiries
     for policy in policies_data:
         chat = f"""User: When is my next premium payment due?
 PoliciesAgent: I'd be happy to help you with that. Could you please provide your policy number?
@@ -61,7 +59,6 @@ User: {policy["policy_number"]}."""
             )
         )
 
-    # Policy coverage inquiries with documentation references
     coverage_topics = {
         "auto": [
             "accident coverage",
@@ -89,7 +86,6 @@ User: {policy["policy_number"]}."""
         ],
     }
 
-    # Documentation references for each category and topic
     doc_references = {
         "auto": {
             "accident coverage": "auto#2.1",
@@ -137,7 +133,6 @@ User: It's {policy["policy_number"]}, {category} insurance."""
                 )
             )
 
-    # General policy information inquiries
     inquiry_templates = [
         "I need information about my policy coverage.",
         "Can you tell me what my policy covers?",
@@ -175,11 +170,9 @@ def as_dspy_examples(examples: list[PoliciesExample]) -> list[dspy.Example]:
 
 
 if __name__ == "__main__":
-    # Generate examples and print them
     examples = create_policies_dataset()
     print(f"Generated {len(examples)} examples")
 
-    # Print a sample
     random.seed(42)
     sample = random.sample(examples, min(3, len(examples)))
     for i, example in enumerate(sample):

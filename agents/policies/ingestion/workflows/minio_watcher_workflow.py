@@ -25,7 +25,6 @@ class MinIOInboxWatcherWorkflow:
 
         while True:
             try:
-                # Scan inbox for new files
                 files = await workflow.execute_activity(
                     scan_minio_inbox_activity,
                     start_to_close_timeout=timedelta(seconds=30),
@@ -43,9 +42,7 @@ class MinIOInboxWatcherWorkflow:
 
             except Exception as e:
                 workflow.logger.error(f"Error in watcher loop: {e}")
-                # Continue running even if there's an error
 
-            # Wait before next scan
             await asyncio.sleep(poll_interval_seconds)
 
     async def _process_files(self, files: list[dict]) -> None:
@@ -56,12 +53,10 @@ class MinIOInboxWatcherWorkflow:
                 document_id = metadata.get('document_id')
 
                 if not document_id:
-                    # Use filename (without extension) as document_id
                     filename = Path(file_key).name
                     document_id = Path(filename).stem
                     metadata['document_id'] = document_id
 
-                # Check if document already exists (prevent re-indexing)
                 exists = await workflow.execute_activity(
                     check_document_exists_activity,
                     args=[document_id],
@@ -77,7 +72,6 @@ class MinIOInboxWatcherWorkflow:
                     )
                     continue
 
-                # Process the document
                 workflow.logger.info(f"Processing {file_key}")
                 try:
                     await workflow.execute_child_workflow(
@@ -92,7 +86,6 @@ class MinIOInboxWatcherWorkflow:
                         execution_timeout=timedelta(minutes=10)
                     )
 
-                    # Move to processed folder on success
                     await workflow.execute_activity(
                         move_to_processed_activity,
                         args=[file_key],
@@ -102,7 +95,6 @@ class MinIOInboxWatcherWorkflow:
 
                 except Exception as e:
                     workflow.logger.error(f"Failed to process {file_key}: {e}")
-                    # Move to failed folder with error metadata
                     await workflow.execute_activity(
                         move_to_failed_activity,
                         args=[file_key, str(e)],
@@ -111,4 +103,3 @@ class MinIOInboxWatcherWorkflow:
 
             except Exception as e:
                 workflow.logger.error(f"Error processing file {file_info}: {e}")
-                # Continue with next file

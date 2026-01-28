@@ -14,7 +14,6 @@ class WebSocketManager:
         self.chat_messages: dict[str, list] = defaultdict(list)
 
     async def connect(self, websocket: WebSocket, connection_id: str) -> str:
-        """Accept a WebSocket connection, register it, and replay any buffered messages."""
         await websocket.accept()
         if connection_id in self.active_connections:
             await self.disconnect(connection_id)
@@ -32,7 +31,6 @@ class WebSocketManager:
         return connection_id
 
     async def disconnect(self, connection_id: str) -> None:
-        """Close and remove a WebSocket connection, and clear its chat history."""
         connection = self.active_connections.get(connection_id)
         if connection is not None:
             try:
@@ -54,14 +52,11 @@ class WebSocketManager:
     async def send_message_to_connection(
         self, connection_id: str, message_data: dict
     ) -> None:
-        """Send a JSON message to a connection, buffering if it's not active."""
-
         self.logger.info(f"Sending message to connection {connection_id}: {message_data}")
         connection = self.active_connections.get(connection_id)
         if connection is not None:
             try:
                 await connection.send_json(message_data)
-                self.logger.info(f"Message sent successfully to connection {connection_id}")
             except Exception as e:
                 self.logger.error(
                     f"Error sending message to connection {connection_id}: {e}",
@@ -72,25 +67,20 @@ class WebSocketManager:
             self.message_buffers[connection_id].append(message_data)
 
     async def attach_message_id(self, message_id: str, connection_id: str) -> None:
-        """Associate an incoming message ID with a connection ID for reply routing."""
         self.message_ids[message_id] = connection_id
 
     async def send_to_message_id(self, message_id: str, message_data: dict) -> None:
-        """Send a JSON message to the connection associated with a message ID."""
         session_id = self.message_ids.get(message_id)
         if session_id:
             await self.send_message_to_connection(session_id, message_data)
 
     async def get_connection_id_from_message_id(self, message_id: str) -> str | None:
-        """Return the connection ID previously associated with the message ID."""
         return self.message_ids.get(message_id)
 
     async def broadcast_message(self, message_data: dict) -> None:
-        """Broadcast a JSON message to all active WebSocket connections."""
-        for _, connection in self.active_connections.items():
+        for connection in self.active_connections.values():
             await connection.send_json(message_data)
 
     async def disconnect_all(self) -> None:
-        """Disconnect and cleanup all active WebSocket connections."""
         for connection_id in list(self.active_connections.keys()):
             await self.disconnect(connection_id)

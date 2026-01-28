@@ -16,13 +16,11 @@ class TestLazyInitialization:
     """Test the lazy initialization of billing model."""
 
     def test_load_optimized_instructions_file_not_exists(self):
-        """Test load_optimized_instructions when file doesn't exist."""
         fake_path = Path("/non/existent/path.json")
         result = load_optimized_instructions(fake_path)
         assert result is None
 
     def test_load_optimized_instructions_valid_file(self):
-        """Test load_optimized_instructions with valid JSON file."""
         valid_json = {
             "react": {
                 "signature": {
@@ -41,7 +39,6 @@ class TestLazyInitialization:
         assert result == "Test optimized instructions"
 
     def test_load_optimized_instructions_invalid_structure(self):
-        """Test load_optimized_instructions with invalid JSON structure."""
         invalid_json = {"wrong": "structure"}
 
         with patch("pathlib.Path.exists", return_value=True):
@@ -50,7 +47,6 @@ class TestLazyInitialization:
                 assert result is None
 
     def test_load_optimized_instructions_no_instructions(self):
-        """Test load_optimized_instructions when instructions field is missing."""
         json_no_instructions = {
             "react": {
                 "signature": {
@@ -65,7 +61,6 @@ class TestLazyInitialization:
                 assert result is None
 
     def test_load_optimized_instructions_json_decode_error(self):
-        """Test load_optimized_instructions with invalid JSON."""
         with patch("pathlib.Path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data="invalid json")):
                 with patch("agents.billing.dspy_modules.billing.logger") as mock_logger:
@@ -76,7 +71,6 @@ class TestLazyInitialization:
     @patch("agents.billing.dspy_modules.billing._initialized", False)
     @patch("agents.billing.dspy_modules.billing._billing_model", None)
     def test_initialize_billing_model_first_time(self):
-        """Test _initialize_billing_model when not initialized."""
         with patch("agents.billing.dspy_modules.billing.create_tracer") as mock_tracer:
             with patch("agents.billing.dspy_modules.billing.load_optimized_instructions") as mock_load:
                 with patch("agents.billing.dspy_modules.billing.TracedReAct") as mock_traced_react:
@@ -98,7 +92,6 @@ class TestLazyInitialization:
 
     @patch("agents.billing.dspy_modules.billing._initialized", True)
     def test_initialize_billing_model_already_initialized(self):
-        """Test _initialize_billing_model when already initialized."""
         # Set up a mock model
         mock_model = MagicMock()
 
@@ -113,7 +106,6 @@ class TestLazyInitialization:
             mock_tracer.assert_not_called()  # Should not create tracer again
 
     def test_initialize_billing_model_with_optimized_instructions(self):
-        """Test _initialize_billing_model with optimized instructions."""
         with patch("agents.billing.dspy_modules.billing.create_tracer"):
             with patch("agents.billing.dspy_modules.billing.load_optimized_instructions") as mock_load:
                 with patch("agents.billing.dspy_modules.billing.TracedReAct"):
@@ -136,7 +128,6 @@ class TestBillingModelFunctionality:
     """Test billing model functionality and edge cases."""
 
     def test_truncate_long_history_boundary(self):
-        """Test truncate_long_history at exact boundary."""
         from agents.billing.dspy_modules.billing import (
             ModelConfig,
             truncate_long_history,
@@ -152,7 +143,6 @@ class TestBillingModelFunctionality:
         assert result["truncated_length"] == 1000
 
     def test_truncate_long_history_just_over_limit(self):
-        """Test truncate_long_history just over the limit."""
         from agents.billing.dspy_modules.billing import (
             ModelConfig,
             truncate_long_history,
@@ -173,7 +163,6 @@ class TestBillingModelFunctionality:
 
     @pytest.mark.asyncio
     async def test_billing_optimized_dspy_with_config(self):
-        """Test process_billing with custom config."""
         from dspy import Prediction
 
         from agents.billing.dspy_modules.billing import (

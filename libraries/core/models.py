@@ -2,67 +2,23 @@ from pydantic import BaseModel, Field
 
 
 class ModelConfig(BaseModel):
-    name: str = Field(
-        default="base_model",
-        description="Name of the model or reasoning chain"
-    )
-    max_iterations: int = Field(
-        default=5,
-        ge=1,
-        le=10,
-        description="Maximum number of iterations for the model"
-    )
-    use_tracing: bool = Field(
-        default=True,
-        description="Whether to trace model execution for debugging"
-    )
-    cache_enabled: bool = Field(
-        default=False,
-        description="Whether to enable model result caching"
-    )
-    timeout_seconds: float = Field(
-        default=30.0,
-        ge=1.0,
-        description="Timeout for model inference in seconds"
-    )
-    truncation_length: int = Field(
-        default=15000,
-        ge=1000,
-        description="Maximum length for conversation history before truncation"
-    )
+    name: str = Field(default="base_model")
+    max_iterations: int = Field(default=5, ge=1, le=10)
+    use_tracing: bool = Field(default=True)
+    cache_enabled: bool = Field(default=False)
+    timeout_seconds: float = Field(default=30.0, ge=1.0)
+    truncation_length: int = Field(default=15000, ge=1000)
 
     model_config = {"validate_assignment": True}
 
 
 class ModelResult(BaseModel):
-    response: str = Field(
-        ...,
-        description="The generated response text"
-    )
-    processing_time_ms: int = Field(
-        ...,
-        ge=0,
-        description="Processing time in milliseconds"
-    )
-    success: bool = Field(
-        default=True,
-        description="Whether the model execution was successful"
-    )
-    truncated: bool = Field(
-        default=False,
-        description="Whether the input was truncated"
-    )
-    original_length: int | None = Field(
-        default=None,
-        description="Original length of input before truncation"
-    )
-    truncated_length: int | None = Field(
-        default=None,
-        description="Length of input after truncation"
-    )
-    error: str | None = Field(
-        default=None,
-        description="Error message if execution failed"
-    )
+    response: str = Field(...)
+    processing_time_ms: int = Field(..., ge=0)
+    success: bool = Field(default=True)
+    truncated: bool = Field(default=False)
+    original_length: int | None = Field(default=None)
+    truncated_length: int | None = Field(default=None)
+    error: str | None = Field(default=None)
 
     model_config = {"validate_assignment": True}

@@ -16,7 +16,6 @@ from libraries.observability.tracing import TracedMessage
 
 @pytest.mark.asyncio
 async def test_escalation_agent_error_handling(monkeypatch):
-    """Test error handling in escalation agent."""
     load_dotenv()
 
     def mock_escalation_error(*args, **kwargs):
@@ -65,7 +64,6 @@ async def test_escalation_agent_error_handling(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_escalation_empty_chat_messages(monkeypatch):
-    """Test handling of empty chat messages."""
     load_dotenv()
 
     from agents.escalation.agent import human_stream_channel
@@ -101,7 +99,6 @@ async def test_escalation_empty_chat_messages(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_escalation_missing_connection_id(monkeypatch):
-    """Test handling of missing connection_id."""
     load_dotenv()
 
     from agents.escalation.agent import human_stream_channel
@@ -129,7 +126,6 @@ async def test_escalation_missing_connection_id(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_other_messages():
-    """Test the handle_other_messages function."""
     test_message = TracedMessage(
         id=str(uuid4()),
         type="debug_message",
@@ -141,13 +137,11 @@ async def test_handle_other_messages():
 
 
 def test_get_conversation_string_empty():
-    """Test get_conversation_string with empty messages."""
     result = get_conversation_string([])
     assert result == ""
 
 
 def test_get_conversation_string_missing_content():
-    """Test get_conversation_string with missing content field."""
     messages = [{"role": "user"}, {"role": "assistant", "content": "Hello"}]
     result = get_conversation_string(messages)
     assert "assistant: Hello" in result
@@ -155,7 +149,6 @@ def test_get_conversation_string_missing_content():
 
 
 def test_get_conversation_string_normal():
-    """Test get_conversation_string with normal messages."""
     messages = [
         {"role": "user", "content": "Hi"},
         {"role": "assistant", "content": "Hello"},
@@ -167,7 +160,6 @@ def test_get_conversation_string_normal():
 
 @pytest.mark.asyncio
 async def test_process_escalation_streaming_error(monkeypatch):
-    """Test error handling during streaming."""
     load_dotenv()
 
     from agents.escalation.agent import human_stream_channel
@@ -205,7 +197,6 @@ async def test_process_escalation_streaming_error(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_escalation_missing_data_fields(monkeypatch):
-    """Test handling of missing various data fields."""
     load_dotenv()
 
     from agents.escalation.agent import human_stream_channel
@@ -227,7 +218,6 @@ async def test_escalation_missing_data_fields(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_escalation_exception_in_handler(monkeypatch):
-    """Test exception handling in main handler."""
     load_dotenv()
 
     from agents.escalation.agent import human_stream_channel
@@ -257,7 +247,6 @@ async def test_escalation_exception_in_handler(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_escalation_long_conversation(monkeypatch):
-    """Test handling of long conversation context."""
     load_dotenv()
 
     from agents.escalation.agent import human_stream_channel

@@ -21,7 +21,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 setup_logging()
 
-classifier = None  # global classifier instance
+classifier = None
 
 app = FastAPI(title="Fine-tuned Model Server")
 
@@ -34,8 +34,6 @@ def init_classifier():
     global classifier
 
     device_map, dtype = get_device_config()
-
-    # load run_id from MLFLOW_RUN_ID
     run_id = os.getenv("MLFLOW_RUN_ID")
 
     logger.info(f"Downloading model artifacts from MLflow run: {run_id}")
@@ -52,8 +50,6 @@ def init_classifier():
     )
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model.eval()
-
-    # create FinetunedClassifier
     classifier = FinetunedClassifier(model=model, tokenizer=tokenizer)
 
 

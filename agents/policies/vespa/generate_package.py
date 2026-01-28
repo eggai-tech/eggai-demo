@@ -5,274 +5,35 @@ import json
 import shutil
 import sys
 import tempfile
-import xml.etree.ElementTree as ET
 import zipfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from xml.dom import minidom
 
-# Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from vespa.package import (
-    ApplicationPackage,
-    Document,
-    Field,
-    FieldSet,
-    RankProfile,
-    Schema,
-    Validation,
-    ValidationID,
-)
+from vespa.package import ApplicationPackage
 
 from libraries.observability.logger import get_console_logger
 
+from .schema_builder import create_policy_document_schema, create_validation_overrides
+from .xml_generators import create_hosts_xml, create_services_xml
+
 logger = get_console_logger("vespa_package_generator")
-
-
-def create_validation_overrides() -> list[Validation]:
-    future_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-
-    validations = []
-
-    # Allow content cluster removal
-    validations.append(
-        Validation(
-            validation_id=ValidationID.contentClusterRemoval,
-            until=future_date,
-            comment="Allow content cluster removal during schema updates",
-        )
-    )
-
-    # Allow redundancy increase for multi-node setup
-    validations.append(
-        Validation(
-            validation_id=ValidationID.redundancyIncrease,
-            until=future_date,
-            comment="Allow redundancy increase for multi-node deployment",
-        )
-    )
-
-    logger.info(f"Created validation overrides until {future_date} (tomorrow)")
-    return validations
-
-
-def create_policy_document_schema() -> Schema:
-    return Schema(
-        name="policy_document",
-        document=Document(
-            fields=[
-                # Core fields
-                Field(
-                    name="id",
-                    type="string",
-                    indexing=["summary", "index"],
-                    match=["word"],
-                ),
-                Field(
-                    name="title",
-                    type="string",
-                    indexing=["summary", "index"],
-                    match=["text"],
-                    index="enable-bm25",
-                ),
-                Field(
-                    name="text",
-                    type="string",
-                    indexing=["summary", "index"],
-                    match=["text"],
-                    index="enable-bm25",
-                ),
-                Field(
-                    name="category",
-                    type="string",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="chunk_index",
-                    type="int",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="source_file",
-                    type="string",
-                    indexing=["summary", "attribute"],
-                ),
-                # Enhanced metadata fields
-                Field(
-                    name="page_numbers",
-                    type="array<int>",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="page_range",
-                    type="string",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="headings",
-                    type="array<string>",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="char_count",
-                    type="int",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="token_count",
-                    type="int",
-                    indexing=["summary", "attribute"],
-                ),
-                # Relationship fields
-                Field(
-                    name="document_id",
-                    type="string",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="previous_chunk_id",
-                    type="string",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="next_chunk_id",
-                    type="string",
-                    indexing=["summary", "attribute"],
-                ),
-                Field(
-                    name="chunk_position",
-                    type="float",
-                    indexing=["summary", "attribute"],
-                ),
-                # Additional context
-                Field(
-                    name="section_path",
-                    type="array<string>",
-                    indexing=["summary", "attribute"],
-                ),
-                # Embedding for vector search
-                Field(
-                    name="embedding",
-                    type="tensor<float>(x[384])",  # Using all-MiniLM-L6-v2 which outputs 384 dimensions
-                    indexing=["attribute", "index"],
-                    attribute=["distance-metric: angular"],
-                ),
-            ]
-        ),
-        fieldsets=[FieldSet(name="default", fields=["title", "text"])],
-        rank_profiles=[
-            RankProfile(name="default", first_phase="nativeRank(title, text)"),
-            RankProfile(
-                name="with_position",
-                first_phase="nativeRank(title, text) * (1.0 - 0.3 * attribute(chunk_position))",
-            ),
-            RankProfile(
-                name="semantic",
-                first_phase="closeness(field, embedding)",
-                inputs=[("query(query_embedding)", "tensor<float>(x[384])")],
-            ),
-            RankProfile(
-                name="hybrid",
-                first_phase="(1.0 - query(alpha)) * nativeRank(title, text) + query(alpha) * closeness(field, embedding)",
-                inputs=[
-                    ("query(alpha)", "double", "0.7"),
-                    ("query(query_embedding)", "tensor<float>(x[384])"),
-                ],
-            ),
-        ],
-    )
 
 
 def create_application_package(app_name: str = "policies") -> ApplicationPackage:
     logger.info(f"Creating enhanced Vespa application package with name: {app_name}")
 
-    # Create schema
     schema = create_policy_document_schema()
-
-    # Create validation overrides
     validations = create_validation_overrides()
 
-    # Create application package with validation overrides
     app_package = ApplicationPackage(
         name=app_name, schema=[schema], validations=validations
     )
 
     logger.info("Enhanced application package created successfully")
     return app_package
-
-
-def create_hosts_xml(hosts: list[dict[str, str]]) -> str:
-    root = ET.Element("hosts")
-
-    for host in hosts:
-        host_elem = ET.SubElement(root, "host", name=host["name"])
-        ET.SubElement(host_elem, "alias").text = host["alias"]
-
-    # Pretty print the XML
-    rough_string = ET.tostring(root, encoding="unicode")
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="    ")
-
-
-def create_services_xml(node_count: int = 1, redundancy: int = 1) -> str:
-    root = ET.Element("services", version="1.0")
-
-    # Admin cluster
-    admin = ET.SubElement(root, "admin", version="2.0")
-
-    if node_count > 1:
-        # For multi-node setup, add config servers, cluster controllers and slobroks
-        configservers = ET.SubElement(admin, "configservers")
-        for i in range(min(3, node_count)):  # Use up to 3 config servers
-            ET.SubElement(configservers, "configserver", hostalias=f"node{i}")
-
-        cluster_controllers = ET.SubElement(admin, "cluster-controllers")
-        for i in range(min(3, node_count)):  # Use up to 3 cluster controllers
-            ET.SubElement(
-                cluster_controllers, "cluster-controller", hostalias=f"node{i}"
-            )
-
-        slobroks = ET.SubElement(admin, "slobroks")
-        for i in range(min(3, node_count)):  # Use up to 3 slobroks
-            ET.SubElement(slobroks, "slobrok", hostalias=f"node{i}")
-
-    # Admin server on first node (or separate node if enough nodes)
-    adminserver_node = "node3" if node_count > 3 else "node0"
-    ET.SubElement(admin, "adminserver", hostalias=adminserver_node)
-
-    # Container cluster
-    container = ET.SubElement(root, "container", id="policies_container", version="1.0")
-    ET.SubElement(container, "search")
-    ET.SubElement(container, "document-api")
-    ET.SubElement(container, "document-processing")
-
-    # Add nodes to container if multi-node
-    if node_count > 1:
-        nodes = ET.SubElement(container, "nodes")
-        for i in range(node_count):
-            ET.SubElement(nodes, "node", hostalias=f"node{i}")
-
-    # Content cluster
-    content = ET.SubElement(root, "content", id="policies_content", version="1.0")
-    ET.SubElement(content, "redundancy").text = str(redundancy)
-
-    # Documents
-    documents = ET.SubElement(content, "documents")
-    ET.SubElement(documents, "document", type="policy_document", mode="index")
-
-    # Content nodes
-    nodes = ET.SubElement(content, "nodes")
-    for i in range(node_count):
-        ET.SubElement(
-            nodes, "node", **{"distribution-key": str(i), "hostalias": f"node{i}"}
-        )
-
-    # Pretty print the XML
-    rough_string = ET.tostring(root, encoding="unicode")
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="    ")
 
 
 def save_package_to_zip(
@@ -283,44 +44,32 @@ def save_package_to_zip(
     hosts: list[dict[str, str]] | None = None,
     services_xml: Path | None = None,
 ) -> Path:
-    # Create a temporary directory to save the application package
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
-        # Save the application package to files
         logger.info("Saving application package to temporary directory")
         app_package.to_files(temp_path)
 
-        # For production deployment, customize services.xml and add hosts.xml
         if deployment_mode == "production":
-            # Calculate redundancy based on node count
-            redundancy = min(node_count, 2)  # Max redundancy of 2 for small clusters
+            redundancy = min(node_count, 2)
 
-            # Override services.xml with multi-node configuration
             if services_xml and services_xml.exists():
-                # Use provided services.xml path if available
                 logger.info(f"Using provided services.xml from {services_xml}")
                 shutil.copy(services_xml, temp_path / "services.xml")
             else:
-                # Create a custom services.xml based on node count and redundancy
                 logger.info(
                     f"Creating custom services.xml for {node_count} nodes with redundancy {redundancy}"
                 )
-                services_xml = create_services_xml(node_count, redundancy)
+                services_xml_content = create_services_xml(node_count, redundancy)
                 services_path = temp_path / "services.xml"
-                services_path.write_text(services_xml)
-                logger.info(
-                    f"Created custom services.xml for {node_count} nodes with redundancy {redundancy}"
-                )
+                services_path.write_text(services_xml_content)
 
-            # Create hosts.xml if hosts are provided
             if hosts:
                 hosts_xml = create_hosts_xml(hosts)
                 hosts_path = temp_path / "hosts.xml"
                 hosts_path.write_text(hosts_xml)
                 logger.info(f"Created hosts.xml with {len(hosts)} host definitions")
 
-        # Create a zip file of the application package
         zip_path = output_path / "vespa-application.zip"
         logger.info(f"Creating zip file at {zip_path}")
 
@@ -357,15 +106,12 @@ def generate_package_artifacts(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create the application package
     app_package = create_application_package(app_name=app_name)
 
-    # Save as zip file with deployment configurations
     zip_path = save_package_to_zip(
         app_package, output_dir, deployment_mode, node_count, hosts, services_xml
     )
 
-    # Create metadata
     schema_info = {
         "name": app_name,
         "generated_at": datetime.now().isoformat(),
@@ -409,7 +155,6 @@ def generate_package_artifacts(
         },
     }
 
-    # Save metadata
     metadata_path = save_package_metadata(output_dir, schema_info)
 
     return zip_path, metadata_path
@@ -456,14 +201,12 @@ def main():
 
     args = parser.parse_args()
 
-    # Load hosts configuration if provided
     hosts = None
     if args.deployment_mode == "production" and args.hosts_config:
         if args.hosts_config.exists():
             with open(args.hosts_config) as f:
                 hosts = json.load(f)
         else:
-            # Generate default hosts for the given node count
             hosts = []
             for i in range(args.node_count):
                 hosts.append(

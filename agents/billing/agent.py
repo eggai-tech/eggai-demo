@@ -31,7 +31,6 @@ init_token_metrics(
 )
 @traced_handler("handle_billing_request")
 async def handle_billing_request(msg: TracedMessage) -> None:
-    """Handle incoming billing request messages from the agents channel."""
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id: str = msg.data.get("connection_id", "unknown")
@@ -68,7 +67,6 @@ async def handle_billing_request(msg: TracedMessage) -> None:
 
 @billing_agent.subscribe(channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
-    """Handle non-billing messages received on the agent channel."""
     logger.debug("Received non-billing message: %s", msg)
 
 if __name__ == "__main__":

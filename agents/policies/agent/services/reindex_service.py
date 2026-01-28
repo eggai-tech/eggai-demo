@@ -12,22 +12,18 @@ logger = get_console_logger("reindex_service")
 class ReindexService:
     def __init__(self, vespa_client: VespaClient):
         self.vespa_client = vespa_client
-        # Get base path for documents
         self.base_path = Path(__file__).parent.parent.parent / "ingestion" / "documents"
 
     async def clear_existing_documents(self) -> int:
         try:
-            # Get count of existing documents first
             existing_results = await self.vespa_client.search_documents(
                 query="",
-                max_hits=400,  # Respect Vespa's configured limit
+                max_hits=400,
             )
-            documents_to_clear = len(existing_results)
 
-            if documents_to_clear == 0:
+            if not existing_results:
                 return 0
 
-            # Clear the index by deleting all documents
             deleted_count = 0
             async with self.vespa_client.app.http_session() as session:
                 for doc in existing_results:
@@ -49,13 +45,11 @@ class ReindexService:
 
     async def get_indexing_status(self) -> dict:
         try:
-            # Get all documents to analyze (respecting Vespa's limit)
             all_results = await self.vespa_client.search_documents(
-                query="",  # Get all documents
-                max_hits=400,  # Respect Vespa's configured limit
+                query="",
+                max_hits=400,
             )
 
-            # Analyze documents by category
             category_stats = {}
             document_stats = {}
             total_chunks = len(all_results)
@@ -64,13 +58,11 @@ class ReindexService:
                 category = result.get("category", "unknown")
                 doc_id = result.get("document_id", "unknown")
 
-                # Update category stats
                 if category not in category_stats:
                     category_stats[category] = {"chunks": 0, "documents": set()}
                 category_stats[category]["chunks"] += 1
                 category_stats[category]["documents"].add(doc_id)
 
-                # Update document stats
                 if doc_id not in document_stats:
                     document_stats[doc_id] = {
                         "chunks": 0,
@@ -79,7 +71,6 @@ class ReindexService:
                     }
                 document_stats[doc_id]["chunks"] += 1
 
-            # Format results
             formatted_categories = {}
             for category, stats in category_stats.items():
                 formatted_categories[category] = {
@@ -112,7 +103,6 @@ class ReindexService:
             raise
 
     def _get_document_configs(self, policy_ids: list[str] | None = None) -> list[dict]:
-        # Define document configurations
         all_configs = [
             {"file": "auto.md", "category": "auto"},
             {"file": "home.md", "category": "home"},
@@ -120,7 +110,6 @@ class ReindexService:
             {"file": "health.md", "category": "health"},
         ]
 
-        # Filter by policy IDs if specified
         if policy_ids:
             return [
                 config
@@ -144,7 +133,6 @@ class ReindexService:
             return False, config["category"], error_msg
 
         try:
-            # Start ingestion workflow
             result = await temporal_client.ingest_document_async(
                 file_path=str(file_path),
                 category=config["category"],
@@ -197,7 +185,6 @@ class ReindexService:
         errors = []
 
         try:
-            # Step 1: Clear existing documents if requested
             if request.force_rebuild:
                 try:
                     await self.clear_existing_documents()
@@ -206,12 +193,10 @@ class ReindexService:
                     logger.error(error_msg)
                     errors.append(error_msg)
 
-            # Step 2: Queue documents for re-ingestion
             from agents.policies.ingestion.temporal_client import TemporalClient
             temporal_client = TemporalClient()
             document_configs = self._get_document_configs(request.policy_ids)
 
-            # Queue each document for ingestion
             documents_queued = 0
             queued_policy_ids = []
 
@@ -226,7 +211,6 @@ class ReindexService:
                 elif error_msg:
                     errors.append(error_msg)
 
-            # Prepare response based on results
             return self._create_reindex_response(
                 documents_queued, queued_policy_ids, errors
             )

@@ -42,53 +42,31 @@ async def lifespan(app: FastAPI):
 api = FastAPI(lifespan=lifespan)
 
 
-@api.get("/", response_class=HTMLResponse)
-async def read_root():
+async def _serve_html(filename: str) -> HTMLResponse:
+    html_file_path = Path(settings.default_public_dir) / filename
     try:
-        html_file_path = Path(settings.default_public_dir) / "index.html"
-        logger.debug(f"Reading HTML file from: {html_file_path}")
-
         if not html_file_path.is_file():
-            logger.error(f"File not found: {html_file_path}")
             raise FileNotFoundError(f"File not found: {html_file_path}")
 
         async with aiofiles.open(html_file_path, encoding="utf-8") as file:
             file_content = await file.read()
 
         return HTMLResponse(content=file_content, status_code=200)
-
     except FileNotFoundError as fnf_error:
-        logger.error(f"File not found: {str(fnf_error)}")
         raise HTTPException(status_code=404, detail=str(fnf_error))
-
     except Exception as e:
-        logger.error(f"Error reading HTML: {str(e)}", exc_info=True)
+        logger.error(f"Error reading {filename}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+
+@api.get("/", response_class=HTMLResponse)
+async def read_root():
+    return await _serve_html("index.html")
 
 
 @api.get("/admin.html", response_class=HTMLResponse)
 async def read_admin():
-    try:
-        html_file_path = Path(settings.default_public_dir) / "admin.html"
-        logger.debug(f"Reading admin HTML file from: {html_file_path}")
-
-        if not html_file_path.is_file():
-            logger.error(f"File not found: {html_file_path}")
-            raise FileNotFoundError(f"File not found: {html_file_path}")
-
-        async with aiofiles.open(html_file_path, encoding="utf-8") as file:
-            file_content = await file.read()
-
-        return HTMLResponse(content=file_content, status_code=200)
-
-    except FileNotFoundError as fnf_error:
-        logger.error(f"File not found: {str(fnf_error)}")
-        raise HTTPException(status_code=404, detail=str(fnf_error))
-
-    except Exception as e:
-        logger.error(f"Error reading admin HTML: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
+    return await _serve_html("admin.html")
 
 
 frontend_server = uvicorn.Server(

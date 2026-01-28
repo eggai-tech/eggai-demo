@@ -7,7 +7,6 @@ from ..config import Settings
 
 
 def test_settings_defaults():
-    """Ensure Settings defaults match expected values."""
     s = Settings()
     # Server defaults
     assert s.host == "127.0.0.1"
@@ -22,7 +21,6 @@ def test_settings_defaults():
 
 
 def test_default_public_dir_property(monkeypatch, tmp_path):
-    """Test default_public_dir points to the public folder when not set."""
     # Ensure PUBLIC_DIR not set
     monkeypatch.delenv("FRONTEND_PUBLIC_DIR", raising=False)
     s = Settings()
@@ -31,7 +29,6 @@ def test_default_public_dir_property(monkeypatch, tmp_path):
 
 
 def test_override_public_dir(monkeypatch):
-    """Test that setting FRONTEND_PUBLIC_DIR overrides default_public_dir."""
     custom = "/tmp/custom_public"
     monkeypatch.setenv("FRONTEND_PUBLIC_DIR", custom)
     s = Settings()

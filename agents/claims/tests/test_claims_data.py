@@ -1,5 +1,3 @@
-"""Tests for claims data module."""
-
 import json
 
 import pytest
@@ -16,7 +14,6 @@ from agents.claims.dspy_modules.claims_data import (
 
 
 def test_get_claim_status_existing():
-    """Test getting status for existing claim."""
     result = get_claim_status("1001")
     data = json.loads(result)
 
@@ -28,7 +25,6 @@ def test_get_claim_status_existing():
 
 
 def test_get_claim_status_nonexistent():
-    """Test getting status for non-existent claim."""
     result = get_claim_status("NONEXISTENT")
     data = json.loads(result)
 
@@ -37,7 +33,6 @@ def test_get_claim_status_nonexistent():
 
 
 def test_get_claim_status_empty():
-    """Test getting status with empty claim number."""
     result = get_claim_status("")
     data = json.loads(result)
 
@@ -45,7 +40,6 @@ def test_get_claim_status_empty():
 
 
 def test_file_claim_success():
-    """Test filing a new claim successfully."""
     result = file_claim("D99999", "Test incident for filing")
     data = json.loads(result)
 
@@ -56,7 +50,6 @@ def test_file_claim_success():
 
 
 def test_file_claim_missing_policy():
-    """Test filing claim with missing policy number."""
     result = file_claim("", "Test incident")
     data = json.loads(result)
 
@@ -65,7 +58,6 @@ def test_file_claim_missing_policy():
 
 
 def test_file_claim_missing_description():
-    """Test filing claim with missing description."""
     result = file_claim("D99999", "")
     data = json.loads(result)
 
@@ -74,7 +66,6 @@ def test_file_claim_missing_description():
 
 
 def test_file_claim_missing_contact():
-    """Test filing claim with missing contact info."""
     # Since file_claim only takes 2 params, this test checks empty details
     result = file_claim("D99999", "")
     data = json.loads(result)
@@ -84,7 +75,6 @@ def test_file_claim_missing_contact():
 
 
 def test_update_claim_info_valid_field():
-    """Test updating a valid claim field."""
     # Update next_steps for claim 1003
     result = update_claim_info("1003", "next_steps", "Contact adjuster for inspection")
     data = json.loads(result)
@@ -94,7 +84,6 @@ def test_update_claim_info_valid_field():
 
 
 def test_update_claim_info_nonexistent_claim():
-    """Test updating non-existent claim."""
     result = update_claim_info("NONEXISTENT", "next_steps", "Some value")
     data = json.loads(result)
 
@@ -103,7 +92,6 @@ def test_update_claim_info_nonexistent_claim():
 
 
 def test_update_claim_info_invalid_field():
-    """Test updating invalid field."""
     result = update_claim_info("1001", "invalid_field", "Some value")
     data = json.loads(result)
 
@@ -115,7 +103,6 @@ def test_update_claim_info_invalid_field():
 
 
 def test_update_claim_info_estimate():
-    """Test updating estimate field with validation."""
     result = update_claim_info("1003", "estimate", "2500.00")
     data = json.loads(result)
 
@@ -123,7 +110,6 @@ def test_update_claim_info_estimate():
 
 
 def test_update_claim_info_invalid_estimate():
-    """Test updating estimate with invalid value."""
     result = update_claim_info("1001", "estimate", "invalid_amount")
     data = json.loads(result)
 
@@ -135,7 +121,6 @@ def test_update_claim_info_invalid_estimate():
 
 
 def test_update_claim_info_negative_estimate():
-    """Test updating estimate with negative value."""
     result = update_claim_info("1001", "estimate", "-100")
     data = json.loads(result)
 
@@ -147,7 +132,6 @@ def test_update_claim_info_negative_estimate():
 
 
 def test_update_claim_info_date_field():
-    """Test updating date field with validation."""
     result = update_claim_info("1003", "estimate_date", "2026-06-01")
     data = json.loads(result)
 
@@ -155,7 +139,6 @@ def test_update_claim_info_date_field():
 
 
 def test_update_claim_info_invalid_date():
-    """Test updating date field with invalid format."""
     result = update_claim_info("1001", "estimate_date", "invalid_date")
     data = json.loads(result)
 
@@ -167,7 +150,6 @@ def test_update_claim_info_invalid_date():
 
 
 def test_update_claim_info_outstanding_items():
-    """Test updating outstanding_items field."""
     result = update_claim_info(
         "1001", "outstanding_items", "Photos, Police report, Medical records"
     )
@@ -179,7 +161,6 @@ def test_update_claim_info_outstanding_items():
 
 
 def test_update_claim_info_empty_field():
-    """Test updating with empty field name."""
     result = update_claim_info("1001", "", "Some value")
     data = json.loads(result)
 
@@ -187,7 +168,6 @@ def test_update_claim_info_empty_field():
 
 
 def test_update_claim_info_empty_value():
-    """Test updating with empty value."""
     result = update_claim_info("1001", "next_steps", "")
     data = json.loads(result)
 
@@ -195,7 +175,6 @@ def test_update_claim_info_empty_value():
 
 
 def test_claim_data_exception():
-    """Test ClaimDataException functionality."""
     exception = ClaimDataException("Test error", ErrorCategory.USER_INPUT)
 
     assert str(exception) == "Test error"
@@ -204,7 +183,6 @@ def test_claim_data_exception():
 
 
 def test_field_validators_estimate():
-    """Test FieldValidators estimate validation."""
     # Valid estimate
     valid, result = FieldValidators.validate_estimate("1500.50")
     assert valid is True
@@ -222,7 +200,6 @@ def test_field_validators_estimate():
 
 
 def test_field_validators_date():
-    """Test FieldValidators date validation."""
     # Valid date
     valid, result = FieldValidators.validate_date("2026-05-15")
     assert valid is True
@@ -235,7 +212,6 @@ def test_field_validators_date():
 
 
 def test_field_validators_items_list():
-    """Test FieldValidators items list validation."""
     # Valid list
     valid, result = FieldValidators.validate_items_list(
         "Photos, Police report, Medical records"
@@ -252,7 +228,6 @@ def test_field_validators_items_list():
 
 
 def test_field_validators_text():
-    """Test FieldValidators text validation."""
     # Valid text
     valid, result = FieldValidators.validate_text("Valid text content")
     assert valid is True
@@ -265,7 +240,6 @@ def test_field_validators_text():
 
 
 def test_error_category_enum():
-    """Test ErrorCategory enum values."""
     assert ErrorCategory.USER_INPUT.value == "user_input"
     assert ErrorCategory.DATA_ACCESS.value == "data_access"
     assert ErrorCategory.SYSTEM.value == "system"
@@ -274,7 +248,6 @@ def test_error_category_enum():
 
 
 def test_claims_database_structure():
-    """Test that claims database has expected structure."""
     assert len(CLAIMS_DATABASE) >= 3
 
     for claim in CLAIMS_DATABASE:
@@ -286,7 +259,6 @@ def test_claims_database_structure():
 
 
 def test_claim_record_to_json():
-    """Test ClaimRecord to_json method."""
     claim = CLAIMS_DATABASE[0]
     json_str = claim.to_json()
     data = json.loads(json_str)

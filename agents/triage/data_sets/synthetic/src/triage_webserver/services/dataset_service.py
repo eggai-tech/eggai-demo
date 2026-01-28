@@ -23,9 +23,6 @@ async def create_dataset(
     turns: list[int] | None = None,
     model: str | None = None,
 ) -> Dataset:
-    """
-    Create a new dataset with generated examples using the dataset generator
-    """
     if agent_distribution is None:
         agent_distribution = {
             "BillingAgent": 0.3,
@@ -57,7 +54,6 @@ async def create_dataset(
     if model is None:
         model = config.MODEL
 
-    # Create the dataset in the database
     dataset = Dataset(
         name=name,
         description=description,
@@ -69,7 +65,6 @@ async def create_dataset(
     db.commit()
     db.refresh(dataset)
 
-    # Calculate total examples for progress tracking
     total_examples = 0
     for agent in Agents:
         agent_frac = agent_distribution.get(agent.value, 0)
@@ -81,10 +76,8 @@ async def create_dataset(
                 count = round(ideal_per_combo * frac)
                 total_examples += max(count, 1)
 
-    # Set up progress tracking
     progress = tqdm(total=total_examples, desc=f"Generating Dataset: {name}")
 
-    # Generate examples for each agent
     agent_tasks = [
         generate_conversation_per_agent(agent, turns, temperatures, progress)
         for agent in Agents
@@ -92,12 +85,10 @@ async def create_dataset(
     results = await asyncio.gather(*agent_tasks)
     progress.close()
 
-    # Flatten results
     examples = []
     for agent_result in results:
         examples.extend(agent_result)
 
-    # Save examples to database
     for example_data in examples:
         example = Example(
             dataset_id=dataset.id,
@@ -113,7 +104,6 @@ async def create_dataset(
         )
         db.add(example)
 
-    # Update dataset with final count
     dataset.total_examples = len(examples)
     db.commit()
     db.refresh(dataset)
@@ -122,23 +112,14 @@ async def create_dataset(
 
 
 def get_dataset(db: Session, dataset_id: int) -> Dataset | None:
-    """
-    Get a dataset by ID
-    """
     return db.query(Dataset).filter(Dataset.id == dataset_id).first()
 
 
 def get_datasets(db: Session, skip: int = 0, limit: int = 100) -> list[Dataset]:
-    """
-    Get all datasets
-    """
     return db.query(Dataset).offset(skip).limit(limit).all()
 
 
 def delete_dataset(db: Session, dataset_id: int) -> bool:
-    """
-    Delete a dataset and all its examples
-    """
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if dataset:
         db.delete(dataset)

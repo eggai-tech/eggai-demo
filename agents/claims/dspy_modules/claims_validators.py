@@ -1,9 +1,6 @@
 class FieldValidators:
-    """Validation functions for claim fields."""
-
     @staticmethod
     def validate_estimate(value: str) -> tuple[bool, str | float | None]:
-        """Validate estimate field value."""
         try:
             amount = float(value)
             if amount < 0:
@@ -14,7 +11,6 @@ class FieldValidators:
 
     @staticmethod
     def validate_date(value: str) -> tuple[bool, str | None]:
-        """Validate date field value."""
         if not (value.count("-") == 2 and len(value) >= 8):
             return False, "Date must be in YYYY-MM-DD format"
         try:
@@ -31,7 +27,6 @@ class FieldValidators:
 
     @staticmethod
     def validate_items_list(value: str) -> tuple[bool, list[str] | None]:
-        """Validate a comma-separated list of items."""
         if not value or not value.strip():
             return False, "Please provide at least one item"
         items = [item.strip() for item in value.split(",") if item.strip()]
@@ -41,7 +36,6 @@ class FieldValidators:
 
     @staticmethod
     def validate_text(value: str) -> tuple[bool, str | None]:
-        """Validate and sanitize text fields."""
         clean_value = value.strip()
         if not clean_value:
             return False, "Value cannot be empty"
@@ -50,7 +44,6 @@ class FieldValidators:
         return True, clean_value
 
 
-# Field validation registry mapping field names to validators
 FIELD_VALIDATORS = {
     "estimate": FieldValidators.validate_estimate,
     "estimate_date": FieldValidators.validate_date,
@@ -65,5 +58,4 @@ FIELD_VALIDATORS = {
     "next_steps": FieldValidators.validate_text,
 }
 
-# Explicitly allowed fields to update (security whitelist)
 ALLOWED_FIELDS = list(FIELD_VALIDATORS.keys())

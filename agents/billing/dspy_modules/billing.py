@@ -1,3 +1,4 @@
+import json
 from collections.abc import AsyncIterable
 from pathlib import Path
 from typing import Any
@@ -20,8 +21,7 @@ logger = get_console_logger("billing_agent.dspy")
 
 
 class BillingSignature(dspy.Signature):
-    """
-    You are the Billing Agent for an insurance company.
+    """You are the Billing Agent for an insurance company.
 
     ROLE:
       - Assist customers with billing inquiries such as amounts, billing cycles, and payment status
@@ -45,13 +45,7 @@ class BillingSignature(dspy.Signature):
     final_response: str = dspy.OutputField(desc="Billing response to the user.")
 
 
-import json
-
-
 def load_optimized_instructions(path: Path) -> str | None:
-    """
-    Load optimized instructions from a JSON file and return them if valid.
-    """
     if not path.exists():
         logger.info(f"Optimized model file not found at {path}")
         return None
@@ -78,14 +72,12 @@ def load_optimized_instructions(path: Path) -> str | None:
     return None
 
 
-# Global variables for lazy initialization
 tracer = None
 _billing_model = None
 _initialized = False
 
 
 def _initialize_billing_model():
-    """Lazy initialization of billing model to avoid hanging during imports."""
     global tracer, _billing_model, _initialized
 
     if _initialized:
@@ -93,7 +85,6 @@ def _initialize_billing_model():
 
     tracer = create_tracer("billing_agent")
 
-    # Load optimized instructions if available
     optimized_path = Path(__file__).resolve().parent / "optimized_billing_simba.json"
     instructions = load_optimized_instructions(optimized_path)
     using_optimized_prompts = False
@@ -120,7 +111,6 @@ def _initialize_billing_model():
 def truncate_long_history(
     chat_history: str, config: ModelConfig | None = None
 ) -> dict[str, Any]:
-    """Truncate conversation history if it exceeds maximum length."""
     config = config or ModelConfig()
     max_length = config.truncation_length
 
@@ -148,16 +138,13 @@ def truncate_long_history(
 async def process_billing(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:
-    """Process a billing inquiry using the DSPy model with streaming output."""
     config = config or ModelConfig()
 
     truncation_result = truncate_long_history(chat_history, config)
     chat_history = truncation_result["history"]
 
-    # Get the billing model (lazy initialization)
     billing_model = _initialize_billing_model()
 
-    # Create a streaming version of the billing model
     streamify_func = dspy.streamify(
         billing_model,
         stream_listeners=[

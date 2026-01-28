@@ -27,7 +27,6 @@ logger = get_console_logger("policies_agent.reasoning")
 
 policies_tracer = create_tracer("policies_agent")
 
-# Default configuration
 language_model = dspy_set_language_model(settings)
 
 
@@ -96,7 +95,6 @@ class PolicyAgentSignature(dspy.Signature):
     final_response: str = dspy.OutputField(desc="Final response message to the user.")
 
 
-# Path to the SIMBA optimized JSON file
 optimized_model_path = (
     Path(__file__).resolve().parent / "optimization" / "optimized_policies_simba.json"
 )
@@ -109,10 +107,8 @@ policies_model = TracedReAct(
     max_iters=settings.max_iterations,
 )
 
-# Flag to indicate if we're using optimized prompts (from JSON)
 using_optimized_prompts = False
 
-# Try to load prompts from the optimized JSON file directly
 if (
     optimized_model_path.exists()
     and os.environ.get("POLICIES_USE_OPTIMIZED_PROMPTS", "false").lower() == "true"
@@ -122,15 +118,12 @@ if (
         with open(optimized_model_path) as f:
             optimized_data = json.load(f)
 
-            # Check if the JSON has the expected structure
             if "react" in optimized_data and "signature" in optimized_data["react"]:
-                # Extract the optimized instructions
                 optimized_instructions = optimized_data["react"]["signature"].get(
                     "instructions"
                 )
                 if optimized_instructions:
                     logger.info("Successfully loaded optimized instructions")
-                    # Update the instructions in our signature class
                     PolicyAgentSignature.__doc__ = optimized_instructions
                     using_optimized_prompts = True
 
@@ -143,7 +136,6 @@ if (
 else:
     logger.info(f"Optimized model file not found at {optimized_model_path}")
 
-# Log which prompts we're using
 logger.info(
     f"Using {'optimized' if using_optimized_prompts else 'standard'} prompts for policies agent"
 )
@@ -152,7 +144,6 @@ logger.info(
 def truncate_long_history(
     chat_history: str, config: ModelConfig | None = None
 ) -> dict[str, Any]:
-    """Truncate conversation history if it exceeds maximum length."""
     config = config or ModelConfig()
     max_length = config.truncation_length
 
@@ -163,7 +154,6 @@ def truncate_long_history(
         "truncated_length": len(chat_history),
     }
 
-    # Check if truncation needed based on both character count and line count
     lines = chat_history.split("\n")
     max_lines = settings.max_conversation_lines
 
@@ -173,7 +163,6 @@ def truncate_long_history(
     truncated_lines = lines[-max_lines:]
     truncated_history = "\n".join(truncated_lines)
 
-    # Update result
     result["history"] = truncated_history
     result["truncated"] = True
     result["truncated_length"] = len(truncated_history)
@@ -185,10 +174,8 @@ def truncate_long_history(
 def process_policies(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:
-    """Process a policies inquiry using the DSPy ReAct model with streaming output."""
     config = config or ModelConfig()
 
-    # Handle long conversations
     truncation_result = truncate_long_history(chat_history, config)
     chat_history = truncation_result["history"]
 
@@ -209,7 +196,6 @@ if __name__ == "__main__":
     async def run():
         init_telemetry(settings.app_name, endpoint=settings.otel_endpoint)
 
-        # Test the policies DSPy module
         test_conversation = (
             "User: I need information about my policy.\n"
             "PoliciesAgent: Sure, I can help with that. Could you please provide me with your policy number?\n"

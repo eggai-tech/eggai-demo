@@ -9,7 +9,6 @@ from pathlib import Path
 
 import httpx
 
-# Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -21,7 +20,6 @@ logger = get_console_logger("vespa_deployment")
 
 
 def check_schema_exists(config_server_url: str, query_url: str, expected_generation: int = None) -> bool:
-    """Check if schema is deployed with correct generation."""
     try:
         app_status_url = f"{config_server_url}/application/v2/tenant/default/application/default/environment/prod/region/default/instance/default"
         response = httpx.get(app_status_url, timeout=10.0)
@@ -36,7 +34,6 @@ def check_schema_exists(config_server_url: str, query_url: str, expected_generat
         if expected_generation is not None and generation < expected_generation:
             return False
 
-        # Check schema accessibility
         policy_doc_url = f"{query_url}/document/v1/policies/policy_document/docid/test?cluster=policies_content"
         response = httpx.get(policy_doc_url, timeout=10.0)
 
@@ -50,11 +47,9 @@ def check_schema_exists(config_server_url: str, query_url: str, expected_generat
 
 
 def deploy_package_from_zip(config_server_url: str, zip_path: Path) -> tuple[bool, str]:
-    """Deploy Vespa package via config server."""
     with open(zip_path, "rb") as f:
         zip_content = f.read()
 
-    # Prepare application
     prepare_url = f"{config_server_url}/application/v2/tenant/default/session"
     response = httpx.post(prepare_url, content=zip_content, headers={"Content-Type": "application/zip"}, timeout=60.0)
 
@@ -67,14 +62,12 @@ def deploy_package_from_zip(config_server_url: str, zip_path: Path) -> tuple[boo
         logger.error("No session ID returned")
         return False, ""
 
-    # Prepare session
     prepare_session_url = f"{config_server_url}/application/v2/tenant/default/session/{session_id}/prepared"
     response = httpx.put(prepare_session_url, timeout=60.0)
     if response.status_code != 200:
         logger.error(f"Session prepare failed: {response.status_code} - {response.text}")
         return False, session_id
 
-    # Activate session
     activate_url = f"{config_server_url}/application/v2/tenant/default/session/{session_id}/active"
     response = httpx.put(activate_url, timeout=60.0)
     if response.status_code != 200:
@@ -96,42 +89,25 @@ def deploy_to_vespa(
     services_xml: Path = None,
     app_name: str = "policies",
 ) -> bool:
-    """Deploy the enhanced application package to Vespa.
-
-    Args:
-        config_server_url: Full URL of the Vespa config server (e.g., http://localhost:19071)
-        query_url: Full URL of the Vespa query endpoint (e.g., http://localhost:8080)
-        force: Force deployment even if schema exists
-        artifacts_dir: Directory containing pre-generated artifacts. If None, generates new ones.
-        deployment_mode: 'local' or 'production'
-        node_count: Number of nodes for production deployment
-        hosts_config: Path to JSON file with host configurations
-        services_xml: Path to XML file with services configurations
-        app_name: Name of the application to deploy
-    """
     logger.info(f"Deploying to {config_server_url}")
 
-    # Get current generation
     try:
         response = httpx.get(f"{config_server_url}/application/v2/tenant/default/application/default/environment/prod/region/default/instance/default", timeout=10.0)
         pre_deployment_generation = response.json().get("generation", 0) if response.status_code == 200 else 0
     except Exception as _:
         pre_deployment_generation = 0
 
-    # Check if schema exists
     if not force and check_schema_exists(config_server_url, query_url):
         logger.info("Schema already deployed, skipping")
         return True
 
     try:
-        # Get package artifacts
         if artifacts_dir and artifacts_dir.exists():
             zip_path = artifacts_dir / "vespa-application.zip"
             if not zip_path.exists():
                 logger.error(f"Package not found: {zip_path}")
                 return False
         else:
-            # Generate hosts for production mode
             hosts = None
             if deployment_mode == "production":
                 if hosts_config and hosts_config.exists():
@@ -153,12 +129,10 @@ def deploy_to_vespa(
                 hosts=hosts, services_xml=services_xml, app_name=app_name
             )
 
-        # Deploy package
         success, session_id = deploy_package_from_zip(config_server_url, zip_path)
         if not success:
             return False
 
-        # Verify deployment with retry
         expected_generation = pre_deployment_generation + 1
         logger.info(f"Waiting for schema to be ready (generation {expected_generation})...")
         for attempt in range(1, 21):
@@ -171,16 +145,13 @@ def deploy_to_vespa(
                 logger.info(f"Schema not ready yet, waiting 5 seconds... (attempt {attempt}/20)")
                 time.sleep(5)
             else:
-                # Final check: verify generation increased AND config server shows convergence
                 try:
                     response = httpx.get(f"{config_server_url}/application/v2/tenant/default/application/default/environment/prod/region/default/instance/default", timeout=10.0)
                     if response.status_code == 200:
                         app_data = response.json()
                         current_gen = app_data.get("generation", 0)
 
-                        # Only consider successful if generation increased AND we have model versions
                         if current_gen >= expected_generation and app_data.get("modelVersions"):
-                            # Try to check service convergence as additional validation
                             try:
                                 conv_response = httpx.get(f"{config_server_url}/application/v2/tenant/default/application/default/environment/prod/region/default/instance/default/serviceconverge", timeout=10.0)
                                 if conv_response.status_code == 200:
@@ -206,7 +177,6 @@ def deploy_to_vespa(
 
 
 def main():
-    """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Deploy Vespa application package",
         formatter_class=argparse.RawDescriptionHelpFormatter,

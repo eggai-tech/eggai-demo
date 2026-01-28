@@ -35,7 +35,6 @@ async def process_claims_request(
     message_id: str,
     timeout_seconds: float | None = None,
 ) -> None:
-    """Generate a response to a claims request with streaming output."""
     config = ModelConfig(name="claims_react", timeout_seconds=timeout_seconds or 30.0)
     with tracer.start_as_current_span("process_claims_request") as span:
         validate_conversation(conversation_string, tracer, span)
@@ -59,7 +58,6 @@ async def process_claims_request(
 )
 @traced_handler("handle_claim_request")
 async def handle_claim_request(msg: TracedMessage) -> None:
-    """Handle incoming claim request messages from the agents channel."""
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id: str = msg.data.get("connection_id", "unknown")
@@ -89,7 +87,6 @@ async def handle_claim_request(msg: TracedMessage) -> None:
 
 @claims_agent.subscribe(channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
-    """Handle non-claim messages received on the agent channel."""
     logger.debug("Received non-claim message: %s", msg)
 
 

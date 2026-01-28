@@ -12,7 +12,6 @@ class DocumentService:
         self.vespa_client = vespa_client
 
     def create_policy_document(self, doc_data: dict) -> PolicyDocument:
-        # Generate citation
         citation = None
         if doc_data.get("page_range"):
             citation = f"{doc_data.get('source_file', 'Unknown')}, page {doc_data['page_range']}"
@@ -25,12 +24,10 @@ class DocumentService:
             chunk_index=doc_data.get("chunk_index", 0),
             source_file=doc_data.get("source_file", ""),
             relevance=doc_data.get("relevance"),
-            # Enhanced metadata
             page_numbers=doc_data.get("page_numbers", []),
             page_range=doc_data.get("page_range"),
             headings=doc_data.get("headings", []),
             citation=citation,
-            # Relationships
             document_id=doc_data.get("document_id"),
             previous_chunk_id=doc_data.get("previous_chunk_id"),
             next_chunk_id=doc_data.get("next_chunk_id"),
@@ -44,20 +41,14 @@ class DocumentService:
         offset: int = 0
     ) -> list[PolicyDocument]:
         try:
-            # Use an empty query to get all documents
-            query = ""  # Empty query will match all documents
-
-            # Get more results to handle pagination properly
             results = await self.vespa_client.search_documents(
-                query=query,
+                query="",
                 category=category,
-                max_hits=limit + offset,  # Get enough results for pagination
+                max_hits=limit + offset,
             )
 
-            # Apply pagination
             paginated_results = results[offset : offset + limit]
 
-            # Convert to PolicyDocument models
             documents = [
                 self.create_policy_document(result)
                 for result in paginated_results
@@ -71,7 +62,6 @@ class DocumentService:
 
     async def get_document_by_id(self, doc_id: str) -> PolicyDocument | None:
         try:
-            # Try to retrieve by document ID
             result = await self.vespa_client.get_document(
                 schema="policy_document", doc_id=doc_id
             )
@@ -87,19 +77,16 @@ class DocumentService:
 
     async def get_categories_stats(self) -> list[dict]:
         try:
-            # Get all documents to count by category
             all_results = await self.vespa_client.search_documents(
-                query="",  # Get all documents
-                max_hits=1000,  # Get a reasonable number of results
+                query="",
+                max_hits=1000,
             )
 
-            # Count documents by category
             category_counts = {}
             for result in all_results:
                 category = result.get("category", "unknown")
                 category_counts[category] = category_counts.get(category, 0) + 1
 
-            # Format results
             stats = [
                 {"name": category, "document_count": count}
                 for category, count in sorted(category_counts.items())
@@ -113,10 +100,9 @@ class DocumentService:
 
     async def clear_all_documents(self) -> dict:
         try:
-            # Get all documents
             all_results = await self.vespa_client.search_documents(
-                query="",  # Get all documents
-                max_hits=400,  # Respect Vespa's configured limit
+                query="",
+                max_hits=400,
             )
 
             if not all_results:
@@ -126,13 +112,11 @@ class DocumentService:
                     "message": "No documents found to delete"
                 }
 
-            # Count by category before deletion
             category_counts = {}
             for result in all_results:
                 category = result.get("category", "unknown")
                 category_counts[category] = category_counts.get(category, 0) + 1
 
-            # Delete all documents
             deleted_count = 0
             async with self.vespa_client.app.http_session() as session:
                 for doc in all_results:

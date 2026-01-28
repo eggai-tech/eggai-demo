@@ -1,5 +1,3 @@
-"""Tests for triage small talk module."""
-
 from unittest.mock import MagicMock, patch
 
 import dspy
@@ -12,20 +10,17 @@ from agents.triage.dspy_modules.small_talk import ChattySignature, chatty
 
 @pytest.fixture
 def mock_dspy_predict():
-    """Mock dspy.Predict for testing."""
     with patch("dspy.Predict") as mock_predict:
         yield mock_predict
 
 
 @pytest.fixture
 def mock_dspy_streamify():
-    """Mock dspy.streamify for testing."""
     with patch("dspy.streamify") as mock_streamify:
         yield mock_streamify
 
 
 def test_chatty_signature():
-    """Test ChattySignature class structure."""
     # Test that the signature class exists and has the right structure
     assert hasattr(ChattySignature, "__annotations__")
     assert hasattr(ChattySignature, "__doc__")
@@ -35,14 +30,12 @@ def test_chatty_signature():
     assert "chat_history" in annotations
     assert "response" in annotations
 
-    # Check docstring contains key information
     docstring = ChattySignature.__doc__
     assert docstring is not None
     assert len(docstring) > 0
 
 
 def test_chatty_function_basic(mock_dspy_streamify):
-    """Test basic chatty function call."""
     # Mock the streamify return value - use MagicMock to avoid async warnings
     mock_callable = MagicMock(return_value=iter([]))
     mock_dspy_streamify.return_value = mock_callable
@@ -51,14 +44,12 @@ def test_chatty_function_basic(mock_dspy_streamify):
 
     chatty(chat_history)
 
-    # Verify streamify was called with correct parameters
     mock_dspy_streamify.assert_called_once()
     call_args = mock_dspy_streamify.call_args
 
     # Check that a dspy.Predict instance was passed as first argument
     assert isinstance(call_args[0][0], dspy.Predict)
 
-    # Check keyword arguments
     kwargs = call_args[1]
     assert "stream_listeners" in kwargs
     assert "include_final_prediction_in_output_stream" in kwargs
@@ -72,8 +63,6 @@ def test_chatty_function_basic(mock_dspy_streamify):
 
 @pytest.mark.asyncio
 async def test_chatty_stream_response():
-    """Test chatty function with stream response."""
-    # Create mock stream responses
     mock_stream_response = StreamResponse(
         predict_name="chatty_predict",
         signature_field_name="response",
@@ -106,7 +95,6 @@ async def test_chatty_stream_response():
 
 @pytest.mark.asyncio
 async def test_chatty_with_off_topic_question():
-    """Test chatty function with off-topic question."""
     mock_prediction = Prediction(
         response="That's an interesting question! However, I'm here to help with your insurance needs. What insurance questions can I assist you with today?"
     )
@@ -130,7 +118,6 @@ async def test_chatty_with_off_topic_question():
 
 @pytest.mark.asyncio
 async def test_chatty_with_insurance_question():
-    """Test chatty function with insurance-related question."""
     mock_prediction = Prediction(
         response="Great! I'd be happy to help you with your insurance policy. What specific information do you need?"
     )
@@ -154,7 +141,6 @@ async def test_chatty_with_insurance_question():
 
 @pytest.mark.asyncio
 async def test_chatty_empty_chat_history():
-    """Test chatty function with empty chat history."""
     mock_prediction = Prediction(
         response="Hello! I'm here to help with your insurance needs. How can I assist you today?"
     )
@@ -177,7 +163,6 @@ async def test_chatty_empty_chat_history():
 
 @pytest.mark.asyncio
 async def test_chatty_multiple_chunks():
-    """Test chatty function with multiple stream chunks."""
     chunks = [
         StreamResponse(
             predict_name="chatty_predict",
@@ -220,22 +205,18 @@ async def test_chatty_multiple_chunks():
             responses.append(response)
 
         assert len(responses) == 5
-        # First 4 should be StreamResponse
         for i in range(4):
             assert isinstance(responses[i], StreamResponse)
-        # Last should be Prediction
         assert isinstance(responses[4], Prediction)
 
 
 def test_chatty_stream_listener_configuration():
-    """Test that stream listener is configured correctly."""
     with patch("dspy.streamify") as mock_streamify:
         # Use MagicMock to avoid async warnings - we only check call args
         mock_streamify.return_value = MagicMock(return_value=iter([]))
 
         chatty("User: Test")
 
-        # Check that streamify was called with correct stream listener
         call_args = mock_streamify.call_args
         kwargs = call_args[1]
 
@@ -250,10 +231,8 @@ def test_chatty_stream_listener_configuration():
 
 
 def test_chatty_signature_docstring():
-    """Test ChattySignature docstring contains required guidelines."""
     docstring = ChattySignature.__doc__
 
-    # Check for key guidelines in the docstring
     assert "friendly and helpful insurance agent" in docstring.lower()
     assert "redirect" in docstring.lower()
     assert "insurance" in docstring.lower()
@@ -263,17 +242,14 @@ def test_chatty_signature_docstring():
 
 @pytest.mark.asyncio
 async def test_chatty_function_parameters():
-    """Test that chatty function passes parameters correctly."""
     with patch("dspy.streamify") as mock_streamify:
         mock_callable = MagicMock()
         mock_streamify.return_value = mock_callable
 
         test_chat_history = "User: What's my policy number?"
 
-        # Call chatty and then call the returned function
         chatty(test_chat_history)
 
-        # Verify streamify was called
         mock_streamify.assert_called_once()
 
         # Get the function that streamify returns and verify it was called with chat_history
@@ -284,7 +260,6 @@ async def test_chatty_function_parameters():
 
 @pytest.mark.asyncio
 async def test_chatty_error_handling():
-    """Test chatty function error handling."""
 
     async def mock_generator_with_error(*args, **kwargs):
         yield StreamResponse(
@@ -305,17 +280,13 @@ async def test_chatty_error_handling():
             async for response in chatty(chat_history):
                 responses.append(response)
 
-        # Should have received the first chunk before error
         assert len(responses) == 1
         assert isinstance(responses[0], StreamResponse)
 
 
 def test_chatty_signature_field_types():
-    """Test ChattySignature field types and properties."""
-    # Test that the signature class has the expected structure
     assert hasattr(ChattySignature, "__annotations__")
 
-    # Check field annotations
     annotations = ChattySignature.__annotations__
     assert "chat_history" in annotations
     assert "response" in annotations
@@ -327,7 +298,6 @@ def test_chatty_signature_field_types():
 
 @pytest.mark.asyncio
 async def test_chatty_conversation_context():
-    """Test chatty function with conversation context."""
     conversation = """User: Hi there!
 Assistant: Hello! How can I help you with your insurance needs?
 User: What's your favorite movie?"""
@@ -337,7 +307,6 @@ User: What's your favorite movie?"""
     )
 
     async def mock_generator(*args, **kwargs):
-        # Verify the chat_history parameter was passed correctly
         assert kwargs.get("chat_history") == conversation or args[0] == conversation
         yield mock_prediction
 

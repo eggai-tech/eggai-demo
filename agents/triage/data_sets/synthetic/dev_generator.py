@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-Development script for running the dataset generator directly.
-For production use, install the package and use the `triage-generate` command.
-"""
-
 import argparse
 import asyncio
 import os
@@ -11,16 +6,13 @@ import sys
 
 from dotenv import load_dotenv
 
-# Add src directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
 
 from src.triage_agent_dataset.__main__ import generate_dataset
 
 if __name__ == "__main__":
-    # Load environment variables
     load_dotenv()
 
-    # Parse command line arguments
     parser = argparse.ArgumentParser(description="Generate a triage agent dataset")
     parser.add_argument(
         "--output",
@@ -55,7 +47,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(f"Starting dataset generation to {args.output}...")
-    # Run the dataset generation function
     asyncio.run(
         generate_dataset(
             output_file=args.output,

@@ -6,14 +6,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class FewshotSettings(BaseSettings):
-    # Model configuration
     n_classes: int = Field(default=5)
     n_examples: int | None = Field(default=None)
     seed: int | list[int] = Field(default=[42, 47, 53])
     model_name_template: str = Field(default="fewshot_baseline_n_{n_examples}")
     checkpoint_dir: str = Field(default="baseline_checkpoints", env="CHECKPOINT_DIR")
 
-    # Dataset configuration
     train_dataset_paths: list[str] = Field(
         default_factory=lambda: [
             os.path.join(
@@ -24,12 +22,10 @@ class FewshotSettings(BaseSettings):
         env="TRAIN_DATASET_PATHS",
     )
 
-    # MLflow configuration
     mlflow_tracking_uri: str = Field(default="http://127.0.0.1:5001")
     mlflow_experiment_name: str = Field(default="triage-model-training")
     mlflow_run_name: str | None = Field(default=None)
 
-    # For evaluation
     test_dataset_path: str = Field(
         default=os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -52,7 +48,6 @@ class FewshotSettings(BaseSettings):
         return {"paths": self.train_dataset_paths}
 
     def generate_run_name(self):
-        """Generate a dynamic run name with timestamp and metadata."""
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if self.n_examples is None:

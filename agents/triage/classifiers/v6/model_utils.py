@@ -24,13 +24,11 @@ def extract_model_id_from_dspy(classify_ft) -> str | None:
 
 def parse_model_id_from_output(captured_output: str) -> str | None:
     try:
-        # Look for: "Model retrieved: ft:model-id"
         pattern = r'Model retrieved:\s+(ft:[\w-]+:[\w-]+::[\w]+)'
         match = re.search(pattern, captured_output)
         if match:
             return match.group(1)
 
-        # Alternative: any ft: model ID
         pattern = r'(ft:gpt-4o-mini-2024-07-18:[\w-]+::[\w]+)'
         match = re.search(pattern, captured_output)
         if match:

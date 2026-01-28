@@ -46,7 +46,6 @@ _response_queue = asyncio.Queue()
 
 
 def create_test_cases() -> list[dict]:
-    """Create test cases for the escalation agent."""
     return [
         {
             "chat_messages": [
@@ -221,7 +220,6 @@ def setup_mlflow():
 
 @pytest.mark.asyncio
 async def test_escalation_agent():
-    """Test the escalation agent functionality."""
     test_cases = create_test_cases()
 
     with setup_mlflow():
@@ -266,7 +264,6 @@ async def test_escalation_agent():
             )
 
             try:
-                # Wait for response
                 event = await wait_for_agent_response(connection_id)
                 if not event:
                     raise TimeoutError(
@@ -302,7 +299,6 @@ async def test_escalation_agent():
                 test_results.append(test_result)
                 evaluation_results.append(evaluation_result)
 
-                # Log metrics
                 mlflow.log_metric(
                     f"precision_case_{i + 1}", evaluation_result.precision_score
                 )
@@ -338,7 +334,6 @@ async def test_escalation_agent():
                 # Log timeout metric
                 mlflow.log_metric(f"timeout_case_{i + 1}", 1)
 
-        # Generate and log report
         headers = [
             "ID",
             "Expected",

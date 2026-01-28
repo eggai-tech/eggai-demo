@@ -28,7 +28,6 @@ async def process_billing_request(
     human_stream_channel: Channel = default_human_stream_channel,
     timeout_seconds: float | None = None,
 ) -> None:
-    """Generate a response to a billing request with streaming output."""
     config = ModelConfig(name="billing_react", timeout_seconds=timeout_seconds or 30.0)
     with tracer.start_as_current_span("process_billing_request") as span:
         validate_conversation(conversation_string, tracer, span)

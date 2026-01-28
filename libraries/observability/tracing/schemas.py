@@ -4,7 +4,6 @@ from eggai.schemas import Message
 from pydantic import BaseModel, Field
 
 
-# TODO make traceparent required and remove default
 class TracedMessage(Message):
     traceparent: str | None = Field(
         default=None,
@@ -32,7 +31,6 @@ class GenAIAttributes(BaseModel):
         result = {}
         for key, value in self.model_dump().items():
             if value is not None:
-                # Ensure all values are strings if they're not already
                 if not isinstance(value, str) and not isinstance(value, (list, bytes)):
                     value = str(value)
                 result[f"gen_ai.{key}"] = value

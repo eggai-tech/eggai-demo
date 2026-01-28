@@ -19,7 +19,6 @@ class Dataset(Base):
         DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
     )
 
-    # Relationship with Examples
     examples = relationship(
         "Example", back_populates="dataset", cascade="all, delete-orphan"
     )
@@ -45,7 +44,6 @@ class Example(Base):
         DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
     )
 
-    # Relationship with Dataset
     dataset = relationship("Dataset", back_populates="examples")
 
     def __repr__(self):

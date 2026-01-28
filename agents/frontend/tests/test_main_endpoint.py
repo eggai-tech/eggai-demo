@@ -12,7 +12,6 @@ def temp_public_dir(tmp_path, monkeypatch):
 
 
 def test_read_root_success(temp_public_dir):
-    """When index.html exists, GET / returns its contents."""
     html_file = temp_public_dir / "index.html"
     content = "<html><body>OK</body></html>"
     html_file.write_text(content, encoding="utf-8")
@@ -23,14 +22,12 @@ def test_read_root_success(temp_public_dir):
 
 
 def test_read_root_not_found(temp_public_dir):
-    """When index.html is missing, GET / returns 404."""
     client = TestClient(api)
     response = client.get("/")
     assert response.status_code == 404
 
 
 def test_read_root_error(temp_public_dir, monkeypatch):
-    """When reading index.html raises an error, GET / returns 500."""
     html_file = temp_public_dir / "index.html"
     html_file.write_text("data", encoding="utf-8")
     # Simulate aiofiles.open() throwing an unexpected error

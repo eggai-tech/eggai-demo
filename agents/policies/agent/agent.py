@@ -38,7 +38,6 @@ async def process_policy_request(
     message_id: str,
     timeout_seconds: float | None = None,
 ) -> None:
-    """Generate a response to a policy request with streaming output."""
     config = model_config
     if timeout_seconds:
         config = model_config.model_copy(update={"timeout_seconds": timeout_seconds})
@@ -65,7 +64,6 @@ async def process_policy_request(
 )
 @traced_handler("handle_policy_request")
 async def handle_policy_request(msg: TracedMessage) -> None:
-    """Handle incoming policy request messages from the agents channel."""
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id: str = msg.data.get("connection_id", "unknown")
@@ -98,7 +96,6 @@ async def handle_policy_request(msg: TracedMessage) -> None:
 
 @policies_agent.subscribe(channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
-    """Handle non-policy messages received on the agent channel."""
     logger.debug("Received non-policy message: %s", msg)
 
 

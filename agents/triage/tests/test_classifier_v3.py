@@ -54,7 +54,6 @@ async def test_classifier_v3():
                 }
             )
 
-        # log the metrics on mlflow
         def ms(vals):
             return statistics.mean(vals) * 1_000
 

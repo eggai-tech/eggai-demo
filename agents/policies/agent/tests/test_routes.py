@@ -1,24 +1,19 @@
-"""Tests for policies API routes"""
-
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from agents.policies.agent.api.routes import router
 
-# Create test app
 app = FastAPI()
 app.include_router(router, prefix="/api/v1")
 
 
 @pytest.fixture
 def client():
-    """Create a test client"""
     return TestClient(app)
 
 
 def test_health_check(client):
-    """Test health check endpoint"""
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
@@ -26,7 +21,6 @@ def test_health_check(client):
 
 
 def test_list_personal_policies(client):
-    """Test listing personal policies"""
     response = client.get("/api/v1/policies?limit=5")
     assert response.status_code == 200
     data = response.json()
@@ -36,7 +30,6 @@ def test_list_personal_policies(client):
 
 
 def test_list_policies_with_category_filter(client):
-    """Test listing policies with category filter"""
     response = client.get("/api/v1/policies?category=auto&limit=10")
     assert response.status_code == 200
     data = response.json()
@@ -46,7 +39,6 @@ def test_list_policies_with_category_filter(client):
 
 
 def test_get_specific_policy(client):
-    """Test getting a specific policy"""
     response = client.get("/api/v1/policies/A12345")
     assert response.status_code == 200
     data = response.json()
@@ -56,14 +48,12 @@ def test_get_specific_policy(client):
 
 
 def test_get_nonexistent_policy(client):
-    """Test getting a policy that doesn't exist"""
     response = client.get("/api/v1/policies/INVALID999")
     assert response.status_code == 404
     assert "Policy not found" in response.json()["detail"]
 
 
 def test_pagination(client):
-    """Test pagination parameters"""
     # Get first page
     response1 = client.get("/api/v1/policies?limit=2&offset=0")
     assert response1.status_code == 200

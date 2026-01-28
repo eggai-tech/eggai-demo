@@ -2,10 +2,7 @@ from fastapi import HTTPException
 
 from agents.policies.agent.types import VALID_CATEGORIES
 
-# Policy number pattern (letter followed by numbers)
 POLICY_NUMBER_PATTERN = r"^[A-Z]\d+$"
-
-# Max lengths
 MAX_QUERY_LENGTH = 500
 MAX_DOCUMENT_ID_LENGTH = 200
 
@@ -45,14 +42,13 @@ def validate_policy_number(policy_number: str | None) -> str | None:
 
     import re
 
-    # Check basic format
     if not re.match(POLICY_NUMBER_PATTERN, policy_number.upper()):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid policy number format '{policy_number}'. Expected format: letter followed by numbers (e.g., A12345)"
         )
 
-    # Check length (1 letter + at least 3 digits, max 6 digits)
+    # 1 letter + 3-6 digits
     if len(policy_number) < 4 or len(policy_number) > 7:
         raise HTTPException(
             status_code=400,
@@ -69,14 +65,12 @@ def validate_document_id(doc_id: str) -> str:
             detail="Document ID cannot be empty"
         )
 
-    # Check length
     if len(doc_id) > MAX_DOCUMENT_ID_LENGTH:
         raise HTTPException(
             status_code=400,
             detail=f"Document ID too long (max {MAX_DOCUMENT_ID_LENGTH} characters)"
         )
 
-    # Basic sanitization to prevent injection
     if any(char in doc_id for char in ['<', '>', '"', "'", '&', '@', '#', '!']):
         raise HTTPException(
             status_code=400,

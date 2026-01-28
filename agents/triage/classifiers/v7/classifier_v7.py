@@ -41,7 +41,6 @@ class FinetunedClassifier:
         if self.model is not None:
             return
 
-        # Check if fine-tuned model exists
         model_path = Path(v7_settings.output_dir)
 
         if model_path.exists():
@@ -53,14 +52,10 @@ class FinetunedClassifier:
             self._load_base_model()
 
     def _load_finetuned_model(self, model_path):
-        """Load fine-tuned sequence classification model"""
         try:
-            # Load tokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-            # Use shared device configuration
             device_map, dtype = get_device_config()
 
-            # Load the fine-tuned sequence classification model directly
             model = Gemma3TextForSequenceClassification.from_pretrained(
                 model_path,
                 num_labels=len(ID2LABEL),
@@ -69,7 +64,6 @@ class FinetunedClassifier:
                 attn_implementation="eager"
             )
 
-            # Move to mps if necessary
             self.model = move_to_mps(model, device_map)
             logger.info(f"Fine-tuned sequence classification model loaded from: {model_path}")
         except Exception as e:
@@ -78,7 +72,6 @@ class FinetunedClassifier:
 
 
     def _load_base_model(self):
-        """Load the base model via HuggingFace"""
         try:
             model_name = v7_settings.get_model_name()
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -87,17 +80,16 @@ class FinetunedClassifier:
 
             device_map, dtype = get_device_config()
             config = AutoConfig.from_pretrained(model_name)
-            config.num_labels = v7_settings.n_classes  # Set number of classes for classification
+            config.num_labels = v7_settings.n_classes
 
             model = AutoModelForSequenceClassification.from_pretrained(
                 model_name,
                 config=config,
                 torch_dtype=dtype,
                 device_map=device_map,
-                load_in_4bit=v7_settings.use_4bit and not v7_settings.use_qat_model and is_cuda_available()  # 4-bit only on CUDA
+                load_in_4bit=v7_settings.use_4bit and not v7_settings.use_qat_model and is_cuda_available()
             )
 
-            # Move to appropriate device
             self.model = move_to_mps(model, device_map)
             logger.info(f"HuggingFace model for classification loaded: {model_name}")
         except Exception as e:
@@ -123,11 +115,8 @@ class FinetunedClassifier:
         return ClassificationResult(target_agent=target_agent, metrics=metrics)
 
     def _sequence_classify(self, chat_history: str) -> TargetAgent:
-        """Classification using sequence classification head"""
-
         inputs = self.tokenizer(chat_history, return_tensors="pt")
 
-        # Move inputs to same device as model
         if torch.backends.mps.is_available():
             inputs = {k: v.to("mps") for k, v in inputs.items()}
         elif torch.cuda.is_available():
@@ -142,7 +131,6 @@ class FinetunedClassifier:
 
 
     def get_metrics(self) -> ClassifierMetrics:
-        """Return empty metrics for local model (no token usage)"""
         return ClassifierMetrics(
             total_tokens=0,
             prompt_tokens=0,
@@ -151,7 +139,6 @@ class FinetunedClassifier:
         )
 
 
-# Global instance
 _classifier = FinetunedClassifier()
 
 

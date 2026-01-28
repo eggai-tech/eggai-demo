@@ -30,13 +30,11 @@ def train_finetune_model(sample_size: int, model_name: str) -> str:
     run_name = setup_mlflow_tracking(model_name)
 
     with mlflow.start_run(run_name=run_name):
-        # Verify we're in the correct experiment
         current_exp = mlflow.get_experiment(mlflow.active_run().info.experiment_id)
         logger.info(f"Active experiment: {current_exp.name} (ID: {current_exp.experiment_id})")
 
         trainset = create_examples(sample_size, phase="train")
         logger.info(f"Loaded {len(trainset)} training examples")
-        # load test set for evaluation (configurable size)
         eval_sample_size = int(os.getenv("EVALUATION_SAMPLE_SIZE", "-1"))
         testset = create_examples(eval_sample_size, phase="test")
         logger.info(f"Loaded {len(testset)} test examples")
@@ -50,20 +48,16 @@ def train_finetune_model(sample_size: int, model_name: str) -> str:
 
         best_model, tokenizer = perform_fine_tuning(trainset, testset)
 
-        # remove 'checkpoint*' dir from output_dir if it exists
         output_dir = v7_settings.output_dir
         for item in os.listdir(output_dir):
             if item.startswith("checkpoint"):
                 item_path = os.path.join(output_dir, item)
                 if os.path.isdir(item_path):
                     logger.info(f"Removing old checkpoint directory: {item_path}")
-                    # remove recursively if it's a directory
                     shutil.rmtree(item_path)
 
-        # save artifacts to mlflow
         mlflow.log_artifacts(v7_settings.output_dir, artifact_path="model")
 
-        # Return model uri from the primary artifacts
         run_id = mlflow.active_run().info.run_id
         model_uri = f"runs:/{run_id}/model"
         logger.info(f"Model URI: {model_uri}")

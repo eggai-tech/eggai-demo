@@ -4,11 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-# Mock dependencies before import
 with patch('agents.claims.main.create_kafka_transport'):
     with patch('agents.claims.main.eggai_set_default_transport'):
         with patch('agents.claims.main.claims_agent') as mock_agent:
-            # Setup mock agent
             mock_agent.start = AsyncMock()
             mock_agent.stop = MagicMock()
 
@@ -20,30 +18,25 @@ with patch('agents.claims.main.create_kafka_transport'):
 
 @pytest.fixture
 def client():
-    """Create a test client"""
     return TestClient(app)
 
 
 def test_health_endpoint(client):
-    """Test that health endpoint is available"""
     response = client.get("/health")
     assert response.status_code == 200
 
 
 def test_claims_list_endpoint(client):
-    """Test that claims list endpoint is available"""
     response = client.get("/api/v1/claims?limit=5")
     assert response.status_code == 200
 
 
 def test_claims_stats_endpoint(client):
-    """Test that claims stats endpoint is available"""
     response = client.get("/api/v1/claims/stats")
     assert response.status_code == 200
 
 
 def test_app_has_cors_middleware(client):
-    """Test that CORS middleware is configured"""
     # Make a preflight request
     response = client.options(
         "/api/v1/claims",

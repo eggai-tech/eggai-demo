@@ -6,13 +6,8 @@ from dotenv import load_dotenv
 
 
 def main():
-    """
-    Main entry point for the triage-server command
-    """
-    # Load environment variables
     load_dotenv()
 
-    # Parse command line arguments
     parser = argparse.ArgumentParser(
         description="Start the Triage Dataset Manager web server"
     )
@@ -34,7 +29,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Run the application
     uvicorn.run(
         "triage_webserver.app:app", host=args.host, port=args.port, reload=args.reload
     )

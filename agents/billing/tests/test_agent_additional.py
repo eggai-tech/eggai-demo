@@ -16,7 +16,6 @@ from libraries.observability.tracing import TracedMessage
 
 @pytest.mark.asyncio
 async def test_billing_agent_error_handling(monkeypatch):
-    """Test error handling in billing agent."""
     load_dotenv()
 
     async def mock_billing_error(*args, **kwargs):
@@ -58,7 +57,6 @@ async def test_billing_agent_error_handling(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_billing_empty_chat_messages(monkeypatch):
-    """Test handling of empty chat messages."""
     load_dotenv()
 
     from agents.billing.agent import human_channel
@@ -91,7 +89,6 @@ async def test_billing_empty_chat_messages(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_billing_missing_connection_id(monkeypatch):
-    """Test handling of missing connection_id."""
     load_dotenv()
 
     from agents.billing.agent import human_stream_channel
@@ -119,7 +116,6 @@ async def test_billing_missing_connection_id(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_other_messages():
-    """Test the handle_other_messages function."""
     test_message = TracedMessage(
         id=str(uuid4()),
         type="debug_message",
@@ -131,13 +127,11 @@ async def test_handle_other_messages():
 
 
 def test_get_conversation_string_empty():
-    """Test get_conversation_string with empty messages."""
     result = get_conversation_string([])
     assert result == ""
 
 
 def test_get_conversation_string_missing_content():
-    """Test get_conversation_string with missing content field."""
     messages = [{"role": "user"}, {"role": "assistant", "content": "Hello"}]
     result = get_conversation_string(messages)
     assert "user:" not in result.lower()
@@ -145,7 +139,6 @@ def test_get_conversation_string_missing_content():
 
 
 def test_get_conversation_string_normal():
-    """Test get_conversation_string with normal messages."""
     messages = [
         {"role": "user", "content": "Hi"},
         {"role": "assistant", "content": "Hello", "agent": "BillingAgent"},
@@ -157,7 +150,6 @@ def test_get_conversation_string_normal():
 
 @pytest.mark.asyncio
 async def test_process_billing_request_short_conversation():
-    """Test process_billing_request with conversation too short."""
     connection_id = str(uuid4())
     message_id = str(uuid4())
 
@@ -167,7 +159,6 @@ async def test_process_billing_request_short_conversation():
 
 @pytest.mark.asyncio
 async def test_billing_missing_data_fields(monkeypatch):
-    """Test handling of missing various data fields."""
     load_dotenv()
 
     from agents.billing.agent import human_channel
@@ -196,7 +187,6 @@ async def test_billing_missing_data_fields(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_billing_exception_in_handler(monkeypatch):
-    """Test exception handling in main handler."""
     load_dotenv()
 
     from agents.billing.agent import human_channel
@@ -231,7 +221,6 @@ async def test_billing_exception_in_handler(monkeypatch):
 
 
 def test_get_conversation_string_special_characters():
-    """Test conversation string with special characters and formatting."""
     messages = [
         {"role": "user", "content": "What's my bill? It costs $100.50!"},
         {"role": "assistant", "content": "I'll help you with that. Let me check..."},
@@ -243,7 +232,6 @@ def test_get_conversation_string_special_characters():
 
 
 def test_get_conversation_string_role_formatting():
-    """Test that roles are properly formatted in conversation string."""
     messages = [
         {"role": "User", "content": "Hello"},
         {"role": "BillingAgent", "content": "Hi there"},

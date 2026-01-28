@@ -16,8 +16,6 @@ lm = dspy_set_language_model(settings)
 
 
 class AgentClassificationSignature(dspy.Signature):
-    """Simple signature for agent classification."""
-
     def __init__(self, chat_history: str):
         super().__init__(chat_history=chat_history)
         self.metrics: ClassifierMetrics
@@ -35,7 +33,6 @@ classifier_v0_program = dspy.Predict(
 
 
 def classifier_v0(chat_history: str) -> AgentClassificationSignature:
-    """Run the v0 classifier with minimal prompting."""
     result = classifier_v0_program(chat_history=chat_history)
     result.metrics = ClassifierMetrics(
         total_tokens=lm.total_tokens,
@@ -44,7 +41,6 @@ def classifier_v0(chat_history: str) -> AgentClassificationSignature:
         latency_ms=lm.latency_ms,
     )
 
-    # Log token usage when in debug mode
     if os.environ.get("TRIAGE_DEBUG") == "1":
         logger.debug(
             f"Token usage - Total: {lm.total_tokens}, "

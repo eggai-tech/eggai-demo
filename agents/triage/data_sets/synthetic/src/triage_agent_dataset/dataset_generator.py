@@ -14,9 +14,6 @@ config = AppConfig()
 
 
 def deserialize_response(response: str):
-    """
-    Deserialize a conversation string into a dictionary.
-    """
     lines = response.strip().split("\n")
     conversation = ""
     target_agent = None
@@ -46,11 +43,6 @@ async def generate_examples(
     special_case: SpecialCaseType | None = None,
     progress: tqdm | None = None,
 ):
-    """
-    Asynchronously generate a batch of examples for the given target agent and combination.
-    Updates the provided tqdm progress bar after each example.
-    """
-
     def add_metadata(example, index_batch):
         return ConversationExample(
             conversation=example["conversation"],

@@ -1,6 +1,3 @@
-"""Shared data utilities for all triage classifiers."""
-
-
 import dspy
 import numpy as np
 
@@ -11,16 +8,6 @@ from agents.triage.data_sets.loader import (
 
 
 def create_examples(sample_size: int = -1, phase: str = "train", seed: int = 42) -> list[dspy.Example]:
-    """Create training examples with deterministic sampling for reproducible results.
-
-    Args:
-        sample_size: Number of examples to sample. Use -1 for all examples.
-        phase: either "train" or "test". Determines which dataset to load.
-        seed: Random seed for reproducible sampling.
-
-    Returns:
-        List of DSPy examples for training.
-    """
     if phase not in ["train", "test"]:
         raise ValueError(f"Invalid phase: {phase}. Expected 'train' or 'test'.")
     if phase == "test":
@@ -35,7 +22,6 @@ def create_examples(sample_size: int = -1, phase: str = "train", seed: int = 42)
         actual_size = total_available
     else:
         actual_size = sample_size
-        # Use deterministic sampling
         rs = np.random.RandomState(seed)
         keys = rs.choice(len(dataset), size=actual_size, replace=False)
         dataset = [dataset[i] for i in keys]

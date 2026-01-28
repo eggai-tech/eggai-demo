@@ -27,7 +27,6 @@ logger = get_console_logger("billing_agent.tests.agent")
 
 @pytest.fixture
 def setup_kafka_transport():
-    """Set up Kafka transport for tests."""
     eggai_set_default_transport(
         lambda: create_kafka_transport(
             bootstrap_servers=settings.kafka_bootstrap_servers,
@@ -35,22 +34,18 @@ def setup_kafka_transport():
         )
     )
     yield
-    # Cleanup if needed
 
 
 @pytest.fixture
 def test_components(setup_kafka_transport):
-    """Set up test components after Kafka transport is initialized."""
     from agents.billing.agent import billing_agent
 
-    # Create test channels and response queue
     test_agent = Agent("TestBillingAgent")
     test_channel = Channel("agents")
     human_channel = Channel("human")
     human_stream_channel = Channel("human_stream")
     response_queue = asyncio.Queue()
 
-    # Configure language model for billing agent
     dspy_lm = dspy_set_language_model(settings, overwrite_cache_enabled=False)
 
     @subscribe(
@@ -61,7 +56,6 @@ def test_components(setup_kafka_transport):
         auto_offset_reset=OffsetReset.LATEST,
     )
     async def _handle_response(event):
-        """Handler for capturing agent responses."""
         await response_queue.put(event)
 
     return {
@@ -77,14 +71,11 @@ def test_components(setup_kafka_transport):
 
 @pytest.mark.asyncio
 async def test_billing_agent(test_components):
-    """Test the billing agent with Kafka integration."""
-    # Extract components from fixture
     billing_agent = test_components["billing_agent"]
     test_agent = test_components["test_agent"]
     test_channel = test_components["test_channel"]
     response_queue = test_components["response_queue"]
 
-    # Get test cases
     test_cases = get_test_cases()
 
     with setup_mlflow_tracking(
@@ -94,28 +85,21 @@ async def test_billing_agent(test_components):
             "language_model": settings.language_model,
         },
     ):
-        # Start the agents
         await billing_agent.start()
         await test_agent.start()
-
-        # Allow time for initialization
         await asyncio.sleep(2)
 
         test_results = []
 
-        # Process each test case
         for i, case in enumerate(test_cases):
             try:
                 logger.info(f"Running test case {i + 1}/{len(test_cases)}")
 
-                # Create unique IDs for this test case
                 connection_id = f"test-{uuid4()}"
                 message_id = str(uuid4())
 
-                # Measure start time for latency
                 start_time = time.perf_counter()
 
-                # Publish test request to the agent
                 await test_channel.publish(
                     TracedMessage(
                         id=message_id,
@@ -129,25 +113,20 @@ async def test_billing_agent(test_components):
                     )
                 )
 
-                # Wait for response from the agent (increased timeout for CI)
                 response_event = await wait_for_agent_response(
                     response_queue, connection_id, timeout=60.0
                 )
 
-                # Extract agent response and calculate metrics
                 agent_response = response_event["data"].get("message", "")
                 latency_ms = (time.perf_counter() - start_time) * 1000
 
-                # Calculate precision score
                 precision_score = precision_metric(
                     case["expected_response"], agent_response
                 )
 
-                # Log metrics
                 mlflow.log_metric(f"latency_case_{i + 1}", latency_ms)
                 mlflow.log_metric(f"precision_case_{i + 1}", precision_score)
 
-                # Record test result
                 test_result = {
                     "id": f"test-{i + 1}",
                     "policy": case["policy_number"],
@@ -163,14 +142,12 @@ async def test_billing_agent(test_components):
                 }
                 test_results.append(test_result)
 
-                # Verify agent responded and assert on minimum precision score
                 assert agent_response, "Agent did not provide a response"
                 # Log low precision scores as warnings
                 if precision_score < 0.5:
                     logger.warning(
                         f"Test case {i + 1} precision score {precision_score} below ideal threshold 0.5"
                     )
-                # Use a minimal threshold for pass/fail, allowing even poor matches
                 assert precision_score >= 0.0, (
                     f"Test case {i + 1} precision score {precision_score} is negative"
                 )
@@ -193,13 +170,11 @@ async def test_billing_agent(test_components):
             # Add delay between tests to avoid rate limiting
             await asyncio.sleep(1)
 
-        # Calculate overall metrics
         if test_results:
             successful_tests = sum(1 for r in test_results if r["result"] == "PASS")
             success_rate = successful_tests / len(test_results)
             mlflow.log_metric("success_rate", success_rate)
 
-            # Log the final results table
             from agents.billing.dspy_modules.evaluation.report import (
                 generate_module_test_report,
             )
@@ -207,10 +182,8 @@ async def test_billing_agent(test_components):
             report = generate_module_test_report(test_results)
             mlflow.log_text(report, "agent_test_results.md")
 
-            # Log and assert minimum success rate
             if success_rate < 0.5:
                 logger.warning(
                     f"Success rate {success_rate} below ideal threshold of 0.5"
                 )
-            # Assert baseline minimum success rate
             assert success_rate >= 0.0, "Success rate is negative"

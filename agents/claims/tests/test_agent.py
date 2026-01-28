@@ -385,7 +385,6 @@ async def test_claims_agent():
             )
             pytest.fail("No evaluation results collected. Check logs for details.")
 
-        # Calculate overall metrics
         overall_precision = sum(e.precision_score for e in evaluation_results) / len(
             evaluation_results
         )

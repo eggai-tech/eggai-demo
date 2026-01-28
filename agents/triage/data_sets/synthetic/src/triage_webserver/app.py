@@ -24,7 +24,6 @@ app.include_router(examples.router, prefix="/api/examples", tags=["examples"])
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize application on startup."""
     try:
         init_db()
     except Exception as e:
@@ -33,11 +32,9 @@ async def startup_event():
         print("For Docker, run: docker-compose up -d db")
         print("For local development, make sure PostgreSQL is running.")
         print(f"{'=' * 80}\n")
-        # Still raise the error so the app won't start with a broken database
         raise
 
 
-# Helper function for formatting dates in templates
 def format_date(date_string):
     from datetime import datetime
 
@@ -45,19 +42,16 @@ def format_date(date_string):
     return date.strftime("%b %d, %Y")
 
 
-# Add template filters
 templates.env.filters["format_date"] = format_date
 
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """Render the homepage with datasets list"""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/datasets/create", response_class=HTMLResponse)
 async def create_dataset_page(request: Request):
-    """Render the create dataset page"""
     return templates.TemplateResponse("create_dataset.html", {"request": request})
 
 
@@ -65,7 +59,6 @@ async def create_dataset_page(request: Request):
 async def dataset_detail(
     request: Request, dataset_id: int, db: Session = Depends(get_db)
 ):
-    """Render the dataset detail page"""
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -80,7 +73,6 @@ async def dataset_detail(
 async def edit_example(
     request: Request, example_id: int, db: Session = Depends(get_db)
 ):
-    """Render the edit example page"""
     from json import dumps
 
     example = db.query(Example).filter(Example.id == example_id).first()
@@ -91,7 +83,6 @@ async def edit_example(
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
-    # Convert example to JSON for Alpine.js
     example_dict = {
         "id": example.id,
         "dataset_id": example.dataset_id,
@@ -119,5 +110,4 @@ async def edit_example(
 
 @app.get("/docs", include_in_schema=False)
 async def docs_redirect():
-    """Redirect /docs to the API documentation"""
     return RedirectResponse(url="/docs")

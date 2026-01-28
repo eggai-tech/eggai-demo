@@ -15,31 +15,21 @@ def _compute_loss(logits: torch.Tensor, labels: torch.Tensor, num_labels: int):
     if labels is None:
         return None
 
-    # we only deal with single label classification here
     if num_labels == 1:
-        # BCE loss
-        loss_fct = nn.BCEWithLogitsLoss()
-        return loss_fct(logits, labels.float())
+        return nn.BCEWithLogitsLoss()(logits, labels.float())
     else:
-        # Cross entropy loss
-        loss_fct = nn.CrossEntropyLoss()
-        return loss_fct(logits.view(-1, num_labels), labels.view(-1))
+        return nn.CrossEntropyLoss()(logits.view(-1, num_labels), labels.view(-1))
 
 
 class Gemma3TextForSequenceClassification(Gemma3PreTrainedModel):
-    """
-    Gemma3 model with sequence classification head on top (just a linear layer on top of the pooled output)
-    """
     config_class = Gemma3TextConfig
 
     def __init__(self, config: Gemma3TextConfig):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.model = Gemma3TextModel(config)
-        # add dropout to slow down overfitting
         self.dropout = nn.Dropout(config.hidden_dropout if hasattr(config, "hidden_dropout") else 0.1)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels, bias=False)
-        # Initialize weights and apply final processing
         self.post_init()
 
     def forward(
@@ -70,7 +60,7 @@ class Gemma3TextForSequenceClassification(Gemma3PreTrainedModel):
             cache_position=cache_position,
             return_dict=return_dict
         )
-        # gemma is a decoder-only autoregressive model, so use the last token as pooled representation
+        # Decoder-only model: use last token as pooled representation
         pooled_output = outputs.last_hidden_state[:, -1]
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
@@ -89,7 +79,6 @@ class Gemma3TextForSequenceClassification(Gemma3PreTrainedModel):
         )
 
 
-# register for auto-loading
 AutoModelForSequenceClassification.register(
     Gemma3TextConfig, Gemma3TextForSequenceClassification, exist_ok=True
 )

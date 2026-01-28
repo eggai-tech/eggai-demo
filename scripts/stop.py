@@ -3,16 +3,6 @@
 # requires-python = ">=3.11"
 # dependencies = ["rich", "psutil"]
 # ///
-"""
-Graceful shutdown for EggAI Demo.
-
-Stops all running agent processes and optionally Docker services.
-
-Usage:
-    uv run scripts/stop.py              # Stop agents only
-    uv run scripts/stop.py --all        # Stop agents and Docker
-    uv run scripts/stop.py --docker     # Stop Docker only
-"""
 
 from __future__ import annotations
 
@@ -28,7 +18,6 @@ from rich.console import Console
 
 console = Console()
 
-# Patterns to identify agent processes
 AGENT_PATTERNS = [
     "agents.frontend.main",
     "agents.triage.main",
@@ -46,7 +35,6 @@ PID_FILE = PROJECT_ROOT / ".agent_pids"
 
 
 def find_agent_processes() -> list[psutil.Process]:
-    """Find all running agent processes."""
     agent_processes = []
 
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
@@ -65,10 +53,8 @@ def find_agent_processes() -> list[psutil.Process]:
 
 
 def stop_agents() -> int:
-    """Stop all running agent processes. Returns count of stopped processes."""
     console.print("[yellow]Stopping agent processes...[/]")
 
-    # First try to read PIDs from file
     stopped_count = 0
     if PID_FILE.exists():
         try:
@@ -85,7 +71,6 @@ def stop_agents() -> int:
         except Exception as e:
             console.print(f"[dim]Could not read PID file: {e}[/]")
 
-    # Also find and kill by pattern
     processes = find_agent_processes()
     for proc in processes:
         try:
@@ -95,11 +80,9 @@ def stop_agents() -> int:
         except psutil.NoSuchProcess:
             pass
 
-    # Wait for graceful shutdown
     if processes:
         gone, alive = psutil.wait_procs(processes, timeout=5)
 
-        # Force kill any remaining
         for proc in alive:
             try:
                 console.print(f"  [red]Force killing {proc.name()} (PID {proc.pid})[/]")
@@ -116,7 +99,6 @@ def stop_agents() -> int:
 
 
 def stop_docker(remove_volumes: bool = False) -> bool:
-    """Stop Docker Compose services."""
     console.print("[yellow]Stopping Docker services...[/]")
 
     cmd = ["docker", "compose", "down"]
@@ -142,7 +124,6 @@ def stop_docker(remove_volumes: bool = False) -> bool:
 
 
 def main():
-    """CLI entry point."""
     parser = argparse.ArgumentParser(description="Stop EggAI Demo services")
     parser.add_argument(
         "--all",
@@ -165,14 +146,11 @@ def main():
     success = True
 
     if args.docker:
-        # Docker only
         success = stop_docker(remove_volumes=args.remove_volumes)
     elif args.all:
-        # Both
         stop_agents()
         success = stop_docker(remove_volumes=args.remove_volumes)
     else:
-        # Agents only (default)
         stop_agents()
 
     console.print("\n[bold]Shutdown complete.[/]")

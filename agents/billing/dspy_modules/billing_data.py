@@ -33,7 +33,6 @@ BILLING_DATABASE = [
 
 
 def get_policy_record(policy_number: str):
-    """Get a policy record by policy number."""
     clean_policy_number = policy_number.strip()
     for record in BILLING_DATABASE:
         if record["policy_number"] == clean_policy_number:

@@ -1,5 +1,3 @@
-"""Training utilities for fine-tuning."""
-
 from datetime import datetime
 
 import dspy
@@ -38,14 +36,11 @@ def perform_fine_tuning(student_classify, teacher_classify, trainset):
 
     start_time = time.time()
 
-    try:
-        classify_ft = optimizer.compile(
-            student_classify,
-            teacher=teacher_classify,
-            trainset=trainset
-        )
-    except Exception:
-        raise
+    classify_ft = optimizer.compile(
+        student_classify,
+        teacher=teacher_classify,
+        trainset=trainset
+    )
 
     training_time = time.time() - start_time
 

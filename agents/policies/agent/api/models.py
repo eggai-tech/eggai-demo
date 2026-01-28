@@ -12,13 +12,11 @@ class PolicyDocument(BaseModel):
     source_file: str
     relevance: float | None = None
 
-    # Enhanced metadata fields
     page_numbers: list[int] = []
     page_range: str | None = None
     headings: list[str] = []
     citation: str | None = None
 
-    # Relationships
     document_id: str | None = None
     previous_chunk_id: str | None = None
     next_chunk_id: str | None = None
@@ -52,7 +50,7 @@ class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=500)
     category: str | None = None
     max_hits: int = Field(10, ge=1, le=100)
-    search_type: str = Field("hybrid", pattern="^(vector|hybrid|keyword)$")  # "vector", "hybrid", or "keyword"
+    search_type: str = Field("hybrid", pattern="^(vector|hybrid|keyword)$")
 
     @field_validator('query')
     @classmethod
@@ -71,10 +69,9 @@ class CategoryStats(BaseModel):
 
 class ReindexRequest(BaseModel):
     force_rebuild: bool = False
-    policy_ids: list[str] | None = None  # If None, reindex all
+    policy_ids: list[str] | None = None
 
     def validate_policy_ids(self):
-        """Validate policy IDs are valid categories."""
         if self.policy_ids:
             from agents.policies.agent.types import VALID_CATEGORIES
 

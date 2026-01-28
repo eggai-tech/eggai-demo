@@ -1,9 +1,3 @@
-"""
-Agent-specific test helpers.
-
-These utilities help with testing EggAI agents and their interactions.
-"""
-
 import asyncio
 from uuid import uuid4
 
@@ -16,7 +10,6 @@ def create_mock_agent_response(
     message: str,
     connection_id: str = "test-connection-123"
 ) -> TracedMessage:
-    """Create a mock agent response for testing."""
     return TracedMessage(
         id=str(uuid4()),
         type=MessageType.AGENT_MESSAGE,
@@ -35,7 +28,6 @@ def create_mock_request_message(
     connection_id: str = "test-connection-123",
     source: str = "Triage"
 ) -> TracedMessage:
-    """Create a mock request message for testing."""
     return TracedMessage(
         id=str(uuid4()),
         type=request_type,
@@ -54,23 +46,10 @@ async def wait_for_message_with_timeout(
     expected_source: str | None = None,
     expected_type: str | None = None
 ) -> TracedMessage | None:
-    """
-    Wait for a message in the queue with optional filtering.
-
-    Args:
-        response_queue: The queue to monitor
-        timeout: Maximum time to wait in seconds
-        expected_source: If provided, only return messages from this source
-        expected_type: If provided, only return messages of this type
-
-    Returns:
-        The matching message or None if timeout occurs
-    """
     try:
         while True:
             message = await asyncio.wait_for(response_queue.get(), timeout=timeout)
 
-            # Check if message matches criteria
             if expected_source and message.source != expected_source:
                 continue
             if expected_type and message.type != expected_type:
@@ -89,7 +68,6 @@ def create_mock_audit_log(
     channel: str,
     category: str = "Agent Processing"
 ) -> TracedMessage:
-    """Create a mock audit log message for testing."""
     return TracedMessage(
         id=str(uuid4()),
         type=MessageType.AUDIT_LOG,
@@ -112,7 +90,6 @@ def assert_valid_agent_response(
     expected_agent: str,
     connection_id: str = "test-connection-123"
 ) -> None:
-    """Assert that an agent response has the expected structure."""
     assert response.type == MessageType.AGENT_MESSAGE
     assert response.source == expected_agent
     assert response.data["connection_id"] == connection_id

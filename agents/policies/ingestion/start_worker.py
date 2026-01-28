@@ -27,30 +27,24 @@ async def initialize_minio_and_migrate():
         from agents.policies.ingestion.minio_client import MinIOClient
         from libraries.integrations.vespa import VespaClient
 
-        # Initialize MinIO buckets
         async with MinIOClient() as minio_client:
             await minio_client.initialize_buckets()
             logger.info("MinIO buckets initialized")
 
-            # Check if migration is needed (if processed folder is empty)
             processed_files = await minio_client.list_processed_files()
 
-            # Run migration only if needed (one-time operation)
             if not processed_files:
                 logger.info("No files in MinIO processed folder, running migration...")
 
-                # Get indexed documents from Vespa
                 vespa_client = VespaClient()
 
-                # Search for all documents - empty query matches all
                 existing_docs = await vespa_client.search_documents(
-                    query="",  # Empty query will match all documents
-                    max_hits=400  # Vespa's configured limit
+                    query="",
+                    max_hits=400,
                 )
 
                 logger.info(f"Found {len(existing_docs)} documents in Vespa")
 
-                # Get unique documents
                 documents = {}
                 for doc in existing_docs:
                     source_file = doc.get('source_file')
@@ -61,7 +55,6 @@ async def initialize_minio_and_migrate():
 
                 logger.info(f"Found {len(documents)} unique source files to migrate: {list(documents.keys())}")
 
-                # Migrate each document
                 current_dir = Path(__file__).parent
                 documents_dir = current_dir / "documents"
                 migrated = 0
@@ -76,7 +69,6 @@ async def initialize_minio_and_migrate():
                             file_hash = hashlib.sha256(content).hexdigest()
                             logger.info(f"Uploading {source_file} (size: {len(content)} bytes, hash: {file_hash[:8]}...)")
 
-                            # Upload to processed folder
                             async with minio_client._get_client() as s3:
                                 await s3.put_object(
                                     Bucket=minio_client.bucket_name,
@@ -102,7 +94,6 @@ async def initialize_minio_and_migrate():
 
     except Exception as e:
         logger.error(f"Error during MinIO initialization: {e}", exc_info=True)
-        # Don't fail the worker startup if MinIO is not available
         logger.warning("Continuing without MinIO support")
 
 
@@ -111,7 +102,6 @@ async def start_minio_watcher(client):
         workflow_id = "minio-inbox-watcher"
         poll_interval = int(os.getenv("MINIO_POLL_INTERVAL", "30"))
 
-        # Check if watcher is already running
         try:
             handle = client.get_workflow_handle(workflow_id)
             desc = await handle.describe()
@@ -121,7 +111,6 @@ async def start_minio_watcher(client):
             else:
                 logger.info(f"MinIO watcher workflow exists but not running (status: {desc.status})")
         except Exception:
-            # Workflow not found
             logger.info("MinIO watcher workflow not found")
 
         logger.info("Starting MinIO inbox watcher workflow...")
@@ -141,7 +130,6 @@ async def start_minio_watcher(client):
 
     except Exception as e:
         logger.error(f"Error starting MinIO watcher: {e}", exc_info=True)
-        # Don't fail the worker startup
         logger.warning("Continuing without MinIO watcher")
 
 
@@ -172,12 +160,11 @@ async def trigger_initial_document_ingestion():
 
             logger.info(f"Processing policy file: {policy_file}")
 
-            # Trigger single-file ingestion workflow
             result = await client.ingest_document_async(
                 file_path=str(policy_file),
                 category=policy_id,
                 index_name="policies_index",
-                force_rebuild=False,  # Make it idempotent
+                force_rebuild=False,
             )
 
             if result.success:
@@ -205,7 +192,6 @@ async def trigger_initial_document_ingestion():
 
 
 async def main():
-    # Initialize telemetry
     init_telemetry(app_name=settings.app_name, endpoint=settings.otel_endpoint)
 
     logger.info("Starting Policy Documentation Temporal worker with settings:")
@@ -213,30 +199,23 @@ async def main():
     logger.info(f"  Namespace: {settings.get_temporal_namespace()}")
     logger.info(f"  Task Queue: {settings.temporal_task_queue}")
 
-    # Create shutdown event
     shutdown_event = asyncio.Event()
 
     def signal_handler(signum):
         logger.info(f"Received signal {signum}, shutting down...")
         shutdown_event.set()
 
-    # Register signal handlers using asyncio loop
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda s=sig: signal_handler(s))
 
     worker = None
     try:
-        # Start the worker
         worker = await run_policy_documentation_worker()
 
         logger.info("Policy Documentation worker is running. Press Ctrl+C to stop.")
 
-        # Deploy Vespa schema before document ingestion
         logger.info("Ensuring Vespa schema is deployed...")
-
-        # Try to deploy with force=True to handle schema updates
-        # Use configuration from settings
 
         schema_deployed = deploy_to_vespa(
             config_server_url=settings.vespa_config_url,
@@ -259,14 +238,11 @@ async def main():
 
         logger.info("Vespa schema ready - proceeding with document ingestion")
 
-        # First, trigger initial document ingestion for all 4 policies
         await trigger_initial_document_ingestion()
 
-        # Then initialize MinIO and migrate the now-indexed documents
         try:
             await initialize_minio_and_migrate()
 
-            # Start MinIO watcher workflow
             temporal_client = await Client.connect(
                 settings.temporal_server_url,
                 namespace=settings.get_temporal_namespace()
@@ -276,7 +252,6 @@ async def main():
             logger.error(f"MinIO initialization failed: {e}")
             logger.info("Continuing without MinIO support")
 
-        # Wait for shutdown signal
         await shutdown_event.wait()
 
     except KeyboardInterrupt:

@@ -8,7 +8,6 @@ logger = get_console_logger("audit_agent")
 def get_message_metadata(
     message: TracedMessage | dict | None
 ) -> tuple[str, str]:
-    """Return (type, source) from a message, defaulting to 'unknown'."""
     if message is None:
         return "unknown", "unknown"
 
@@ -25,7 +24,6 @@ def get_message_metadata(
 
 
 def get_message_content(message: TracedMessage | dict | None) -> str | None:
-    """Extract the primary message text or last chat history content."""
     data = getattr(message, "data", None)
     if not isinstance(data, dict):
         return None

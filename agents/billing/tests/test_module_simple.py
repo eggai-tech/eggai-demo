@@ -2,10 +2,8 @@ from unittest.mock import MagicMock, patch
 
 
 class TestBillingModule:
-    """Test basic billing module functionality."""
 
     def test_truncate_long_history_under_limit(self):
-        """Test truncation when history is under the limit."""
         from agents.billing.dspy_modules.billing import truncate_long_history
         from agents.billing.types import ModelConfig
 
@@ -20,7 +18,6 @@ class TestBillingModule:
         assert result["truncated_length"] == len(history)
 
     def test_truncate_long_history_over_limit(self):
-        """Test truncation when history exceeds the limit."""
         from agents.billing.dspy_modules.billing import truncate_long_history
         from agents.billing.types import ModelConfig
 
@@ -43,7 +40,6 @@ class TestBillingModule:
     @patch("agents.billing.dspy_modules.billing.create_tracer")
     @patch("agents.billing.dspy_modules.billing.load_optimized_instructions")
     def test_initialize_billing_model(self, mock_load, mock_tracer, mock_traced_react):
-        """Test billing model initialization."""
         # Reset module state
         import agents.billing.dspy_modules.billing as billing_module
         from agents.billing.dspy_modules.billing import _initialize_billing_model
@@ -69,7 +65,6 @@ class TestBillingModule:
     @patch("agents.billing.dspy_modules.billing.create_tracer")
     @patch("agents.billing.dspy_modules.billing.load_optimized_instructions")
     def test_initialize_billing_model_with_optimized(self, mock_load, mock_tracer, mock_traced_react):
-        """Test billing model initialization with optimized instructions."""
         # Reset module state
         import agents.billing.dspy_modules.billing as billing_module
         from agents.billing.dspy_modules.billing import (
@@ -93,7 +88,6 @@ class TestBillingModule:
         assert result == mock_model
 
     def test_model_config_defaults(self):
-        """Test ModelConfig default values."""
         from agents.billing.types import ModelConfig
 
         config = ModelConfig()
@@ -106,7 +100,6 @@ class TestBillingModule:
         assert config.timeout_seconds == 30.0
 
     def test_model_config_custom_values(self):
-        """Test ModelConfig with custom values."""
         from agents.billing.types import ModelConfig
 
         config = ModelConfig(

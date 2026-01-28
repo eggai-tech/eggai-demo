@@ -1,5 +1,3 @@
-"""Tests for the classifier registry."""
-
 
 from agents.triage.classifiers.registry import (
     compare_classifiers,
@@ -9,10 +7,8 @@ from agents.triage.classifiers.registry import (
 
 
 class TestRegistry:
-    """Tests for registry functions."""
 
     def test_list_classifiers(self):
-        """Test listing all classifiers."""
         classifiers = list_classifiers()
         assert len(classifiers) == 9  # v0 through v8
 
@@ -20,12 +16,10 @@ class TestRegistry:
         assert versions == {"v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"}
 
     def test_get_available_versions(self):
-        """Test getting available versions."""
         versions = get_available_versions()
         assert versions == ["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"]
 
     def test_compare_classifiers_all(self):
-        """Test comparing all classifiers."""
         comparison = compare_classifiers()
         assert len(comparison) == 9
         assert "v0" in comparison
@@ -33,7 +27,6 @@ class TestRegistry:
         assert "v8" in comparison
 
     def test_compare_classifiers_subset(self):
-        """Test comparing a subset of classifiers."""
         comparison = compare_classifiers(["v0", "v4", "v6"])
         assert len(comparison) == 3
         assert "v0" in comparison
@@ -42,7 +35,6 @@ class TestRegistry:
         assert "v1" not in comparison
 
     def test_classifier_info_fields(self):
-        """Test that classifier info has expected fields."""
         classifiers = list_classifiers()
 
         for info in classifiers:
@@ -55,13 +47,11 @@ class TestRegistry:
             assert len(info.estimated_latency_ms) == 2
 
     def test_v4_is_default_recommendation(self):
-        """Test that v4 is marked as recommended."""
         classifiers = list_classifiers()
         v4 = next(c for c in classifiers if c.version == "v4")
         assert "Recommended" in v4.description or "default" in v4.description.lower()
 
     def test_llm_requirements(self):
-        """Test LLM requirements are correctly set."""
         comparison = compare_classifiers()
 
         # These require LLM

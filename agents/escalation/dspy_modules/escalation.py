@@ -98,9 +98,6 @@ logger.info(
 
 @tracer.start_as_current_span("get_tickets_by_policy")
 def get_tickets_by_policy(policy_number: str) -> str:
-    """Retrieve all tickets associated with a policy number from the database.
-
-    Strips leading/trailing whitespace from the provided policy number before lookup."""
     cleaned = policy_number.strip()
     logger.info(f"Searching for tickets with policy number: {cleaned!r}")
 
@@ -132,7 +129,6 @@ def get_tickets_by_policy(policy_number: str) -> str:
 def create_ticket(
     policy_number: str, dept: TicketDepartment, title: str, contact: str
 ) -> str:
-    """Create a ticket in the database and return the ticket details as JSON."""
     logger.info("Creating ticket in database...")
     ticket = TicketInfo(
         id=f"TICKET-{len(ticket_database) + 1:03}",
@@ -171,7 +167,6 @@ ticket_database: list[dict] = [
 async def process_escalation(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:
-    """Process an escalation inquiry using the DSPy model with streaming output."""
     config = config or ModelConfig()
 
     streamify_func = dspy.streamify(
@@ -198,7 +193,6 @@ if __name__ == "__main__":
         init_telemetry(settings.app_name, endpoint=settings.otel_endpoint)
         dspy_set_language_model(settings)
 
-        # Test the escalation DSPy module
         test_conversation = (
             "User: I need to escalate an issue with my policy A12345.\n"
             "TicketingAgent: I can help you with that. Let me check if there are any existing tickets for policy A12345.\n"
