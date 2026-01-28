@@ -112,7 +112,7 @@ def start_agents_foreground() -> None:
         pids = [p.pid for p in processes]
         PID_FILE.write_text(" ".join(str(p) for p in pids))
 
-    console.print(f"\n[bold green]All agents running. Logs will appear below.[/]\n")
+    console.print("\n[bold green]All agents running. Logs will appear below.[/]\n")
     console.print("[dim]" + "=" * 60 + "[/]\n")
 
     # Wait for any process to exit

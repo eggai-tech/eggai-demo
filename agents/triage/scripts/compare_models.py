@@ -24,9 +24,8 @@ import importlib
 import os
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 
 import dspy
 import mlflow
@@ -94,6 +93,11 @@ MODELS = {
         model_id="lm_studio/gemma-3-12b-it-qat",
         api_base="http://localhost:1234/v1/",
     ),
+    "gemma4b": ModelConfig(
+        name="Gemma 3 4B QAT",
+        model_id="lm_studio/gemma-3-4b-it-qat",
+        api_base="http://localhost:1234/v1/",
+    ),
     "mistral": ModelConfig(
         name="Mistral Nemo 12B",
         model_id="lm_studio/mistral-nemo-instruct-2407",
@@ -106,27 +110,49 @@ VERSIONS = ["v0", "v1", "v2", "v4"]
 
 # Test cases with expected agent
 # Available agents: BillingAgent, PolicyAgent, ClaimsAgent, EscalationAgent, ChattyAgent
+# Mix of easy and challenging (ambiguous) cases to show optimization impact
 TEST_CASES = [
+    # Clear claims cases
     ("User: I need help with my insurance claim", TargetAgent.ClaimsAgent),
     ("User: My claim was denied, can you explain why?", TargetAgent.ClaimsAgent),
-    ("User: I had a car accident and need to file a claim", TargetAgent.ClaimsAgent),
+    # Clear policy cases
     ("User: What's covered under my policy?", TargetAgent.PolicyAgent),
-    ("User: I want to add my spouse to my policy", TargetAgent.PolicyAgent),
     ("User: Can you explain my deductible?", TargetAgent.PolicyAgent),
+    # Clear billing cases
     ("User: How do I pay my premium?", TargetAgent.BillingAgent),
     ("User: When is my next payment due?", TargetAgent.BillingAgent),
-    ("User: I need a copy of my invoice", TargetAgent.BillingAgent),
+    # Clear chatty cases
     ("User: Hello, how are you today?", TargetAgent.ChattyAgent),
-    ("User: What's the weather like?", TargetAgent.ChattyAgent),
     ("User: Tell me a joke", TargetAgent.ChattyAgent),
+    # AMBIGUOUS cases - these test optimization impact
+    ("User: I paid but my coverage was cancelled", TargetAgent.BillingAgent),  # billing vs policy
+    ("User: The doctor bill was wrong after my visit", TargetAgent.ClaimsAgent),  # claims vs billing
+    ("User: Why am I being charged extra this month?", TargetAgent.BillingAgent),  # billing vs policy
+    ("User: My card was declined when renewing", TargetAgent.BillingAgent),  # billing
+    ("User: I got injured at work, what now?", TargetAgent.ClaimsAgent),  # claims
+    ("User: The pharmacy won't fill my prescription", TargetAgent.ClaimsAgent),  # claims vs policy
+    ("User: I need to change my beneficiary", TargetAgent.PolicyAgent),  # policy
+    ("User: Can I get a refund for unused months?", TargetAgent.BillingAgent),  # billing
+    ("User: What happens if I miss a payment?", TargetAgent.BillingAgent),  # billing vs policy
+    ("User: Is my son covered until age 26?", TargetAgent.PolicyAgent),  # policy
+    ("User: I want to speak to a supervisor", TargetAgent.EscalationAgent),  # escalation
+    ("User: This is unacceptable, I've been waiting for weeks", TargetAgent.EscalationAgent),  # escalation
 ]
 
 
 def configure_model(config: ModelConfig) -> TrackingLM:
-    """Configure DSPy with the specified model."""
+    """Configure DSPy with the specified model via environment variables."""
     if config.requires_api_key and not os.getenv("OPENAI_API_KEY"):
         raise ValueError(f"OPENAI_API_KEY required for {config.name}")
 
+    # Set environment variables for the triage agent to pick up
+    os.environ["TRIAGE_LANGUAGE_MODEL"] = config.model_id
+    if config.api_base:
+        os.environ["TRIAGE_LANGUAGE_MODEL_API_BASE"] = config.api_base
+    else:
+        os.environ.pop("TRIAGE_LANGUAGE_MODEL_API_BASE", None)
+
+    # Also configure DSPy directly for classifiers that use global config
     lm = TrackingLM(
         config.model_id,
         cache=False,
@@ -143,9 +169,14 @@ def get_classifier(version: str):
     if version in ["v2", "v4"]:
         module_name = f"agents.triage.classifiers.{version}.classifier_{version}"
 
-    # Remove from cache if exists
-    if module_name in sys.modules:
-        del sys.modules[module_name]
+    # Remove from cache if exists - also remove related modules
+    modules_to_remove = [k for k in sys.modules.keys() if "agents.triage.classifiers" in k]
+    for mod in modules_to_remove:
+        del sys.modules[mod]
+
+    # Also clear the config module to force re-read of env vars
+    if "agents.triage.config" in sys.modules:
+        del sys.modules["agents.triage.config"]
 
     module = importlib.import_module(module_name)
     return getattr(module, f"classifier_{version}")
@@ -336,7 +367,7 @@ def main():
         logger.info(f"\nTesting model: {config.name}")
 
         try:
-            lm = configure_model(config)
+            configure_model(config)
             logger.info(f"  Configured: {config.model_id}")
         except Exception as e:
             logger.error(f"  Failed to configure model: {e}")
@@ -378,7 +409,7 @@ def main():
     # Log to MLflow
     if args.mlflow and aggregates:
         log_to_mlflow(aggregates)
-        print(f"\n✓ Results logged to MLflow: http://localhost:5001")
+        print("\n✓ Results logged to MLflow: http://localhost:5001")
 
     # Summary
     print("\nSUMMARY:")
