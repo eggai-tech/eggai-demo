@@ -45,16 +45,21 @@ graph LR
 ### 2. Online Stage: Agentic Retrieval
 
 The Policies Agent uses a **ReAct pattern** (Reasoning + Acting) to handle
-queries:
+queries. The LLM autonomously decides which tool to call:
 
 ```python
-# Agent's decision flow
-if query_needs_personal_data(query):
-    # Use database lookup for policy numbers
-    result = get_personal_policy_details(policy_number)
-else:
-    # Use Vespa search for general questions
-    result = search_policy_documentation(query, category)
+# DSPy ReAct - LLM decides tool usage based on query analysis
+# Available tools:
+# - get_personal_policy_details(policy_number) → Database lookup
+# - search_policy_documentation(query, category) → Vespa search
+
+# Example: "What's my premium for A12345?"
+#   → LLM extracts policy_number="A12345"
+#   → LLM calls get_personal_policy_details("A12345")
+
+# Example: "What does fire damage cover?"
+#   → LLM identifies general query, category="home"
+#   → LLM calls search_policy_documentation("fire damage", "home")
 ```
 
 ## Vespa Search Configuration
