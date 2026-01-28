@@ -148,6 +148,14 @@ Uses [RAGAS](https://docs.ragas.io/)-inspired metrics with custom extensions:
 - **Retrieval Metrics**: Success rate, speed, hit count (30% weight)
 - **Position Metrics**: Best match position, top-3 hit rate (10% weight)
 
+#### Context Metrics Explained
+
+| Metric    | Question it answers                                        |
+| --------- | ---------------------------------------------------------- |
+| Recall    | Did you find ALL relevant docs? (completeness)             |
+| Precision | Of what you returned, how many were relevant? (accuracy)   |
+| NDCG      | Are relevant docs ranked at the TOP? (ordering)            |
+
 Results tracked in MLflow for continuous optimization.
 
 ## User Flow: Chat UI to RAG
