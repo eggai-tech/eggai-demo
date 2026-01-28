@@ -23,11 +23,12 @@ graph TB
         
         E --> F[Verification Activity]
         F -->|Exists| K[MinIO Processed Folder]
-        F -->|New| G[DocLing Loading Activity] 
+        F -->|New| G[DocLing Loading Activity]
         G --> H[Hierarchical Chunking Activity]
-        H --> I[Vespa Indexing Activity]
-        I --> J[Vespa Search Engine]
-        I --> K
+        H --> I[Embedding Generation]
+        I --> L[Vespa Indexing Activity]
+        L --> J[Vespa Search Engine]
+        L --> K
         
         D -->|Failed| L[MinIO Failed Folder]
     end
@@ -113,14 +114,26 @@ Document ingestion is a complex multi-step process that requires:
 # 2-sentence overlap between chunks
 ```
 
-### 6. Vespa Indexing
+### 6. Embedding Generation
+
+[`agents/policies/agent/services/embeddings.py`](../agents/policies/agent/services/embeddings.py)
+
+```python
+# Generates vector embeddings for each chunk:
+# - Model: all-MiniLM-L6-v2 (sentence-transformers)
+# - Dimensions: 384-dimensional vectors
+# - Embeddings enable semantic similarity search
+# - Same model used at query time for consistency
+```
+
+### 7. Vespa Indexing
 
 [`agents/policies/ingestion/workflows/activities/document_indexing_activity.py`](../agents/policies/ingestion/workflows/activities/document_indexing_activity.py)
 
 ```python
-# Hybrid search with both keyword and semantic understanding:
-# - Vector embeddings: 384-dim from all-MiniLM-L6-v2 model
-# - BM25 text search for keyword matching
+# Indexes chunks with embeddings into Vespa:
+# - Stores text + 384-dim embedding vector per chunk
+# - BM25 text indexing for keyword matching
 # - Hybrid ranking: 70% vector similarity + 30% keyword relevance
 # Schema includes: id, title, text, category, source_file, embedding
 # Enhanced metadata: page numbers, headings, chunk relationships

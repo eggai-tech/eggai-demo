@@ -12,18 +12,21 @@ about insurance policies.
 ```mermaid
 graph LR
     subgraph "Offline Stage"
-        A[Policy Documents] --> B[Temporal Ingestion Pipeline]
-        B --> C[Vespa Search Index]
+        A[Policy Documents] --> B[Temporal Ingestion]
+        B --> B1[Chunking]
+        B1 --> B2[Embedding Generation]
+        B2 --> C[Vespa Search Index]
     end
-    
+
     subgraph "Online Stage"
         D[User Query] --> E[Policies Agent]
         E --> F{Query Analysis}
         F -->|Personal Query| G[Database Lookup]
-        F -->|General Query| H[Vespa Retrieval]
-        H --> C
+        F -->|General Query| H[Query Embedding]
+        H --> H1[Vespa Retrieval]
+        H1 --> C
         G --> I[Response Generation]
-        H --> I
+        H1 --> I
         I --> J[User Response]
     end
 ```
@@ -98,8 +101,14 @@ Search Weights:
 
 [`agents/policies/agent/services/`](../agents/policies/agent/services/)
 
-- Embedding generation using `all-MiniLM-L6-v2`
+**Embedding Generation** (`embeddings.py`):
+- Model: `all-MiniLM-L6-v2` (sentence-transformers)
+- Dimensions: 384-dimensional vectors
+- Used at both ingestion time (documents) and query time (user queries)
+
+**Search Service** (`search_service.py`):
 - Query construction with category filtering
+- Hybrid search combining vector similarity and keyword matching
 - Result ranking and metadata extraction
 
 ### Agent Logic
