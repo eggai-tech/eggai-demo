@@ -21,14 +21,14 @@ graph TB
     subgraph "Specialized Agents"
         BI[Billing Agent]
         CL[Claims Agent]
-        PO[Policies Agent (RAG)]
+        PO["Policies Agent (RAG)"]
         ES[Escalation Agent]
     end
-    
+
     subgraph "Infrastructure"
-        RP[Message Broker (Redpanda)]
-        VE[Vector Search (Vespa)]
-        TE[Workflows (Temporal)]
+        RP["Message Broker (Redpanda)"]
+        VE["Vector Search (Vespa)"]
+        TE["Workflows (Temporal)"]
     end
     
     UI <-->|WebSocket| WS
