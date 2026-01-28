@@ -21,6 +21,43 @@ agent communication:
 - **Message Format**: CloudEvents JSON with W3C Trace Context
 - **Delivery Guarantees**: At-least-once delivery
 
+### Consumer Groups
+
+Each agent runs as its own Kafka consumer group, enabling:
+
+- **Automatic Load Balancing**: Multiple instances of the same agent share the workload
+- **No Duplicate Processing**: Each message is processed by exactly one instance within a group
+- **Independent Scaling**: Agents scale horizontally without coordination
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Topic: agents                            │
+├─────────────────────────────────────────────────────────────┤
+│  Partition 0  │  Partition 1  │  Partition 2  │  Partition 3│
+└───────┬───────┴───────┬───────┴───────┬───────┴───────┬─────┘
+        │               │               │               │
+        ▼               ▼               ▼               ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│ billing-group │ │ claims-group  │ │ policies-group│
+│  Instance 1   │ │  Instance 1   │ │  Instance 1   │
+│  Instance 2   │ │  Instance 2   │ │  Instance 2   │
+└───────────────┘ └───────────────┘ └───────────────┘
+```
+
+### Delivery Guarantees
+
+The system supports different delivery guarantee levels:
+
+| Guarantee | Configuration | Trade-off |
+|-----------|--------------|-----------|
+| At-most-once | `enable_auto_commit=true` | Fast but may lose messages on failure |
+| At-least-once | `enable_auto_commit=false` + manual ack | Current default - safe, may reprocess |
+| Exactly-once | Transactions + idempotency keys | Recommended for production |
+
+The demo uses **at-least-once** delivery with manual acknowledgment. For production
+deployments requiring exactly-once semantics, implement idempotent message handlers
+using the CloudEvents `id` field.
+
 ### Message Protocol (CloudEvents)
 
 All messages follow the [CloudEvents specification](https://cloudevents.io/) (v1.0), an
