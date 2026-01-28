@@ -1,5 +1,5 @@
 # =============================================================================
-# EggAI Demp
+# EggAI Demo
 # =============================================================================
 # Core commands for running the demo. For advanced operations, use the
 # individual scripts directly or see the full command reference in docs/.
