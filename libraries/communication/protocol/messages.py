@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypedDict, TypeGuard
+from typing import Any, Literal, NotRequired, TypedDict, TypeGuard
 
 from .enums import AgentName, AuditCategory, MessageType
 
@@ -13,7 +13,7 @@ class SecurityContext(TypedDict, total=False):
 
 class MessageData(TypedDict):
     connection_id: str
-    security_context: SecurityContext | None
+    security_context: NotRequired[SecurityContext | None]  # Optional for backward compat
 
 
 class ChatMessage(TypedDict):
