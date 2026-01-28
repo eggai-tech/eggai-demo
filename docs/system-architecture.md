@@ -41,7 +41,6 @@ graph TB
 
     style UI fill:#e1f5fe
     style TR fill:#f3e5f5
-    style PO fill:#e8f5e9
 ```
 
 ## Core Components
