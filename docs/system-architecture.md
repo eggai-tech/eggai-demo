@@ -40,7 +40,15 @@ graph TB
     PO <-->|ingestion| TE
 
     style UI fill:#e1f5fe
+    style WS fill:#f3e5f5
     style TR fill:#f3e5f5
+    style BI fill:#f3e5f5
+    style CL fill:#f3e5f5
+    style PO fill:#f3e5f5
+    style ES fill:#f3e5f5
+    style RP fill:#fff3e0
+    style VE fill:#fff3e0
+    style TE fill:#fff3e0
 ```
 
 ## Core Components

@@ -18,8 +18,64 @@ agent communication:
 
 - **Broker**: Kafka bootstrap servers
 - **Protocol**: Event streaming with consumer groups
-- **Message Format**: JSON with distributed tracing headers
+- **Message Format**: CloudEvents JSON with W3C Trace Context
 - **Delivery Guarantees**: At-least-once delivery
+
+### Message Protocol (CloudEvents)
+
+All messages follow the [CloudEvents specification](https://cloudevents.io/) (v1.0), an
+open standard for describing event data in a common way. This ensures interoperability
+and makes it easy to integrate with other event-driven systems.
+
+#### Message Structure
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "com.eggai.billing.request",
+  "source": "triage-agent",
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "time": "2024-01-15T10:30:00Z",
+  "subject": "connection-123",
+  "traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+  "tracestate": "eggai=session123",
+  "data": {
+    "connection_id": "conn-456",
+    "chat_messages": [
+      {"role": "user", "content": "What is my bill?", "agent": null}
+    ],
+    "security_context": {
+      "user_id": "user-789",
+      "tenant_id": "tenant-abc",
+      "consent_scope": ["billing_read"],
+      "retention_policy": "30d"
+    }
+  }
+}
+```
+
+#### CloudEvents Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | Yes | Unique event identifier (UUID) |
+| `type` | Yes | Event type (e.g., `com.eggai.billing.request`) |
+| `source` | Yes | Event producer (agent name) |
+| `specversion` | Yes | CloudEvents spec version (`1.0`) |
+| `datacontenttype` | No | Payload content type (`application/json`) |
+| `time` | No | Event timestamp (ISO 8601) |
+| `subject` | No | Event subject (connection ID) |
+| `data` | Yes | Event payload |
+
+#### W3C Trace Context Extensions
+
+| Field | Description |
+|-------|-------------|
+| `traceparent` | W3C Trace Context propagation header |
+| `tracestate` | Vendor-specific trace information |
+
+These headers enable distributed tracing across all agents via OpenTelemetry.
 
 ### Communication Channels
 

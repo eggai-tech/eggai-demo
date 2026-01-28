@@ -79,7 +79,9 @@ Context is automatically extracted and propagated across agents.
 
 ## GenAI Semantic Conventions
 
-Standard metrics for LLM operations following OpenTelemetry GenAI conventions.
+Standard metrics for LLM operations following the
+[OpenTelemetry Semantic Conventions for GenAI](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+specification.
 
 ### Token Usage Metrics
 
