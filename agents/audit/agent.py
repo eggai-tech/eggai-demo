@@ -16,6 +16,7 @@ from .utils import (
     get_message_content,
     get_message_id,
     get_message_metadata,
+    get_security_context,
     propagate_trace_context,
 )
 
@@ -66,6 +67,7 @@ async def audit_message(
                     f"type={message_type}, source={source}, id={message_id}"
                 )
 
+            security_ctx = get_security_context(message)
             audit_event = AuditEvent(
                 message_id=message_id,
                 message_type=message_type,
@@ -73,6 +75,7 @@ async def audit_message(
                 channel=channel,
                 category=category,
                 content=get_message_content(message),
+                security_context=security_ctx,
             )
             data = audit_event.to_dict()
 

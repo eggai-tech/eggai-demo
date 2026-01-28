@@ -3,8 +3,17 @@ from typing import Any, Literal, TypedDict, TypeGuard
 from .enums import AgentName, AuditCategory, MessageType
 
 
+class SecurityContext(TypedDict, total=False):
+    """Security context for compliance demo (GKV-ready architecture)."""
+    user_id: str           # From IAM/Keycloak in production
+    tenant_id: str         # Multi-tenant isolation
+    consent_scope: list[str]  # e.g., ["policy_read", "claims_write"]
+    retention_policy: str  # e.g., "30d", "1y", "permanent"
+
+
 class MessageData(TypedDict):
     connection_id: str
+    security_context: SecurityContext | None
 
 
 class ChatMessage(TypedDict):

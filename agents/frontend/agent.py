@@ -122,6 +122,12 @@ async def _process_user_messages(
                 data={
                     "chat_messages": websocket_manager.chat_messages[connection_id],
                     "connection_id": connection_id,
+                    "security_context": {
+                        "user_id": f"demo-user-{connection_id[:8]}",
+                        "tenant_id": "demo-insurance-corp",
+                        "consent_scope": ["policy_read", "claims_read", "billing_read"],
+                        "retention_policy": "30d",
+                    },
                 },
                 traceparent=traceparent,
                 tracestate=tracestate,

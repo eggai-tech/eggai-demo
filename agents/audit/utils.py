@@ -59,3 +59,15 @@ def propagate_trace_context(
         target_message.traceparent = source_message.traceparent
     if hasattr(source_message, "tracestate") and source_message.tracestate:
         target_message.tracestate = source_message.tracestate
+
+
+def get_security_context(message: TracedMessage | dict | None) -> dict | None:
+    """Extract security context from message data for audit logging."""
+    if message is None:
+        return None
+
+    data = getattr(message, "data", None)
+    if not isinstance(data, dict):
+        return None
+
+    return data.get("security_context")
