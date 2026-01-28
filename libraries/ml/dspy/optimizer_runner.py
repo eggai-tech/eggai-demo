@@ -2,9 +2,10 @@ import datetime
 import sys
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from libraries.observability.logger import get_console_logger
 
@@ -59,7 +60,7 @@ def run_optimization(config: OptimizerConfig):
 
     logger = get_console_logger(f"{config.agent_name}_optimizer")
 
-    lm = dspy_set_language_model(config.settings, overwrite_cache_enabled=False)
+    _lm = dspy_set_language_model(config.settings, overwrite_cache_enabled=False)
 
     mlflow.set_experiment(config.experiment_name)
     run_name = f"{config.agent_name}_optimization_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"

@@ -1,7 +1,6 @@
 import json
 
 from agents.claims.types import ClaimRecord
-
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
 from libraries.observability.tracing.otel import safe_set_attribute

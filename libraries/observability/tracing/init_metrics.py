@@ -2,7 +2,6 @@ from opentelemetry import trace
 from prometheus_client import start_http_server
 
 from .metrics_definitions import (
-    _application_name,
     gen_ai_client_cost_current,
     gen_ai_client_cost_per_token,
     gen_ai_client_cost_total,
@@ -28,6 +27,7 @@ __all__ = [
     "normalize_operation_name",
     "export_semantic_metrics",
     "export_token_metrics",
+    "calculate_request_cost",
     "patch_tracking_lm",
     "start_metrics_server",
     "init_token_metrics",

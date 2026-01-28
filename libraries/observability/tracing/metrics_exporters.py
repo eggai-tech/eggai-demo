@@ -1,5 +1,4 @@
 from .metrics_definitions import (
-    _application_name,
     gen_ai_client_cost_current,
     gen_ai_client_cost_per_token,
     gen_ai_client_cost_total,

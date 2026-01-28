@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from agents.policies.agent.api.models import ReindexRequest, ReindexResponse
+
+if TYPE_CHECKING:
+    from agents.policies.ingestion.temporal_client import TemporalClient
 from libraries.integrations.vespa import VespaClient
 from libraries.observability.logger import get_console_logger
 
