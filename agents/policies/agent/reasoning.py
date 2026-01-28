@@ -2,7 +2,7 @@ import json
 import os
 from collections.abc import AsyncIterable
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import dspy
 from dspy import Prediction
@@ -82,13 +82,14 @@ class PolicyAgentSignature(dspy.Signature):
 
     chat_history: str = dspy.InputField(desc="Full conversation context.")
 
-    policy_category: PolicyCategory | None = dspy.OutputField(
+    # NOTE: Using Optional[] instead of X | None for DSPy compatibility with Python 3.11
+    policy_category: Optional[PolicyCategory] = dspy.OutputField(  # noqa: UP045
         desc="Policy category if identified."
     )
-    policy_number: str | None = dspy.OutputField(
+    policy_number: Optional[str] = dspy.OutputField(  # noqa: UP045
         desc="Policy number if provided by user."
     )
-    documentation_reference: str | None = dspy.OutputField(
+    documentation_reference: Optional[str] = dspy.OutputField(  # noqa: UP045
         desc="Reference on the documentation if found (e.g. Section 3.1)."
     )
 
