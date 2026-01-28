@@ -5,7 +5,7 @@
 # individual scripts directly or see the full command reference in docs/.
 # =============================================================================
 
-.PHONY: start stop test test-ci test-all lint lint-fix clean help \
+.PHONY: start start-foreground stop test test-ci test-all lint lint-fix clean help \
         docker-up docker-down health benchmark-classifiers
 
 # Default target
@@ -16,16 +16,19 @@
 # -----------------------------------------------------------------------------
 
 start: ## Start everything (infrastructure + agents)
-	@uv run scripts/start.py
+	@PYTHONPATH=$(PWD) uv run scripts/start.py
+
+start-foreground: ## Start with agent logs visible (Ctrl+C to stop)
+	@PYTHONPATH=$(PWD) uv run scripts/start.py --foreground
 
 stop: ## Stop agents (keeps Docker running)
-	@uv run scripts/stop.py
+	@PYTHONPATH=$(PWD) uv run scripts/stop.py
 
 stop-all: ## Stop agents and Docker infrastructure
-	@uv run scripts/stop.py --all
+	@PYTHONPATH=$(PWD) uv run scripts/stop.py --all
 
 health: ## Check health of all services
-	@uv run scripts/health_check.py
+	@PYTHONPATH=$(PWD) uv run scripts/health_check.py
 
 # -----------------------------------------------------------------------------
 # Development
@@ -111,7 +114,7 @@ help: ## Show this help message
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Core Commands:"
-	@grep -E '^(start|stop|stop-all|health):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(start|start-foreground|stop|stop-all|health):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Development:"
 	@grep -E '^(test|test-ci|test-all|test-coverage|lint|lint-fix):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'

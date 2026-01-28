@@ -12,7 +12,7 @@ import time
 
 from rich.console import Console
 
-from scripts.startup_agents import start_agents
+from scripts.startup_agents import start_agents, start_agents_foreground
 from scripts.startup_checks import check_prerequisites, load_environment, sync_dependencies
 from scripts.startup_infra import start_docker, wait_for_infrastructure
 from scripts.startup_ui import print_banner, print_success
@@ -38,6 +38,11 @@ def main():
         default=120.0,
         help="Timeout for waiting on services (default: 120s)",
     )
+    parser.add_argument(
+        "--foreground",
+        action="store_true",
+        help="Run agents in foreground with visible logs",
+    )
     args = parser.parse_args()
 
     print_banner()
@@ -62,11 +67,14 @@ def main():
         sys.exit(1)
 
     if not args.no_agents:
-        if not start_agents():
-            console.print("\n[yellow]Some agents failed to start.[/]")
+        if args.foreground:
+            start_agents_foreground()  # This blocks until Ctrl+C
+        else:
+            if not start_agents():
+                console.print("\n[yellow]Some agents failed to start.[/]")
 
-        console.print("\n[dim]Waiting for agents to initialize...[/]")
-        time.sleep(3)
+            console.print("\n[dim]Waiting for agents to initialize...[/]")
+            time.sleep(3)
 
     print_success()
 
