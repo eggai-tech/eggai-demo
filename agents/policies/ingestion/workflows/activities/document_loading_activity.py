@@ -43,7 +43,7 @@ async def load_document_activity(file_path: str, source: str = "filesystem", met
 
                 return {
                     "success": True,
-                    "document": document.model_dump(),
+                    "document": document.model_dump(mode="json"),
                     "metadata": {
                         "num_pages": len(document.pages),
                         "filename": original_filename,
@@ -70,7 +70,7 @@ async def load_document_activity(file_path: str, source: str = "filesystem", met
 
         return {
             "success": True,
-            "document": document.model_dump(),
+            "document": document.model_dump(mode="json"),
             "metadata": {
                 "num_pages": len(document.pages),
                 "filename": file_path_obj.name,
