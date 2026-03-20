@@ -14,6 +14,7 @@ from libraries.observability.tracing import (
     traced_dspy_function,
 )
 
+from ..config import settings
 from ..types import ModelConfig, TicketDepartment, TicketInfo
 
 logger = get_console_logger("escalation_agent.dspy")
@@ -149,6 +150,7 @@ escalation_model = TracedReAct(
     name="escalation_react",
     tracer=tracer,
     max_iters=5,
+    model_name=settings.language_model,
 )
 
 ticket_database: list[dict] = [
@@ -163,7 +165,7 @@ ticket_database: list[dict] = [
 ]
 
 
-@traced_dspy_function(name="escalation_dspy")
+@traced_dspy_function(name="escalation_dspy", model_name=settings.language_model)
 async def process_escalation(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:

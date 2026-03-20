@@ -125,6 +125,7 @@ claims_optimized = TracedReAct(
     name="claims_react",
     tracer=claims_tracer,
     max_iters=5,
+    model_name=settings.language_model,
 )
 
 
@@ -210,7 +211,7 @@ def truncate_long_history(
     return result
 
 
-@traced_dspy_function(name="claims_dspy")
+@traced_dspy_function(name="claims_dspy", model_name=settings.language_model)
 async def process_claims(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:

@@ -113,6 +113,7 @@ def main():
         name="billing_react",
         tracer=None,
         max_iters=5,
+        model_name=settings.language_model,
     )
 
     batch_size = min(len(train_set), 4)

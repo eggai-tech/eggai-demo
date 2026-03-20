@@ -106,6 +106,7 @@ policies_model = TracedReAct(
     name="policies_react",
     tracer=policies_tracer,
     max_iters=settings.max_iterations,
+    model_name=settings.language_model,
 )
 
 using_optimized_prompts = False
@@ -171,7 +172,7 @@ def truncate_long_history(
     return result
 
 
-@traced_dspy_function(name="process_policies")
+@traced_dspy_function(name="process_policies", model_name=settings.language_model)
 def process_policies(
     chat_history: str, config: ModelConfig | None = None
 ) -> AsyncIterable[StreamResponse | Prediction]:
