@@ -136,14 +136,17 @@ async def index_document_activity(
                 f"headings: {documents[0].headings[:2] if documents[0].headings else 'None'}"
             )
 
+        failed_count = result["failed"]
+        errors_list = result.get("errors", [])
         return {
-            "success": result["failed"] == 0,
+            "success": failed_count == 0,
             "documents_processed": 1,
             "total_documents_indexed": result["successful"],
             "total_chunks": len(documents),
             "document_metadata_indexed": doc_metadata_indexed,
             "vespa_result": result,
-            "errors": result.get("errors", []),
+            "errors": errors_list,
+            "error_message": f"{failed_count} documents failed to index: {'; '.join(errors_list)}" if failed_count > 0 else None,
             "metadata_summary": {
                 "pages_covered": document_stats.get("page_numbers", [])
                 if document_stats
