@@ -48,6 +48,7 @@ billing_program = TracedReAct(
     name="billing_react_optimizer",
     tracer=None,
     max_iters=5,
+    model_name=settings.language_model,
 )
 
 

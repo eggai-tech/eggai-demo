@@ -128,6 +128,7 @@ if __name__ == "__main__":
         name="claims_react",
         tracer=None,  # No tracing during optimization
         max_iters=5,
+        model_name=settings.language_model,
     )
 
     output_path = Path(__file__).resolve().parent / "optimized_claims_simba.json"

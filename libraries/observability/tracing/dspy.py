@@ -14,7 +14,7 @@ logger = get_console_logger("tracing.dspy")
 
 
 def add_gen_ai_attributes_to_span(
-    span: trace.Span, model_name: str = "claude", **kwargs
+    span: trace.Span, model_name: str = "unknown", **kwargs
 ) -> None:
     attr_dict = {"model_name": model_name}
 
@@ -32,32 +32,34 @@ class TracedChainOfThought(dspy.ChainOfThought):
         signature,
         name: str | None = None,
         tracer: trace.Tracer | None = None,
+        model_name: str = "unknown",
     ):
         super().__init__(signature)
         self.trace_name = name or self.__class__.__name__.lower()
         self.tracer = tracer or trace.get_tracer(f"dspy.{self.trace_name}")
+        self.model_name = model_name
 
     def __call__(self, *args, **kwargs):
         with self.tracer.start_as_current_span(f"{self.trace_name}_call") as span:
-            add_gen_ai_attributes_to_span(span)
+            add_gen_ai_attributes_to_span(span, model_name=self.model_name)
             span.set_attribute("dspy.call_args", str(args))
             span.set_attribute("dspy.call_kwargs", str(kwargs))
             return super().__call__(*args, **kwargs)
 
     def forward(self, **kwargs):
         with self.tracer.start_as_current_span(f"{self.trace_name}_forward") as span:
-            add_gen_ai_attributes_to_span(span)
+            add_gen_ai_attributes_to_span(span, model_name=self.model_name)
             span.set_attribute("dspy.forward_args", str(kwargs))
             return super().forward(**kwargs)
 
     def predict(self, **kwargs):
         with self.tracer.start_as_current_span(f"{self.trace_name}_predict") as span:
-            add_gen_ai_attributes_to_span(span)
+            add_gen_ai_attributes_to_span(span, model_name=self.model_name)
             span.set_attribute("dspy.predict_args", str(kwargs))
             return super().predict(**kwargs)
 
 
-def traced_dspy_function(name=None, span_namer=None):
+def traced_dspy_function(name=None, span_namer=None, model_name="unknown"):
 
     def decorator(fn):
         tracer = trace.get_tracer(f"dspy.{name or fn.__name__}")
@@ -66,7 +68,7 @@ def traced_dspy_function(name=None, span_namer=None):
             extracted_attrs = {}
             if "service_tier" in kwargs:
                 extracted_attrs["service_tier"] = kwargs.get("service_tier")
-            add_gen_ai_attributes_to_span(span, **extracted_attrs)
+            add_gen_ai_attributes_to_span(span, model_name=model_name, **extracted_attrs)
 
         @functools.wraps(fn)
         def sync_wrapper(*args, **kwargs):
@@ -140,10 +142,12 @@ class TracedReAct(dspy.ReAct):
         max_iters: int | None = 5,
         name: str | None = None,
         tracer: trace.Tracer | None = None,
+        model_name: str = "unknown",
     ):
         super().__init__(signature, tools=tools, max_iters=max_iters)
         self.trace_name = name or self.__class__.__name__.lower()
         self.tracer = tracer or trace.get_tracer(f"dspy.{self.trace_name}")
+        self.model_name = model_name
 
     def __call__(self, *args, **kwargs):
         with self.tracer.start_as_current_span(f"{self.trace_name}_call") as span:
@@ -162,7 +166,7 @@ class TracedReAct(dspy.ReAct):
 
     def forward(self, **kwargs):
         with self.tracer.start_as_current_span(f"{self.trace_name}_forward") as span:
-            add_gen_ai_attributes_to_span(span)
+            add_gen_ai_attributes_to_span(span, model_name=self.model_name)
             span.set_attribute("dspy.forward_args", str(kwargs))
             res = super().forward(**kwargs)
             lm: TrackingLM = dspy.settings.get("lm")

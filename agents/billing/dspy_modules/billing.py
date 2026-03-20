@@ -98,6 +98,7 @@ def _initialize_billing_model():
         name="billing_react",
         tracer=tracer,
         max_iters=5,
+        model_name=settings.language_model,
     )
 
     logger.info(

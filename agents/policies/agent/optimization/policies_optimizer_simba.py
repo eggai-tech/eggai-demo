@@ -114,6 +114,7 @@ def main():
         name="policies_react",
         tracer=None,  # No tracing during optimization
         max_iters=5,
+        model_name=settings.language_model,
     )
 
     output_path = Path(__file__).resolve().parent / "optimized_policies_simba.json"
