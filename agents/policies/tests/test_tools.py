@@ -89,11 +89,11 @@ class TestPolicySearch:
     def test_search_policy_documentation_basic(self):
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
-        agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
+        agents.policies.agent.tools.retrieval.policy_search._VECTOR_STORE = None
 
-        with patch("agents.policies.agent.tools.retrieval.policy_search.VespaClient") as MockVespaClient:
+        with patch("agents.policies.agent.tools.retrieval.policy_search.create_vector_store") as MockCreateStore:
             with patch("agents.policies.agent.tools.retrieval.policy_search.generate_embedding_async") as mock_embedding:
-                mock_instance = MockVespaClient.return_value
+                mock_instance = MockCreateStore.return_value
                 mock_instance.hybrid_search = AsyncMock(return_value=[
                     {
                         "id": "doc1",
@@ -121,11 +121,11 @@ class TestPolicySearch:
     def test_search_policy_documentation_with_category(self):
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
-        agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
+        agents.policies.agent.tools.retrieval.policy_search._VECTOR_STORE = None
 
-        with patch("agents.policies.agent.tools.retrieval.policy_search.VespaClient") as MockVespaClient:
+        with patch("agents.policies.agent.tools.retrieval.policy_search.create_vector_store") as MockCreateStore:
             with patch("agents.policies.agent.tools.retrieval.policy_search.generate_embedding_async") as mock_embedding:
-                mock_instance = MockVespaClient.return_value
+                mock_instance = MockCreateStore.return_value
                 mock_instance.hybrid_search = AsyncMock(return_value=[
                     {
                         "id": "home1",
@@ -154,11 +154,11 @@ class TestPolicySearch:
     def test_search_policy_documentation_no_results(self):
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
-        agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
+        agents.policies.agent.tools.retrieval.policy_search._VECTOR_STORE = None
 
-        with patch("agents.policies.agent.tools.retrieval.policy_search.VespaClient") as MockVespaClient:
+        with patch("agents.policies.agent.tools.retrieval.policy_search.create_vector_store") as MockCreateStore:
             with patch("agents.policies.agent.tools.retrieval.policy_search.generate_embedding_async") as mock_embedding:
-                mock_instance = MockVespaClient.return_value
+                mock_instance = MockCreateStore.return_value
                 mock_instance.hybrid_search = AsyncMock(return_value=[])
                 mock_embedding.return_value = [0.1] * 768  # Mock embedding vector
 
@@ -169,11 +169,11 @@ class TestPolicySearch:
     def test_search_policy_documentation_multiple_results(self):
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
-        agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
+        agents.policies.agent.tools.retrieval.policy_search._VECTOR_STORE = None
 
-        with patch("agents.policies.agent.tools.retrieval.policy_search.VespaClient") as MockVespaClient:
+        with patch("agents.policies.agent.tools.retrieval.policy_search.create_vector_store") as MockCreateStore:
             with patch("agents.policies.agent.tools.retrieval.policy_search.generate_embedding_async") as mock_embedding:
-                mock_instance = MockVespaClient.return_value
+                mock_instance = MockCreateStore.return_value
                 mock_instance.hybrid_search = AsyncMock(return_value=[
                     {
                         "id": "doc1",
@@ -222,11 +222,11 @@ class TestPolicySearch:
     def test_search_policy_documentation_error_handling(self):
         # Reset the singleton before test
         import agents.policies.agent.tools.retrieval.policy_search
-        agents.policies.agent.tools.retrieval.policy_search._VESPA_CLIENT = None
+        agents.policies.agent.tools.retrieval.policy_search._VECTOR_STORE = None
 
-        with patch("agents.policies.agent.tools.retrieval.policy_search.VespaClient") as MockVespaClient:
+        with patch("agents.policies.agent.tools.retrieval.policy_search.create_vector_store") as MockCreateStore:
             with patch("agents.policies.agent.tools.retrieval.policy_search.generate_embedding_async") as mock_embedding:
-                mock_instance = MockVespaClient.return_value
+                mock_instance = MockCreateStore.return_value
                 mock_instance.hybrid_search = AsyncMock(side_effect=Exception("Search failed"))
                 mock_embedding.return_value = [0.1] * 768  # Mock embedding vector
 
@@ -240,8 +240,8 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_success(self):
-        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
-            mock_instance = MockVespaClient.return_value
+        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.create_vector_store") as MockCreateStore:
+            mock_instance = MockCreateStore.return_value
 
             # Mock search results with multiple chunks
             mock_instance.search_documents = AsyncMock(return_value=[
@@ -287,8 +287,8 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_not_found(self):
-        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
-            mock_instance = MockVespaClient.return_value
+        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.create_vector_store") as MockCreateStore:
+            mock_instance = MockCreateStore.return_value
             mock_instance.search_documents = AsyncMock(return_value=[])
 
             result = await retrieve_full_document_async("nonexistent_doc")
@@ -299,8 +299,8 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_single_chunk(self):
-        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
-            mock_instance = MockVespaClient.return_value
+        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.create_vector_store") as MockCreateStore:
+            mock_instance = MockCreateStore.return_value
             mock_instance.search_documents = AsyncMock(return_value=[
                 {
                     "document_id": "short_policy",
@@ -384,8 +384,8 @@ class TestFullDocumentRetrieval:
 
     @pytest.mark.asyncio
     async def test_retrieve_full_document_error_handling(self):
-        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.VespaClient") as MockVespaClient:
-            mock_instance = MockVespaClient.return_value
+        with patch("agents.policies.agent.tools.retrieval.full_document_retrieval.create_vector_store") as MockCreateStore:
+            mock_instance = MockCreateStore.return_value
             mock_instance.search_documents = AsyncMock(side_effect=Exception("Database error"))
 
             result = await retrieve_full_document_async("auto_policy")

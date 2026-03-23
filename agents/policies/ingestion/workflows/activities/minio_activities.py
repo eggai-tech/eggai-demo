@@ -3,7 +3,7 @@ import logging
 from temporalio import activity
 
 from agents.policies.ingestion.minio_client import MinIOClient
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import create_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +23,17 @@ async def check_document_exists_activity(document_id: str) -> bool:
             logger.info(f"Document {document_id} found in MinIO processed folder")
             return True
 
-    vespa_client = VespaClient()
+    vector_store = create_vector_store()
 
     try:
-        existing_docs = await vespa_client.search_documents(
+        existing_docs = await vector_store.search_documents(
             query=f'document_id:"{document_id}"',
             max_hits=1
         )
 
         exists = len(existing_docs) > 0
         if exists:
-            logger.info(f"Document {document_id} found in Vespa")
+            logger.info(f"Document {document_id} found in vector store")
         return exists
 
     except Exception as e:

@@ -9,15 +9,15 @@ from agents.policies.agent.api.models import (
 )
 from agents.policies.agent.config import settings
 from agents.policies.agent.services.embeddings import generate_embedding
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("search_service")
 
 
 class SearchService:
-    def __init__(self, vespa_client: VespaClient, embedding_model: SentenceTransformer | None = None):
-        self.vespa_client = vespa_client
+    def __init__(self, vector_store: VectorStoreBase, embedding_model: SentenceTransformer | None = None):
+        self.vector_store = vector_store
         self._embedding_model = embedding_model
 
     def create_policy_document(self, doc_data: dict) -> PolicyDocument:
@@ -51,14 +51,14 @@ class SearchService:
                 query_embedding = generate_embedding(request.query)
 
                 if request.search_type == "vector":
-                    results = await self.vespa_client.vector_search(
+                    results = await self.vector_store.vector_search(
                         query_embedding=query_embedding,
                         category=request.category,
                         max_hits=request.max_hits,
                         ranking_profile="semantic"
                     )
                 else:
-                    results = await self.vespa_client.hybrid_search(
+                    results = await self.vector_store.hybrid_search(
                         query=request.query,
                         query_embedding=query_embedding,
                         category=request.category,
@@ -67,7 +67,7 @@ class SearchService:
                     )
 
             else:
-                results = await self.vespa_client.search_documents(
+                results = await self.vector_store.search_documents(
                     query=request.query,
                     category=request.category,
                     max_hits=request.max_hits,

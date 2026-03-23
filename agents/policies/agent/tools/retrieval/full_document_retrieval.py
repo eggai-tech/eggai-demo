@@ -3,7 +3,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from agents.policies.agent.utils import run_async_safe
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase, create_vector_store
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("policies_agent.full_document")
@@ -72,8 +72,8 @@ class DocumentRetrievalError(Exception):
         super().__init__(f"Document {document_id}: {message}")
 
 
-def _get_vespa_client(vespa_client: VespaClient | None = None) -> VespaClient:
-    return vespa_client or VespaClient()
+def _get_vector_store(vector_store: VectorStoreBase | None = None) -> VectorStoreBase:
+    return vector_store or create_vector_store()
 
 
 def _sort_chunks_by_index(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -144,9 +144,9 @@ def _create_document_metadata(chunks: list[dict[str, Any]]) -> DocumentMetadata:
 
 
 async def _search_document_chunks(
-    document_id: str, vespa_client: VespaClient
+    document_id: str, vector_store: VectorStoreBase
 ) -> list[dict[str, Any]]:
-    chunks = await vespa_client.search_documents(
+    chunks = await vector_store.search_documents(
         query=f'document_id:"{document_id}"',
         category=None,
         max_hits=100,  # Reasonable limit for chunks
@@ -161,13 +161,13 @@ async def _search_document_chunks(
 
 
 async def retrieve_full_document_async(
-    document_id: str, vespa_client: VespaClient | None = None
+    document_id: str, vector_store: VectorStoreBase | None = None
 ) -> dict[str, Any]:
     logger.info(f"Retrieving full document for ID: {document_id}")
 
     try:
-        client = _get_vespa_client(vespa_client)
-        chunks = await _search_document_chunks(document_id, client)
+        store = _get_vector_store(vector_store)
+        chunks = await _search_document_chunks(document_id, store)
 
         full_text = "\n\n".join(chunk.get("text", "") for chunk in chunks)
         total_chars, total_tokens = _calculate_total_stats(chunks)
@@ -209,24 +209,24 @@ async def retrieve_full_document_async(
 
 
 def retrieve_full_document(
-    document_id: str, vespa_client: VespaClient | None = None
+    document_id: str, vector_store: VectorStoreBase | None = None
 ) -> dict[str, Any]:
-    return run_async_safe(retrieve_full_document_async(document_id, vespa_client))
+    return run_async_safe(retrieve_full_document_async(document_id, vector_store))
 
 
 def get_document_chunk_range(
     document_id: str,
     start_chunk: int,
     end_chunk: int | None = None,
-    vespa_client: VespaClient | None = None,
+    vector_store: VectorStoreBase | None = None,
 ) -> dict[str, Any]:
     logger.info(
         f"Retrieving chunks {start_chunk}-{end_chunk} for document {document_id}"
     )
 
     try:
-        client = _get_vespa_client(vespa_client)
-        full_doc_result = retrieve_full_document(document_id, client)
+        store = _get_vector_store(vector_store)
+        full_doc_result = retrieve_full_document(document_id, store)
 
         if "error" in full_doc_result:
             return full_doc_result

@@ -9,7 +9,7 @@ from agents.policies.agent.api.dependencies import (
     get_document_service,
     get_reindex_service,
     get_search_service,
-    get_vespa_client,
+    get_vector_store,
 )
 from agents.policies.agent.api.models import (
     FullDocumentResponse,
@@ -20,7 +20,7 @@ from agents.policies.agent.api.routes import router
 from agents.policies.agent.services.document_service import DocumentService
 from agents.policies.agent.services.reindex_service import ReindexService
 from agents.policies.agent.services.search_service import SearchService
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("test_api_integration")
@@ -31,48 +31,43 @@ app.include_router(router, prefix="/api/v1")
 
 
 @pytest.fixture
-def mock_vespa_client():
-    client = MagicMock(spec=VespaClient)
+def mock_vector_store():
+    store = MagicMock(spec=VectorStoreBase)
 
     # Mock search_documents for keyword search
-    client.search_documents = AsyncMock(return_value=[])
+    store.search_documents = AsyncMock(return_value=[])
 
     # Mock vector and hybrid search methods
-    client.vector_search = AsyncMock(return_value=[])
-    client.hybrid_search = AsyncMock(return_value=[])
+    store.vector_search = AsyncMock(return_value=[])
+    store.hybrid_search = AsyncMock(return_value=[])
+    store.delete_all_documents = AsyncMock(return_value=0)
+    store.get_document = AsyncMock(return_value=None)
+    store.delete_document = AsyncMock(return_value=True)
 
-    client.app = MagicMock()
-
-    # Mock query results for vector search - return empty by default
-    mock_query_result = MagicMock()
-    mock_query_result.hits = []
-
-    client.app.query = AsyncMock(return_value=mock_query_result)
-    client.app.http_session = MagicMock()
-    return client
+    return store
 
 
 @pytest.fixture
-def mock_document_service(mock_vespa_client):
-    return DocumentService(mock_vespa_client)
+def mock_document_service(mock_vector_store):
+    return DocumentService(mock_vector_store)
 
 
 @pytest.fixture
-def mock_search_service(mock_vespa_client):
-    return SearchService(mock_vespa_client)
+def mock_search_service(mock_vector_store):
+    return SearchService(mock_vector_store)
 
 
 @pytest.fixture
-def mock_reindex_service(mock_vespa_client):
-    return ReindexService(mock_vespa_client)
+def mock_reindex_service(mock_vector_store):
+    return ReindexService(mock_vector_store)
 
 
 @pytest.fixture
-def test_client(mock_document_service, mock_search_service, mock_reindex_service, mock_vespa_client):
+def test_client(mock_document_service, mock_search_service, mock_reindex_service, mock_vector_store):
     app.dependency_overrides[get_document_service] = lambda: mock_document_service
     app.dependency_overrides[get_search_service] = lambda: mock_search_service
     app.dependency_overrides[get_reindex_service] = lambda: mock_reindex_service
-    app.dependency_overrides[get_vespa_client] = lambda: mock_vespa_client
+    app.dependency_overrides[get_vector_store] = lambda: mock_vector_store
 
     with TestClient(app) as client:
         yield client
@@ -124,7 +119,7 @@ def create_mock_documents() -> list[dict]:
 
 class TestDocumentEndpoints:
 
-    def test_list_documents_success(self, test_client, mock_vespa_client, mock_document_service):
+    def test_list_documents_success(self, test_client, mock_vector_store, mock_document_service):
         # Setup mock - mock the service method, not vespa client
         mock_docs = create_mock_documents()
         mock_document_service.list_documents = AsyncMock(return_value=[
@@ -244,10 +239,10 @@ class TestDocumentEndpoints:
 
 class TestSearchEndpoints:
 
-    def test_search_documents_success(self, test_client, mock_search_service, mock_vespa_client):
+    def test_search_documents_success(self, test_client, mock_search_service, mock_vector_store):
         # Setup mock - mock the hybrid_search method (default search type)
         mock_results = create_mock_documents()[:1]
-        mock_vespa_client.hybrid_search.return_value = mock_results
+        mock_vector_store.hybrid_search.return_value = mock_results
 
         response = test_client.post(
             "/api/v1/kb/search/vector",
@@ -259,12 +254,12 @@ class TestSearchEndpoints:
         assert data["total_hits"] == 1
         assert "Auto insurance" in data["documents"][0]["text"]
 
-    def test_search_documents_with_category(self, test_client, mock_search_service, mock_vespa_client):
+    def test_search_documents_with_category(self, test_client, mock_search_service, mock_vector_store):
         # Setup mock - return empty results for category search
         mock_query_result = MagicMock()
         mock_query_result.hits = []
 
-        mock_vespa_client.app.query = AsyncMock(return_value=mock_query_result)
+        mock_vector_store.app.query = AsyncMock(return_value=mock_query_result)
 
         response = test_client.post(
             "/api/v1/kb/search/vector",
@@ -298,7 +293,7 @@ class TestSearchEndpoints:
         errors = response.json()["detail"]
         assert any("at most 500 characters" in str(error) for error in errors)
 
-    def test_vector_search_success(self, test_client, mock_search_service, mock_vespa_client):
+    def test_vector_search_success(self, test_client, mock_search_service, mock_vector_store):
         # Setup mock - mock the hybrid_search method (default search type)
         mock_result = {
             "id": "auto_001",
@@ -311,7 +306,7 @@ class TestSearchEndpoints:
             "page_numbers": [],
             "headings": []
         }
-        mock_vespa_client.hybrid_search.return_value = [mock_result]
+        mock_vector_store.hybrid_search.return_value = [mock_result]
 
         response = test_client.post(
             "/api/v1/kb/search/vector",
@@ -477,13 +472,13 @@ class TestErrorHandling:
         assert "Internal server error" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_timeout_handling(self, test_client, mock_vespa_client):
+    async def test_timeout_handling(self, test_client, mock_vector_store):
         # Setup mock to simulate timeout
         async def slow_search(*args, **kwargs):
             await asyncio.sleep(10)  # Simulate slow operation
             return []
 
-        mock_vespa_client.search_documents = slow_search
+        mock_vector_store.search_documents = slow_search
 
         # This should timeout based on API configuration
         test_client.post(

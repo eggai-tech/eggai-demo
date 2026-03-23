@@ -1,11 +1,11 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 from libraries.communication.messaging import MessageType
 
 
-class TargetAgent(str, Enum):
+class TargetAgent(StrEnum):
     BillingAgent = "BillingAgent"
     PolicyAgent = "PolicyAgent"
     ClaimsAgent = "ClaimsAgent"

@@ -11,7 +11,7 @@ from agents.policies.ingestion.temporal_client import TemporalClient
 from agents.policies.ingestion.workflows.worker import (
     run_policy_documentation_worker,
 )
-from agents.policies.vespa.deploy_package import deploy_to_vespa
+from libraries.integrations.vector_store.config import VectorStoreBackend, vector_store_config
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import init_telemetry
 
@@ -25,7 +25,7 @@ async def initialize_minio_and_migrate():
         import hashlib
 
         from agents.policies.ingestion.minio_client import MinIOClient
-        from libraries.integrations.vespa import VespaClient
+        from libraries.integrations.vector_store import create_vector_store
 
         async with MinIOClient() as minio_client:
             await minio_client.initialize_buckets()
@@ -36,14 +36,14 @@ async def initialize_minio_and_migrate():
             if not processed_files:
                 logger.info("No files in MinIO processed folder, running migration...")
 
-                vespa_client = VespaClient()
+                vector_store = create_vector_store()
 
-                existing_docs = await vespa_client.search_documents(
+                existing_docs = await vector_store.search_documents(
                     query="",
                     max_hits=400,
                 )
 
-                logger.info(f"Found {len(existing_docs)} documents in Vespa")
+                logger.info(f"Found {len(existing_docs)} documents in vector store")
 
                 documents = {}
                 for doc in existing_docs:
@@ -215,28 +215,32 @@ async def main():
 
         logger.info("Policy Documentation worker is running. Press Ctrl+C to stop.")
 
-        logger.info("Ensuring Vespa schema is deployed...")
+        if vector_store_config.backend == VectorStoreBackend.VESPA:
+            logger.info("Ensuring Vespa schema is deployed...")
+            from agents.policies.vespa.deploy_package import deploy_to_vespa
 
-        schema_deployed = deploy_to_vespa(
-            config_server_url=settings.vespa_config_url,
-            query_url=settings.vespa_query_url,
-            force=True,
-            artifacts_dir=settings.vespa_artifacts_dir,
-            deployment_mode=settings.vespa_deployment_mode,
-            node_count=settings.vespa_node_count,
-            hosts_config=settings.vespa_hosts_config,
-            services_xml=settings.vespa_services_xml,
-            app_name=settings.vespa_app_name,
-        )
-
-        if not schema_deployed:
-            logger.error(
-                "Vespa schema deployment failed - cannot proceed with document ingestion"
+            schema_deployed = deploy_to_vespa(
+                config_server_url=settings.vespa_config_url,
+                query_url=settings.vespa_query_url,
+                force=True,
+                artifacts_dir=settings.vespa_artifacts_dir,
+                deployment_mode=settings.vespa_deployment_mode,
+                node_count=settings.vespa_node_count,
+                hosts_config=settings.vespa_hosts_config,
+                services_xml=settings.vespa_services_xml,
+                app_name=settings.vespa_app_name,
             )
-            logger.error("Please check Vespa container status and try again")
-            raise Exception("Vespa schema deployment failed")
 
-        logger.info("Vespa schema ready - proceeding with document ingestion")
+            if not schema_deployed:
+                logger.error(
+                    "Vespa schema deployment failed - cannot proceed with document ingestion"
+                )
+                logger.error("Please check Vespa container status and try again")
+                raise Exception("Vespa schema deployment failed")
+
+            logger.info("Vespa schema ready - proceeding with document ingestion")
+        else:
+            logger.info("Using in-memory vector store - no schema deployment needed")
 
         await trigger_initial_document_ingestion()
 

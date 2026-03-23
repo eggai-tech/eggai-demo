@@ -8,7 +8,11 @@ from agents.policies.agent.services.embeddings import (
     combine_text_for_embedding,
     generate_embeddings_batch,
 )
-from libraries.integrations.vespa import DocumentMetadata, PolicyDocument, VespaClient
+from libraries.integrations.vector_store import (
+    DocumentMetadata,
+    PolicyDocument,
+    create_vector_store,
+)
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("ingestion.document_indexing")
@@ -39,7 +43,7 @@ async def index_document_activity(
                 "reason": "No chunks to index",
             }
 
-        vespa_client = VespaClient()
+        vector_store = create_vector_store()
 
         document_id = chunks_data[0].get(
             "document_id", os.path.splitext(os.path.basename(file_path))[0]
@@ -81,9 +85,9 @@ async def index_document_activity(
             )
             documents.append(doc)
 
-        logger.info(f"Indexing {len(documents)} enhanced documents to Vespa")
+        logger.info(f"Indexing {len(documents)} enhanced documents to vector store")
 
-        result = await vespa_client.index_documents(documents)
+        result = await vector_store.index_documents(documents)
 
         doc_metadata_indexed = False
         if document_stats:
@@ -126,7 +130,7 @@ async def index_document_activity(
                 logger.warning(f"Failed to create document metadata: {e}")
 
         logger.info(
-            f"Vespa indexing completed: {result['successful']} successful, "
+            f"Indexing completed: {result['successful']} successful, "
             f"{result['failed']} failed out of {result['total_documents']} total"
         )
 
@@ -144,7 +148,7 @@ async def index_document_activity(
             "total_documents_indexed": result["successful"],
             "total_chunks": len(documents),
             "document_metadata_indexed": doc_metadata_indexed,
-            "vespa_result": result,
+            "indexing_result": result,
             "errors": errors_list,
             "error_message": f"{failed_count} documents failed to index: {'; '.join(errors_list)}" if failed_count > 0 else None,
             "metadata_summary": {

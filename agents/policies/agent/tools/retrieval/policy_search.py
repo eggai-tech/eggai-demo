@@ -6,14 +6,14 @@ from agents.policies.agent.services.embeddings import (
     generate_embedding_async,
 )
 from agents.policies.agent.utils import run_async_safe
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase, create_vector_store
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
 
 logger = get_console_logger("policies_agent.tools.retrieval")
 tracer = create_tracer("policies_agent_tools_retrieval")
 
-_VESPA_CLIENT = None
+_VECTOR_STORE = None
 
 
 @tracer.start_as_current_span("search_policy_documentation")
@@ -67,12 +67,12 @@ def search_policy_documentation(query: str, category: str | None = None) -> str:
         return "Error retrieving policy information."
 
 
-def _get_vespa_client() -> VespaClient:
-    global _VESPA_CLIENT
-    if _VESPA_CLIENT is None:
-        _VESPA_CLIENT = VespaClient()
-        logger.info("Vespa client initialized")
-    return _VESPA_CLIENT
+def _get_vector_store() -> VectorStoreBase:
+    global _VECTOR_STORE
+    if _VECTOR_STORE is None:
+        _VECTOR_STORE = create_vector_store()
+        logger.info("Vector store initialized")
+    return _VECTOR_STORE
 
 
 def format_citation(result: dict[str, Any]) -> str:
@@ -85,13 +85,13 @@ def format_citation(result: dict[str, Any]) -> str:
 
 
 async def _hybrid_search_with_embedding(
-    vespa_client: VespaClient,
+    vector_store: VectorStoreBase,
     query: str,
     category: str | None = None
 ) -> list[dict[str, Any]]:
     query_embedding = await generate_embedding_async(query)
 
-    results = await vespa_client.hybrid_search(
+    results = await vector_store.hybrid_search(
         query=query,
         query_embedding=query_embedding,
         category=category,
@@ -110,10 +110,10 @@ def retrieve_policies(
     )
 
     try:
-        vespa_client = _get_vespa_client()
+        vector_store = _get_vector_store()
 
         results = run_async_safe(
-            _hybrid_search_with_embedding(vespa_client, query, category)
+            _hybrid_search_with_embedding(vector_store, query, category)
         )
 
         formatted_results = []
@@ -179,5 +179,5 @@ def retrieve_policies(
         return formatted_results
 
     except Exception as e:
-        logger.error(f"Error searching Vespa: {e}", exc_info=True)
+        logger.error(f"Error searching vector store: {e}", exc_info=True)
         return []
