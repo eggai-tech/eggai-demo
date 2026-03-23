@@ -1,17 +1,21 @@
-from guardrails import AsyncGuard
-
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("frontend_agent")
 
 try:
+    from guardrails import AsyncGuard
+except Exception as e:
+    logger.warning(f"Guardrails import failed; disabling guardrails: {e}")
+    AsyncGuard = None
+
+try:
     from guardrails.hub import ToxicLanguage
-except ImportError:
-    logger.warning("ToxicLanguage validator not found in guardrails.hub; disabling guardrails")
+except Exception as e:
+    logger.warning(f"ToxicLanguage validator unavailable; disabling guardrails: {e}")
     ToxicLanguage = None
 
 _toxic_language_guard = None
-if ToxicLanguage:
+if AsyncGuard and ToxicLanguage:
     _toxic_language_guard = AsyncGuard().use(
         ToxicLanguage,
         threshold=0.5,

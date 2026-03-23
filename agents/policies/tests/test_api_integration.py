@@ -255,11 +255,7 @@ class TestSearchEndpoints:
         assert "Auto insurance" in data["documents"][0]["text"]
 
     def test_search_documents_with_category(self, test_client, mock_search_service, mock_vector_store):
-        # Setup mock - return empty results for category search
-        mock_query_result = MagicMock()
-        mock_query_result.hits = []
-
-        mock_vector_store.app.query = AsyncMock(return_value=mock_query_result)
+        mock_vector_store.hybrid_search.return_value = []
 
         response = test_client.post(
             "/api/v1/kb/search/vector",

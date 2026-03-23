@@ -11,6 +11,7 @@ from agents.policies.ingestion.temporal_client import TemporalClient
 from agents.policies.ingestion.workflows.worker import (
     run_policy_documentation_worker,
 )
+from agents.policies.vespa.deploy_package import deploy_to_vespa
 from libraries.integrations.vector_store.config import VectorStoreBackend, vector_store_config
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import init_telemetry
@@ -217,7 +218,6 @@ async def main():
 
         if vector_store_config.backend == VectorStoreBackend.VESPA:
             logger.info("Ensuring Vespa schema is deployed...")
-            from agents.policies.vespa.deploy_package import deploy_to_vespa
 
             schema_deployed = deploy_to_vespa(
                 config_server_url=settings.vespa_config_url,

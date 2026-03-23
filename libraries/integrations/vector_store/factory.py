@@ -9,7 +9,7 @@ logger = get_console_logger("vector_store.factory")
 def create_vector_store(config: VectorStoreConfig | None = None) -> VectorStoreBase:
     """Create a vector store instance based on configuration.
 
-    Set VECTOR_STORE_BACKEND=faiss (default) or VECTOR_STORE_BACKEND=vespa in .env
+    Set VECTOR_STORE_BACKEND=vespa (default) or VECTOR_STORE_BACKEND=faiss in .env
     """
     cfg = config or vector_store_config
 
@@ -19,7 +19,7 @@ def create_vector_store(config: VectorStoreConfig | None = None) -> VectorStoreB
 
         return VespaVectorStore()
     else:
-        logger.info("Using in-memory FAISS vector store backend")
+        logger.info("Using local FAISS vector store backend")
         from .store import InMemoryVectorStore
 
         return InMemoryVectorStore(config=cfg)

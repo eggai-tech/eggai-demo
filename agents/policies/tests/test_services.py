@@ -359,7 +359,7 @@ class TestReindexService:
 
     @pytest.mark.asyncio
     async def test_reindex_documents_full_flow(self, reindex_service, mock_vector_store):
-        mock_vector_store.search_documents.return_value = create_mock_documents()[:2]
+        mock_vector_store.delete_all_documents.return_value = 2
 
         with patch("agents.policies.ingestion.temporal_client.TemporalClient") as mock_temporal_class:
             mock_temporal = AsyncMock()
@@ -380,7 +380,7 @@ class TestReindexService:
             assert set(response.policy_ids) == {"auto", "home"}
 
             # Verify clear was called since force_rebuild=True
-            assert mock_vector_store.search_documents.called
+            mock_vector_store.delete_all_documents.assert_called_once()
 
 
 # Run tests

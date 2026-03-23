@@ -4,4 +4,20 @@ from .config import VectorStoreConfig as VectorStoreConfig
 from .factory import create_vector_store as create_vector_store
 from .schemas import DocumentMetadata as DocumentMetadata
 from .schemas import PolicyDocument as PolicyDocument
-from .store import InMemoryVectorStore as InMemoryVectorStore
+
+__all__ = [
+    "DocumentMetadata",
+    "PolicyDocument",
+    "VectorStoreBackend",
+    "VectorStoreBase",
+    "VectorStoreConfig",
+    "create_vector_store",
+]
+
+
+def __getattr__(name: str):
+    if name == "InMemoryVectorStore":
+        from .store import InMemoryVectorStore
+
+        return InMemoryVectorStore
+    raise AttributeError(name)

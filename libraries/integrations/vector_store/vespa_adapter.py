@@ -1,8 +1,11 @@
 from typing import Any
 
+import httpx
+
 from libraries.observability.logger import get_console_logger
 
 from .base import VectorStoreBase
+from .query_utils import escape_yql_string, parse_field_query
 from .schemas import PolicyDocument
 
 logger = get_console_logger("vector_store.vespa")
@@ -40,6 +43,17 @@ class VespaVectorStore(VectorStoreBase):
         max_hits: int | None = None,
         ranking_profile: str | None = None,
     ) -> list[dict[str, Any]]:
+        field_query = parse_field_query(query)
+        if field_query:
+            field, value = field_query
+            return await self._search_documents_by_field(
+                field=field,
+                value=value,
+                category=category,
+                max_hits=max_hits,
+                ranking_profile=ranking_profile,
+            )
+
         return await self._client.search_documents(
             query=query, category=category, max_hits=max_hits, ranking_profile=ranking_profile
         )
@@ -68,7 +82,7 @@ class VespaVectorStore(VectorStoreBase):
         category: str | None = None,
         max_hits: int | None = None,
         alpha: float = 0.7,
-    ) -> list[dict[str, Any]]:
+        ) -> list[dict[str, Any]]:
         return await self._client.hybrid_search(
             query=query,
             query_embedding=query_embedding,
@@ -76,6 +90,48 @@ class VespaVectorStore(VectorStoreBase):
             max_hits=max_hits,
             alpha=alpha,
         )
+
+    async def _search_documents_by_field(
+        self,
+        field: str,
+        value: str,
+        category: str | None,
+        max_hits: int | None,
+        ranking_profile: str | None,
+    ) -> list[dict[str, Any]]:
+        max_hits = max_hits or self._client.config.max_hits
+        ranking_profile = ranking_profile or self._client.config.ranking_profile
+
+        conditions = [f'{field} contains "{escape_yql_string(value)}"']
+        if category:
+            conditions.append(f'category contains "{escape_yql_string(category)}"')
+
+        yql = (
+            f"select * from {self._client.config.schema_name} "
+            f"where {' and '.join(conditions)}"
+        )
+
+        try:
+            async with self._client.vespa_app.asyncio(
+                connections=1,
+                timeout=httpx.Timeout(self._client.config.vespa_timeout),
+            ) as session:
+                response = await session.query(
+                    yql=yql,
+                    hits=max_hits,
+                    ranking=ranking_profile,
+                )
+
+                if not response.is_successful():
+                    logger.error(
+                        f"Field search failed: status {response.status_code}, response: {response.json}"
+                    )
+                    return []
+
+                return self._client._extract_search_results(response)
+        except Exception as e:
+            logger.error(f"Field search error: {e}")
+            return []
 
     async def get_document(self, doc_id: str, **kwargs) -> dict[str, Any] | None:
         try:
