@@ -13,7 +13,7 @@ jobs:
     name: Code quality checks
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,7 +30,7 @@ jobs:
     name: Run tests
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -51,8 +51,35 @@ jobs:
     name: Verify Docker build
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build Docker image
         run: |
           docker build -t eggai-demo:test .
+
+  review:
+    runs-on: ubuntu-latest
+    name: AI Code Review
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install QualOps
+        run: npm install -g @eggai/qualops@~0.2
+
+      - name: Run QualOps
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: qualops --base=${{ github.base_ref }} --head=${{ github.sha }}
