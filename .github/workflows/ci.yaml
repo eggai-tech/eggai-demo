@@ -83,3 +83,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: qualops --base=${{ github.base_ref }} --head=${{ github.sha }}
+
+      - name: Upload QualOps report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qualops-report
+          path: .qualops/reports/
+          retention-days: 30
