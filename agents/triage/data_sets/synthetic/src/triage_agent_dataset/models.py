@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 
-class Agents(str, Enum):
+class Agents(StrEnum):
     BILLING = "BillingAgent"
     POLICY = "PolicyAgent"
     CLAIMS = "ClaimsAgent"
@@ -11,7 +11,7 @@ class Agents(str, Enum):
     CHATTY = "ChattyAgent"
 
 
-class SpecialCaseType(str, Enum):
+class SpecialCaseType(StrEnum):
     EDGE_CASE = "edge_case"
     CROSS_DOMAIN = "cross_domain"
     LANGUAGE_SWITCH = "language_switch"

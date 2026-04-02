@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class MessageType(str, Enum):
+class MessageType(StrEnum):
     USER_MESSAGE = "user_message"
     BILLING_REQUEST = "billing_request"
     CLAIM_REQUEST = "claim_request"
@@ -21,7 +21,7 @@ class MessageType(str, Enum):
     ERROR = "error"
 
 
-class AgentName(str, Enum):
+class AgentName(StrEnum):
     FRONTEND = "Frontend"
     TRIAGE = "Triage"
     BILLING = "Billing"
@@ -31,7 +31,7 @@ class AgentName(str, Enum):
     AUDIT = "Audit"
 
 
-class AuditCategory(str, Enum):
+class AuditCategory(StrEnum):
     SYSTEM_OPERATIONS = "System Operations"
     USER_COMMUNICATION = "User Communication"
     AGENT_PROCESSING = "Agent Processing"
@@ -39,7 +39,7 @@ class AuditCategory(str, Enum):
     OTHER = "Other"
 
 
-class OffsetReset(str, Enum):
+class OffsetReset(StrEnum):
     LATEST = "latest"
     EARLIEST = "earliest"
     NONE = "none"
