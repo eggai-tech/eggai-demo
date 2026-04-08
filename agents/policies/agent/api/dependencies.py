@@ -8,16 +8,16 @@ from agents.policies.agent.config import settings
 from agents.policies.agent.services.document_service import DocumentService
 from agents.policies.agent.services.reindex_service import ReindexService
 from agents.policies.agent.services.search_service import SearchService
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase, create_vector_store
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("policies_api_dependencies")
 
 
 @lru_cache
-def get_vespa_client() -> VespaClient:
-    logger.info("Creating Vespa client instance")
-    return VespaClient()
+def get_vector_store() -> VectorStoreBase:
+    logger.info("Creating vector store instance")
+    return create_vector_store()
 
 
 @lru_cache
@@ -27,19 +27,19 @@ def get_embedding_model() -> SentenceTransformer:
 
 
 def get_document_service(
-    vespa_client: Annotated[VespaClient, Depends(get_vespa_client)]
+    vector_store: Annotated[VectorStoreBase, Depends(get_vector_store)]
 ) -> DocumentService:
-    return DocumentService(vespa_client)
+    return DocumentService(vector_store)
 
 
 def get_search_service(
-    vespa_client: Annotated[VespaClient, Depends(get_vespa_client)],
+    vector_store: Annotated[VectorStoreBase, Depends(get_vector_store)],
     embedding_model: Annotated[SentenceTransformer, Depends(get_embedding_model)]
 ) -> SearchService:
-    return SearchService(vespa_client, embedding_model)
+    return SearchService(vector_store, embedding_model)
 
 
 def get_reindex_service(
-    vespa_client: Annotated[VespaClient, Depends(get_vespa_client)]
+    vector_store: Annotated[VectorStoreBase, Depends(get_vector_store)]
 ) -> ReindexService:
-    return ReindexService(vespa_client)
+    return ReindexService(vector_store)

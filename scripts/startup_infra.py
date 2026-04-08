@@ -42,12 +42,19 @@ def wait_for_infrastructure(timeout: float = 120.0) -> bool:
     async def check_services():
         import httpx
 
+        from libraries.integrations.vector_store.config import (
+            VectorStoreBackend,
+            vector_store_config,
+        )
+
         services = [
             ("Redpanda", "http://localhost:19644/v1/status/ready"),
-            ("Vespa", "http://localhost:19071/state/v1/health"),
             ("Temporal UI", "http://localhost:8081"),
             ("MLflow", "http://localhost:5001/health"),
         ]
+
+        if vector_store_config.backend == VectorStoreBackend.VESPA:
+            services.append(("Vespa", "http://localhost:19071/state/v1/health"))
 
         start = time.time()
         while time.time() - start < timeout:

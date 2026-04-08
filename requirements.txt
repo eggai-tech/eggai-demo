@@ -5,7 +5,9 @@ dspy>=3.0.0
 psutil==7.0.0
 websockets==14.1
 guardrails-ai==0.6.2
+setuptools>=75.0.0,<82.0.0
 pyvespa==0.56.0
+faiss-cpu>=1.7.4; python_version < "3.13"
 tenacity==9.0.0
 httpx==0.28.1
 requests==2.32.2

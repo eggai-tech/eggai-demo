@@ -7,40 +7,21 @@ from agents.policies.agent.api.models import ReindexRequest, ReindexResponse
 
 if TYPE_CHECKING:
     from agents.policies.ingestion.temporal_client import TemporalClient
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("reindex_service")
 
 
 class ReindexService:
-    def __init__(self, vespa_client: VespaClient):
-        self.vespa_client = vespa_client
+    def __init__(self, vector_store: VectorStoreBase):
+        self.vector_store = vector_store
         self.base_path = Path(__file__).parent.parent.parent / "ingestion" / "documents"
 
     async def clear_existing_documents(self) -> int:
         try:
-            existing_results = await self.vespa_client.search_documents(
-                query="",
-                max_hits=400,
-            )
-
-            if not existing_results:
-                return 0
-
-            deleted_count = 0
-            async with self.vespa_client.app.http_session() as session:
-                for doc in existing_results:
-                    try:
-                        response = await session.delete_data_point(
-                            schema="policy_document", data_id=doc["id"]
-                        )
-                        if response.status_code == 200:
-                            deleted_count += 1
-                    except Exception as e:
-                        logger.warning(f"Failed to delete document {doc['id']}: {e}")
-
-            logger.info(f"Cleared {deleted_count} documents from Vespa")
+            deleted_count = await self.vector_store.delete_all_documents()
+            logger.info(f"Cleared {deleted_count} documents from vector store")
             return deleted_count
 
         except Exception as e:
@@ -49,7 +30,7 @@ class ReindexService:
 
     async def get_indexing_status(self) -> dict:
         try:
-            all_results = await self.vespa_client.search_documents(
+            all_results = await self.vector_store.search_documents(
                 query="",
                 max_hits=400,
             )

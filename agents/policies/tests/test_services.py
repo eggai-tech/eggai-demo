@@ -11,46 +11,38 @@ from agents.policies.agent.api.models import (
 from agents.policies.agent.services.document_service import DocumentService
 from agents.policies.agent.services.reindex_service import ReindexService
 from agents.policies.agent.services.search_service import SearchService
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("test_services")
 
 
 @pytest.fixture
-def mock_vespa_client():
-    client = MagicMock(spec=VespaClient)
-    client.search_documents = AsyncMock()
-    client.vector_search = AsyncMock()
-    client.hybrid_search = AsyncMock()
-    client.app = MagicMock()
+def mock_vector_store():
+    store = MagicMock(spec=VectorStoreBase)
+    store.search_documents = AsyncMock()
+    store.vector_search = AsyncMock()
+    store.hybrid_search = AsyncMock()
+    store.delete_all_documents = AsyncMock(return_value=0)
+    store.get_document = AsyncMock(return_value=None)
+    store.delete_document = AsyncMock(return_value=True)
 
-    # Mock the app.query method for vector search
-    mock_query_result = MagicMock()
-    mock_query_result.hits = []
-    client.app.query = AsyncMock(return_value=mock_query_result)
-
-    # Mock the http_session context manager
-    mock_session = AsyncMock()
-    mock_session.delete_data_point = AsyncMock(return_value=MagicMock(status_code=200))
-    client.app.http_session = MagicMock(return_value=AsyncMock(__aenter__=AsyncMock(return_value=mock_session)))
-
-    return client
+    return store
 
 
 @pytest.fixture
-def document_service(mock_vespa_client):
-    return DocumentService(mock_vespa_client)
+def document_service(mock_vector_store):
+    return DocumentService(mock_vector_store)
 
 
 @pytest.fixture
-def search_service(mock_vespa_client):
-    return SearchService(mock_vespa_client)
+def search_service(mock_vector_store):
+    return SearchService(mock_vector_store)
 
 
 @pytest.fixture
-def reindex_service(mock_vespa_client):
-    return ReindexService(mock_vespa_client)
+def reindex_service(mock_vector_store):
+    return ReindexService(mock_vector_store)
 
 
 def create_mock_documents(category: str = None, count: int = 3) -> list[dict]:
@@ -76,9 +68,9 @@ def create_mock_documents(category: str = None, count: int = 3) -> list[dict]:
 class TestDocumentService:
 
     @pytest.mark.asyncio
-    async def test_list_documents_all(self, document_service, mock_vespa_client):
+    async def test_list_documents_all(self, document_service, mock_vector_store):
         # Setup mock - list_documents uses search_documents internally
-        mock_vespa_client.search_documents.return_value = create_mock_documents()
+        mock_vector_store.search_documents.return_value = create_mock_documents()
 
         result = await document_service.list_documents()
 
@@ -87,8 +79,8 @@ class TestDocumentService:
         assert {doc.category for doc in result} == {"auto", "home", "life", "health"}
 
     @pytest.mark.asyncio
-    async def test_list_documents_by_category(self, document_service, mock_vespa_client):
-        mock_vespa_client.search_documents.return_value = create_mock_documents(category="auto")
+    async def test_list_documents_by_category(self, document_service, mock_vector_store):
+        mock_vector_store.search_documents.return_value = create_mock_documents(category="auto")
 
         result = await document_service.list_documents(category="auto")
 
@@ -97,12 +89,12 @@ class TestDocumentService:
         assert all(doc.document_id == "auto_policy" for doc in result)
 
     @pytest.mark.asyncio
-    async def test_list_documents_with_pagination(self, document_service, mock_vespa_client):
+    async def test_list_documents_with_pagination(self, document_service, mock_vector_store):
         # Setup mock - return enough documents for pagination
         all_docs = create_mock_documents()
         # The list_documents method will apply [offset:offset+limit] to these results
         # With offset=1 and limit=2, it needs at least 3 documents to return 2
-        mock_vespa_client.search_documents.return_value = all_docs
+        mock_vector_store.search_documents.return_value = all_docs
 
         result = await document_service.list_documents(limit=2, offset=1)
 
@@ -110,8 +102,8 @@ class TestDocumentService:
         # Should skip first document and return next 2
 
     @pytest.mark.asyncio
-    async def test_list_documents_empty_result(self, document_service, mock_vespa_client):
-        mock_vespa_client.search_documents.return_value = []
+    async def test_list_documents_empty_result(self, document_service, mock_vector_store):
+        mock_vector_store.search_documents.return_value = []
 
         result = await document_service.list_documents()
 
@@ -119,8 +111,8 @@ class TestDocumentService:
 
 
     @pytest.mark.asyncio
-    async def test_get_category_stats(self, document_service, mock_vespa_client):
-        mock_vespa_client.search_documents.return_value = create_mock_documents()
+    async def test_get_category_stats(self, document_service, mock_vector_store):
+        mock_vector_store.search_documents.return_value = create_mock_documents()
 
         result = await document_service.get_categories_stats()
 
@@ -130,9 +122,9 @@ class TestDocumentService:
         assert all(stat["document_count"] == 3 for stat in result)  # 3 chunks per category
 
     @pytest.mark.asyncio
-    async def test_list_documents_error_handling(self, document_service, mock_vespa_client):
+    async def test_list_documents_error_handling(self, document_service, mock_vector_store):
         # Setup mock to raise exception
-        mock_vespa_client.search_documents.side_effect = Exception("Connection failed")
+        mock_vector_store.search_documents.side_effect = Exception("Connection failed")
 
         # Execute and verify exception is raised
         with pytest.raises(Exception) as exc_info:
@@ -144,12 +136,12 @@ class TestDocumentService:
 class TestSearchService:
 
     @pytest.mark.asyncio
-    async def test_search_documents_basic(self, search_service, mock_vespa_client):
+    async def test_search_documents_basic(self, search_service, mock_vector_store):
         query = "collision damage"
         mock_results = create_mock_documents("auto", 1)
 
         # Mock hybrid_search to return the mock results
-        mock_vespa_client.hybrid_search.return_value = mock_results
+        mock_vector_store.hybrid_search.return_value = mock_results
 
         # Execute - use search with a request object
         from agents.policies.agent.api.models import SearchRequest
@@ -167,12 +159,12 @@ class TestSearchService:
         assert "auto" in result.documents[0].text
 
     @pytest.mark.asyncio
-    async def test_search_documents_with_category(self, search_service, mock_vespa_client):
+    async def test_search_documents_with_category(self, search_service, mock_vector_store):
         query = "water damage"
         category = "home"
 
         # Mock empty results - SearchRequest defaults to hybrid search
-        mock_vespa_client.hybrid_search.return_value = []
+        mock_vector_store.hybrid_search.return_value = []
 
         # Execute - use search with a request object
         from agents.policies.agent.api.models import SearchRequest
@@ -187,7 +179,7 @@ class TestSearchService:
         assert result.category == category
         assert result.total_hits == 0
         # Verify the hybrid_search was called with correct parameters
-        mock_vespa_client.hybrid_search.assert_called_once_with(
+        mock_vector_store.hybrid_search.assert_called_once_with(
             query=query,
             query_embedding=[0.1, 0.2, 0.3],
             category=category,
@@ -196,13 +188,13 @@ class TestSearchService:
         )
 
     @pytest.mark.asyncio
-    async def test_search_documents_with_limit(self, search_service, mock_vespa_client):
+    async def test_search_documents_with_limit(self, search_service, mock_vector_store):
         query = "insurance"
         limit = 5
         mock_docs = create_mock_documents()[:limit]
 
         # Mock hybrid_search to return the mock results
-        mock_vespa_client.hybrid_search.return_value = mock_docs
+        mock_vector_store.hybrid_search.return_value = mock_docs
 
         # Execute - use search with a request object
         from agents.policies.agent.api.models import SearchRequest
@@ -218,12 +210,12 @@ class TestSearchService:
         assert result.total_hits == len(mock_docs)
 
     @pytest.mark.asyncio
-    async def test_vector_search(self, search_service, mock_vespa_client):
+    async def test_vector_search(self, search_service, mock_vector_store):
         request = SearchRequest(query="find similar content", max_hits=3)
         mock_results = create_mock_documents("auto", 2)
 
         # Mock hybrid_search to return the mock results (default search type)
-        mock_vespa_client.hybrid_search.return_value = mock_results
+        mock_vector_store.hybrid_search.return_value = mock_results
 
         # Mock embedding generation
         with patch("agents.policies.agent.services.search_service.generate_embedding") as mock_embed:
@@ -237,9 +229,9 @@ class TestSearchService:
             mock_embed.assert_called_once_with(request.query)
 
     @pytest.mark.asyncio
-    async def test_search_error_handling(self, search_service, mock_vespa_client):
+    async def test_search_error_handling(self, search_service, mock_vector_store):
         # Setup mock to raise exception
-        mock_vespa_client.hybrid_search.side_effect = Exception("Search failed")
+        mock_vector_store.hybrid_search.side_effect = Exception("Search failed")
 
         # Execute and verify exception is raised
         with patch("agents.policies.agent.services.search_service.generate_embedding") as mock_embed:
@@ -256,28 +248,25 @@ class TestSearchService:
 class TestReindexService:
 
     @pytest.mark.asyncio
-    async def test_clear_existing_documents(self, reindex_service, mock_vespa_client):
-        existing_docs = create_mock_documents()[:5]
-        mock_vespa_client.search_documents.return_value = existing_docs
+    async def test_clear_existing_documents(self, reindex_service, mock_vector_store):
+        mock_vector_store.delete_all_documents.return_value = 5
 
         result = await reindex_service.clear_existing_documents()
 
-        assert result == 5  # Should have deleted 5 documents
-        # Verify delete was called for each document
-        session = mock_vespa_client.app.http_session().__aenter__.return_value
-        assert session.delete_data_point.call_count == 5
+        assert result == 5
+        mock_vector_store.delete_all_documents.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_clear_documents_empty_index(self, reindex_service, mock_vespa_client):
-        mock_vespa_client.search_documents.return_value = []
+    async def test_clear_documents_empty_index(self, reindex_service, mock_vector_store):
+        mock_vector_store.delete_all_documents.return_value = 0
 
         result = await reindex_service.clear_existing_documents()
 
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_get_indexing_status(self, reindex_service, mock_vespa_client):
-        mock_vespa_client.search_documents.return_value = create_mock_documents()
+    async def test_get_indexing_status(self, reindex_service, mock_vector_store):
+        mock_vector_store.search_documents.return_value = create_mock_documents()
 
         result = await reindex_service.get_indexing_status()
 
@@ -369,8 +358,8 @@ class TestReindexService:
         assert len(response.policy_ids) == 0
 
     @pytest.mark.asyncio
-    async def test_reindex_documents_full_flow(self, reindex_service, mock_vespa_client):
-        mock_vespa_client.search_documents.return_value = create_mock_documents()[:2]
+    async def test_reindex_documents_full_flow(self, reindex_service, mock_vector_store):
+        mock_vector_store.delete_all_documents.return_value = 2
 
         with patch("agents.policies.ingestion.temporal_client.TemporalClient") as mock_temporal_class:
             mock_temporal = AsyncMock()
@@ -391,7 +380,7 @@ class TestReindexService:
             assert set(response.policy_ids) == {"auto", "home"}
 
             # Verify clear was called since force_rebuild=True
-            assert mock_vespa_client.search_documents.called
+            mock_vector_store.delete_all_documents.assert_called_once()
 
 
 # Run tests

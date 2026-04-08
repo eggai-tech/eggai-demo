@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from agents.policies.agent.api.models import PolicyDocument
-from libraries.integrations.vespa import VespaClient
+from libraries.integrations.vector_store import VectorStoreBase
 from libraries.observability.logger import get_console_logger
 
 logger = get_console_logger("document_service")
 
 
 class DocumentService:
-    def __init__(self, vespa_client: VespaClient):
-        self.vespa_client = vespa_client
+    def __init__(self, vector_store: VectorStoreBase):
+        self.vector_store = vector_store
 
     def create_policy_document(self, doc_data: dict) -> PolicyDocument:
         citation = None
@@ -41,7 +41,7 @@ class DocumentService:
         offset: int = 0
     ) -> list[PolicyDocument]:
         try:
-            results = await self.vespa_client.search_documents(
+            results = await self.vector_store.search_documents(
                 query="",
                 category=category,
                 max_hits=limit + offset,
@@ -62,9 +62,7 @@ class DocumentService:
 
     async def get_document_by_id(self, doc_id: str) -> PolicyDocument | None:
         try:
-            result = await self.vespa_client.get_document(
-                schema="policy_document", doc_id=doc_id
-            )
+            result = await self.vector_store.get_document(doc_id=doc_id)
 
             if result:
                 return self.create_policy_document(result)
@@ -77,7 +75,7 @@ class DocumentService:
 
     async def get_categories_stats(self) -> list[dict]:
         try:
-            all_results = await self.vespa_client.search_documents(
+            all_results = await self.vector_store.search_documents(
                 query="",
                 max_hits=1000,
             )
@@ -100,7 +98,7 @@ class DocumentService:
 
     async def clear_all_documents(self) -> dict:
         try:
-            all_results = await self.vespa_client.search_documents(
+            all_results = await self.vector_store.search_documents(
                 query="",
                 max_hits=400,
             )
@@ -117,17 +115,7 @@ class DocumentService:
                 category = result.get("category", "unknown")
                 category_counts[category] = category_counts.get(category, 0) + 1
 
-            deleted_count = 0
-            async with self.vespa_client.app.http_session() as session:
-                for doc in all_results:
-                    doc_id = doc.get("id")
-                    if doc_id:
-                        response = await session.delete_data_point(
-                            schema="policy_document",
-                            data_id=doc_id,
-                        )
-                        if response.status_code == 200:
-                            deleted_count += 1
+            deleted_count = await self.vector_store.delete_all_documents()
 
             return {
                 "total_deleted": deleted_count,
