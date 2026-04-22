@@ -8,6 +8,7 @@ from libraries.ml.dspy import (
     TrackingLM,
     dspy_set_language_model,
 )
+from libraries.ml.dspy.language_model import _normalize_model_name
 
 
 class TestTrackingLM:
@@ -272,3 +273,57 @@ class TestDspySetLanguageModelExtras:
             # Verify latency tracking
             assert lm.latency_ms == 500.0
             assert result == "result"
+
+
+class TestStackitModelNormalization:
+    """Tests for STACKIT OpenAI-compatible model normalization."""
+
+    def test_non_stackit_model_is_unchanged(self):
+        assert (
+            _normalize_model_name("openai/gpt-4o-mini", "https://api.openai.com/v1")
+            == "openai/gpt-4o-mini"
+        )
+
+    def test_stackit_raw_model_is_wrapped_for_litellm(self):
+        assert (
+            _normalize_model_name(
+                "neuralmagic/Mistral-Nemo-Instruct-2407-FP8",
+                "https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1",
+            )
+            == "openai/neuralmagic/Mistral-Nemo-Instruct-2407-FP8"
+        )
+
+    def test_stackit_openai_named_model_is_wrapped_once_more(self):
+        assert (
+            _normalize_model_name(
+                "openai/gpt-oss-20b",
+                "https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1",
+            )
+            == "openai/openai/gpt-oss-20b"
+        )
+
+    @patch("dspy.settings")
+    @patch("dspy.configure")
+    @patch("libraries.ml.dspy.language_model.TrackingLM")
+    def test_dspy_set_language_model_normalizes_stackit_models(
+        self, mock_tracking_lm, mock_configure, mock_dspy_settings
+    ):
+        mock_settings = Mock()
+        mock_settings.language_model = "neuralmagic/Mistral-Nemo-Instruct-2407-FP8"
+        mock_settings.cache_enabled = False
+        mock_settings.language_model_api_base = (
+            "https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1"
+        )
+
+        mock_lm_instance = Mock()
+        mock_lm_instance.max_context_window = 16384
+        mock_lm_instance.is_lm_studio = False
+        mock_tracking_lm.return_value = mock_lm_instance
+
+        dspy_set_language_model(mock_settings)
+
+        mock_tracking_lm.assert_called_once_with(
+            "openai/neuralmagic/Mistral-Nemo-Instruct-2407-FP8",
+            cache=False,
+            api_base="https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1",
+        )
