@@ -1,4 +1,5 @@
 from time import perf_counter
+from urllib.parse import urlparse
 
 import dspy
 from dotenv import load_dotenv
@@ -94,6 +95,21 @@ class TrackingLM(dspy.LM):
         return forward_result
 
 
+def _is_stackit_openai_compat_api_base(api_base: str | None) -> bool:
+    if not api_base:
+        return False
+
+    hostname = urlparse(api_base).hostname or ""
+    return hostname.endswith("onstackit.cloud") and "openai-compat.model-serving" in hostname
+
+
+def _normalize_model_name(model_name: str, api_base: str | None) -> str:
+    """Map STACKIT raw model IDs to LiteLLM's OpenAI-compatible provider format."""
+    if _is_stackit_openai_compat_api_base(api_base):
+        return f"openai/{model_name}"
+    return model_name
+
+
 def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = None):
     load_dotenv()
 
@@ -101,8 +117,12 @@ def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = Non
     if overwrite_cache_enabled is not None:
         cache_enabled = overwrite_cache_enabled
 
+    normalized_model_name = _normalize_model_name(
+        settings.language_model, settings.language_model_api_base
+    )
+
     language_model = TrackingLM(
-        settings.language_model,
+        normalized_model_name,
         cache=cache_enabled,
         api_base=settings.language_model_api_base
         if settings.language_model_api_base

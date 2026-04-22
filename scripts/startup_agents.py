@@ -10,6 +10,7 @@ from rich.console import Console
 
 PROJECT_ROOT = Path(__file__).parent.parent
 PID_FILE = PROJECT_ROOT / ".agent_pids"
+VENV_PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python"
 
 console = Console()
 
@@ -32,11 +33,11 @@ def start_agents() -> bool:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_ROOT)
 
-    use_uv = shutil.which("uv") is not None
-
     for name, module in AGENTS:
         try:
-            if use_uv:
+            if VENV_PYTHON.exists():
+                cmd = [str(VENV_PYTHON), "-m", module]
+            elif shutil.which("uv") is not None:
                 cmd = ["uv", "run", "python", "-m", module]
             else:
                 cmd = [sys.executable, "-m", module]
@@ -45,8 +46,10 @@ def start_agents() -> bool:
                 cmd,
                 cwd=PROJECT_ROOT,
                 env=env,
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                start_new_session=True,
             )
             pids.append(proc.pid)
             console.print(f"  [green]Started[/] {name} (PID {proc.pid})")
@@ -71,8 +74,6 @@ def start_agents_foreground() -> None:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_ROOT)
 
-    use_uv = shutil.which("uv") is not None
-
     def cleanup(signum=None, frame=None):
         console.print("\n[yellow]Stopping all agents...[/]")
         for proc in processes:
@@ -93,7 +94,9 @@ def start_agents_foreground() -> None:
 
     for name, module in AGENTS:
         try:
-            if use_uv:
+            if VENV_PYTHON.exists():
+                cmd = [str(VENV_PYTHON), "-m", module]
+            elif shutil.which("uv") is not None:
                 cmd = ["uv", "run", "python", "-m", module]
             else:
                 cmd = [sys.executable, "-m", module]
