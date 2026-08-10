@@ -234,22 +234,20 @@ class TestClassifierV7Unit:
         assert classifier.model is mock_model
         assert classifier.tokenizer is mock_tokenizer
 
-    @patch('os.path.exists', return_value=False)
+    @patch('pathlib.Path.exists', return_value=False)
     def test_model_path_logic(self, mock_exists):
-        """Test v7 model path checking logic."""
+        """Test v7 falls back to the base model when the fine-tuned path is missing."""
         from agents.triage.classifiers.v7.classifier_v7 import FinetunedClassifier
 
         classifier = FinetunedClassifier()
 
-        # This will hit the path checking code even if it fails later
-        try:
+        # Stub the actual load so the test never reaches out to HuggingFace.
+        with patch.object(FinetunedClassifier, '_load_base_model') as mock_load_base:
             classifier._ensure_loaded()
-        except (ImportError, Exception):
-            # Expected when transformers not available or other issues
-            pass  # The important thing is the path checking code was executed
 
-        # Verify path checking was called
+        # Verify path checking was called and the base-model branch was taken
         mock_exists.assert_called()
+        mock_load_base.assert_called_once()
 
     @patch('pathlib.Path.exists', return_value=True)
     @patch('agents.triage.classifiers.v7.classifier_v7.AutoTokenizer')

@@ -46,6 +46,25 @@ jobs:
       - name: Run tests
         run: pytest -v
 
+  security:
+    runs-on: ubuntu-latest
+    name: Dependency vulnerability scan
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Verify requirements files match uv.lock
+        run: |
+          make deps-export
+          git diff --exit-code requirements.txt dev-requirements.txt \
+            || (echo "::error::requirements files are out of date - run 'make deps-export'" && exit 1)
+
+      - name: Scan dependencies with osv-scanner
+        run: make security-scan
+
   docker-build:
     runs-on: ubuntu-latest
     name: Verify Docker build
