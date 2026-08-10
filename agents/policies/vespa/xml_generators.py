@@ -1,5 +1,15 @@
-import xml.etree.ElementTree as ET
-from xml.dom import minidom
+# nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+import xml.etree.ElementTree as ET  # see opengrep-suppressions.toml
+
+
+def _pretty(root: ET.Element) -> str:
+    """Serialise an element tree we built ourselves, indented.
+
+    Uses ElementTree's own indenter rather than round-tripping the document
+    through minidom.parseString, so no XML parser ever runs here.
+    """
+    ET.indent(root, space="    ")
+    return ET.tostring(root, encoding="unicode", xml_declaration=True) + "\n"
 
 
 def create_hosts_xml(hosts: list[dict[str, str]]) -> str:
@@ -9,9 +19,7 @@ def create_hosts_xml(hosts: list[dict[str, str]]) -> str:
         host_elem = ET.SubElement(root, "host", name=host["name"])
         ET.SubElement(host_elem, "alias").text = host["alias"]
 
-    rough_string = ET.tostring(root, encoding="unicode")
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="    ")
+    return _pretty(root)
 
 
 def create_services_xml(node_count: int = 1, redundancy: int = 1) -> str:
@@ -59,6 +67,4 @@ def create_services_xml(node_count: int = 1, redundancy: int = 1) -> str:
             nodes, "node", **{"distribution-key": str(i), "hostalias": f"node{i}"}
         )
 
-    rough_string = ET.tostring(root, encoding="unicode")
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="    ")
+    return _pretty(root)
