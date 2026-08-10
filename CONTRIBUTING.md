@@ -95,6 +95,31 @@ tasks. It's the recommended way to work with the project.
    make lint-fix
    ```
 
+### Dependencies and Security Scanning
+
+`pyproject.toml` + `uv.lock` are the single source of truth for dependencies.
+`requirements.txt` (runtime) and `dev-requirements.txt` (test tooling) are
+generated from the lockfile for the Docker image and CI - never edit them by
+hand:
+
+```bash
+# after changing pyproject.toml or running `uv lock`
+make deps-export
+```
+
+Dependencies are scanned with [osv-scanner](https://google.github.io/osv-scanner/);
+CI fails on any CRITICAL or HIGH finding:
+
+```bash
+make security-scan
+```
+
+If a finding cannot be fixed by upgrading (for example an upstream package caps
+a transitive dependency), add an entry to `osv-scanner.toml` with a reason and
+an `ignoreUntil` date rather than lowering the gate. To keep a vulnerable
+transitive version out of the lockfile, add a floor to
+`[tool.uv] constraint-dependencies` in `pyproject.toml`.
+
 ### Running the Application
 
 1. Start the infrastructure:

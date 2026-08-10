@@ -1,0 +1,43 @@
+# osv-scanner configuration
+#
+# Run locally with `make security-scan` (see scripts/security_scan.py).
+# The scan gates on CRITICAL and HIGH findings; anything listed below is a
+# finding we cannot currently fix by upgrading, together with the reason it is
+# not exploitable here and the date the decision must be revisited.
+#
+# Every entry MUST have a reason and an ignoreUntil date. When the date passes
+# the scanner reports the vulnerability again, forcing a re-evaluation.
+# Ignores are matched by alias too, so one id per advisory is enough.
+
+[[IgnoredVulns]]
+id = "GHSA-g6cj-pr64-35w5"           # CVE-2026-69247 / PYSEC-2026-3552
+ignoreUntil = 2026-11-10
+reason = """
+cryptography <50.0.0: Bleichenbacher oracle in PKCS#7 EnvelopedData decryption
+(pkcs7_decrypt_der / _pem / _smime).
+
+Not reachable: no first-party code decrypts PKCS#7 EnvelopedData - grep for
+pkcs7 over agents/, libraries/ and scripts/ has no hits. cryptography is a
+transitive dependency only.
+
+Cannot upgrade: mlflow (all versions up to 3.15.1) requires cryptography<50, so
+pinning 50.0.0 forces mlflow down to 3.2.0, which reintroduces several CRITICAL
+mlflow advisories. Holding at cryptography 49.0.0 - which does fix the CRITICAL
+CVE-2026-39892 and the HIGH CVE-2026-69249 - is the safer trade.
+Revisit when mlflow relaxes its cryptography upper bound.
+"""
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-2132"              # CVE-2026-7246 / GHSA-47fr-3ffg-hgmw
+ignoreUntil = 2026-11-10
+reason = """
+click <=8.3.2: command injection via click.edit().
+
+Not reachable: no first-party code imports click or calls click.edit(). click is
+pulled in transitively by litellm, mlflow, guardrails-ai and typer, none of which
+this project invokes as a CLI.
+
+Cannot upgrade: guardrails-ai 0.10.2 (latest) pins click<=8.2.0, so the fixed
+8.3.3 cannot be resolved while guardrails-ai is a dependency.
+Revisit when guardrails-ai relaxes its click pin.
+"""

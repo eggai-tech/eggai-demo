@@ -42,7 +42,7 @@ dependencies = [
     "sentence-transformers>=4.0.2",
 
     # ML & LLM
-    "litellm>=1.70.2",
+    "litellm>=1.84.0",
     "transformers[torch]>=4.51.3",
     "peft>=0.14.0",
     "datasets>=3.3.2",
@@ -53,7 +53,7 @@ dependencies = [
     "numpy>=2.2.4",
 
     # MLflow & experiment tracking
-    "mlflow>=2.21.3",
+    "mlflow>=3.11.0",
     "aioboto3>=13.3.0",
 
     # Observability
@@ -82,7 +82,7 @@ dependencies = [
     "rich>=13.0.0",
 
     # Optional: guardrails
-    "guardrails-ai>=0.6.2",
+    "guardrails-ai>=0.10.2",
 ]
 
 [project.optional-dependencies]
@@ -110,6 +110,15 @@ build-backend = "hatchling.build"
 packages = ["agents", "libraries", "scripts"]
 
 [tool.uv]
+# Security floors for transitive dependencies. These packages are not imported
+# directly; the floors exist only to keep known-vulnerable versions out of the
+# lockfile (see osv-scanner.toml / `make security-scan`).
+constraint-dependencies = [
+    "cryptography>=49.0.0",  # CVE-2026-39892, CVE-2026-69249 (see osv-scanner.toml for CVE-2026-69247)
+    "lxml>=6.1.0",           # CVE-2026-41066
+    "pyarrow>=23.0.1",       # CVE-2026-25087
+]
+
 dev-dependencies = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.24.0",
