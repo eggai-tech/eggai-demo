@@ -65,6 +65,36 @@ jobs:
       - name: Scan dependencies with osv-scanner
         run: make security-scan
 
+  sast:
+    runs-on: ubuntu-latest
+    name: Static analysis security scan
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Pinned release binary with a checksum rather than `curl | bash`, so a
+      # compromised install script cannot execute code on the runner.
+      - name: Install opengrep
+        env:
+          OPENGREP_VERSION: v1.26.0
+          OPENGREP_SHA256: 40c21299eeddabf743b856daa843d24f9d4a027130671cd45b3b21776fd9ab26
+        run: |
+          mkdir -p "$HOME/.opengrep/cli/latest"
+          curl -fsSL -o "$HOME/.opengrep/cli/latest/opengrep" \
+            "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_x86"
+          echo "${OPENGREP_SHA256}  $HOME/.opengrep/cli/latest/opengrep" | sha256sum --check --strict
+          chmod +x "$HOME/.opengrep/cli/latest/opengrep"
+          echo "$HOME/.opengrep/cli/latest" >> "$GITHUB_PATH"
+
+      - name: Verify opengrep is runnable
+        run: opengrep --version
+
+      - name: Scan source with opengrep
+        run: make sast-scan
+
   docker-build:
     runs-on: ubuntu-latest
     name: Verify Docker build
@@ -101,7 +131,12 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: qualops --base=${{ github.base_ref }} --head=${{ github.sha }}
+          # Passed through the environment rather than interpolated into the
+          # shell command: `${{ ... }}` is substituted before the shell runs, so
+          # a crafted ref name would otherwise be executed as shell code.
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.sha }}
+        run: qualops --base="$BASE_REF" --head="$HEAD_SHA"
 
       - name: Upload QualOps report
         if: always()

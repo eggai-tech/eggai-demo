@@ -6,7 +6,7 @@
 # =============================================================================
 
 .PHONY: start start-foreground stop test test-ci test-all lint lint-fix clean help \
-        docker-up docker-down health benchmark-classifiers security-scan deps-export
+        docker-up docker-down health benchmark-classifiers security-scan sast-scan deps-export
 
 # Default target
 .DEFAULT_GOAL := help
@@ -57,6 +57,9 @@ lint-fix: ## Auto-fix lint issues
 
 security-scan: ## Scan dependencies for known vulnerabilities (fails on HIGH/CRITICAL)
 	@uv run --no-project scripts/security_scan.py
+
+sast-scan: ## Scan source for insecure code patterns with opengrep (fails on HIGH/CRITICAL)
+	@uv run --no-project scripts/sast_scan.py
 
 deps-export: ## Regenerate requirements.txt / dev-requirements.txt from uv.lock
 	@uv export --no-dev --no-emit-project --format requirements-txt -o requirements.txt
@@ -132,7 +135,7 @@ help: ## Show this help message
 	@grep -E '^(test|test-ci|test-all|test-coverage|lint|lint-fix):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Dependencies & Security:"
-	@grep -E '^(security-scan|deps-export):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(security-scan|sast-scan|deps-export):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Infrastructure:"
 	@grep -E '^(docker-up|docker-down|docker-reset):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'

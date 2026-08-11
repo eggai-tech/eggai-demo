@@ -206,7 +206,11 @@ def main() -> int:
     logger.info("Training completed!")
     best_model_path = Path(settings.checkpoint_dir) / "best_model.pth"
     logger.info(f"Loading best model from {best_model_path}")
-    best_model_state = torch.load(best_model_path)
+    # weights_only=True restricts the unpickler to plain tensors/primitives, so a
+    # tampered checkpoint cannot execute code. best_model.pth is written by
+    # Trainer.train() above as a plain state_dict, so nothing else is needed.
+    # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch
+    best_model_state = torch.load(best_model_path, weights_only=True)
     best_model = AttentionBasedClassifier(
         embedding_dim=settings.embedding_dim,
         hidden_dims=settings.hidden_dims,

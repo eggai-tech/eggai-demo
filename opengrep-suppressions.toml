@@ -1,0 +1,84 @@
+# opengrep (SAST) suppression register
+#
+# Run locally with `make sast-scan` (see scripts/sast_scan.py).
+# The scan gates on CRITICAL and HIGH findings; anything listed below is a
+# finding we have chosen not to fix, together with the reason it is not
+# exploitable here and the date the decision must be revisited.
+#
+# Suppression itself is done with an inline `# nosemgrep: <rule id>` comment at
+# the exact line, so a bare `opengrep scan` honours it too. This file is the
+# justification register: every inline suppression in agents/, libraries/,
+# scripts/ and .github/ MUST have a matching entry here, and every entry MUST
+# have a reason and an ignoreUntil date. scripts/sast_scan.py enforces both --
+# an undocumented suppression or an expired date fails the scan, forcing a
+# re-evaluation.
+#
+# `path` is relative to the repo root and `id` is the full opengrep rule id, so
+# the pair matches exactly one inline comment.
+
+[[Suppressions]]
+id = "python.lang.security.use-defused-xml.use-defused-xml"
+path = "agents/policies/vespa/xml_generators.py"
+ignoreUntil = 2026-11-10
+reason = """
+The stdlib `xml` package is vulnerable to XXE and entity-expansion attacks when
+it parses untrusted documents; the rule advises using defusedxml instead.
+
+Not reachable: this module never parses XML, it only generates it. Both public
+functions (create_hosts_xml, create_services_xml) build an ElementTree from
+typed Python arguments supplied by generate_package.py - node counts, a
+redundancy factor and a host list read from local deployment config - and
+serialise it. There is no parse entry point, so there is no document for an
+attacker to inject an external entity into. The one parse that did exist (a
+minidom.parseString round-trip used purely for pretty-printing) was removed in
+favour of ET.indent, so no XML parser runs in this file at all.
+
+Cannot be fixed: the rule is `pattern: import xml` - a confidence:LOW,
+subcategory:audit heuristic that fires on the import statement regardless of
+how the module is used. defusedxml is a parser hardening shim and adds nothing
+to a generator, so swapping the import would mean taking on a dependency purely
+to silence an import-level match. Revisit if this module ever gains a parse
+call, in which case defusedxml becomes the correct fix.
+"""
+
+[[Suppressions]]
+id = "trailofbits.python.pickles-in-pytorch.pickles-in-pytorch"
+path = "agents/triage/classifiers/v5/attention_net_trainer.py"
+ignoreUntil = 2026-11-10
+reason = """
+torch.load() unpickles by default, and unpickling attacker-controlled data is
+arbitrary code execution (CWE-502).
+
+Already fixed, not merely suppressed: the call now passes weights_only=True,
+which restricts the unpickler to tensors and primitives and makes code
+execution impossible regardless of the file's contents. The input is also
+trusted - best_model.pth is written by Trainer.train() a few lines earlier in
+the same process, into a local checkpoint dir.
+
+Cannot be silenced by the fix: the rule is `pattern: torch.load(...)` with
+pattern-nots only for literal paths and for state_dict saves; it has no
+exception for weights_only=True, so the correctly hardened call still matches.
+Revisit when the trailofbits rule learns about weights_only.
+"""
+
+[[Suppressions]]
+id = "trailofbits.python.pickles-in-pytorch.pickles-in-pytorch"
+path = "agents/triage/classifiers/v5/classifier_v5.py"
+ignoreUntil = 2026-11-10
+reason = """
+Rule match only; the call is hardened. trailofbits pickles-in-pytorch matches any
+torch.load, and its pattern has no exception for weights_only=True - the same
+false positive as attention_net_trainer.py above.
+
+mlflow.pytorch.log_model (attention_net_trainer.py) registers the whole nn.Module
+rather than a state_dict, so the pickle legitimately contains classes and plain
+weights_only=True cannot load it. Instead of falling back to weights_only=False,
+get_model() allowlists the exact classes AttentionBasedClassifier is built from
+via torch.serialization.add_safe_globals and then loads with weights_only=True.
+The unpickler refuses every other global, so a tampered artifact can no longer
+execute code, and the existing registered models still load unchanged - no
+re-registration needed.
+
+Verified on torch 2.13.0: a checkpoint carrying an os.system payload executes
+under weights_only=False and raises UnpicklingError under the allowlist.
+"""

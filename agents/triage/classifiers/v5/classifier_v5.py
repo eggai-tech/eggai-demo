@@ -3,9 +3,12 @@ from time import perf_counter
 
 import torch
 from dotenv import load_dotenv
+from torch import nn
 
 from agents.triage.classifiers.v5.attention_based_classifier import (
+    AttentionBasedClassifier,
     AttentionBasedClassifierWrapper,
+    GatedAttentionPooling,
 )
 from agents.triage.classifiers.v5.config import AttentionNetSettings
 from agents.triage.config import Settings
@@ -18,13 +21,35 @@ nn_settings = AttentionNetSettings()
 
 _model = None
 
+# mlflow.pytorch.log_model pickles the whole nn.Module rather than a state_dict,
+# so loading it needs more than plain tensors. Rather than fall back to
+# weights_only=False - which lets a tampered checkpoint execute arbitrary code -
+# we allowlist exactly the classes AttentionBasedClassifier can be built from.
+# The unpickler will refuse anything else, so this is the complete set for every
+# config variant (dropout is optional; softmax is used functionally, not as a
+# module). If the architecture gains a layer type, loading fails with an
+# UnpicklingError naming the missing class - add it here.
+_SAFE_MODEL_GLOBALS = [
+    AttentionBasedClassifier,
+    GatedAttentionPooling,
+    nn.Sequential,
+    nn.Linear,
+    nn.ReLU,
+    nn.Tanh,
+    nn.Sigmoid,
+    nn.Dropout,
+]
+
+
 def get_model():
     global _model
     if _model is None:
         checkpoint_path = find_model(
             settings.classifier_v5_model_name, version=settings.classifier_v5_model_version
         )
-        attention_net = torch.load(checkpoint_path, weights_only=False)
+        torch.serialization.add_safe_globals(_SAFE_MODEL_GLOBALS)
+        # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch
+        attention_net = torch.load(checkpoint_path, weights_only=True)
         attention_net.eval()
         _model = AttentionBasedClassifierWrapper(attention_net)
     return _model
