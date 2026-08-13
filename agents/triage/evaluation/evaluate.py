@@ -73,8 +73,6 @@ def run_evaluation(program, report_name, lm: dspy.LM):
         devset=test_dataset,
         num_threads=8,
         display_progress=True,
-        return_outputs=True,
-        return_all_scores=True,
     )
 
     latencies_sec: list[float] = []
@@ -105,11 +103,16 @@ def run_evaluation(program, report_name, lm: dspy.LM):
 
         return pred
 
-    accuracy, results, all_scores = evaluator(
+    evaluation = evaluator(
         timed_program,
         metric=lambda ex, pred, trace=None: ex.target_agent.lower()
         == pred.target_agent.lower(),
     )
+    # Evaluate returns a single EvaluationResult of (score, results), where
+    # results is a list of (example, prediction, score) triples.
+    accuracy = evaluation.score
+    results = evaluation.results
+    all_scores = [score for _, _, score in results]
 
     def ms(vals):
         return statistics.mean(vals) * 1_000

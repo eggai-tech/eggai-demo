@@ -64,13 +64,19 @@ class SIMBAOptimizer:
                 log_traces_from_eval=True,
             )
 
-            if devset:
-                evaluator = Evaluate(
+            evaluator = (
+                Evaluate(
                     devset=devset, metric=self.metric, num_threads=min(4, len(devset))
                 )
+                if devset
+                else None
+            )
 
+            if evaluator is not None:
                 logger.info("Evaluating baseline performance...")
-                baseline_score = evaluator(program)
+                # Evaluate returns an EvaluationResult, not a float; .score is the
+                # number. The object supports neither arithmetic nor format specs.
+                baseline_score = evaluator(program).score
                 logger.info(f"Baseline score: {baseline_score:.3f}")
                 mlflow.log_metric("baseline_score", baseline_score)
             else:
@@ -88,9 +94,9 @@ class SIMBAOptimizer:
             logger.info(f"Optimization completed in {optimization_time:.1f} seconds")
             mlflow.log_metric("optimization_time_seconds", optimization_time)
 
-            if devset:
+            if evaluator is not None:
                 logger.info("Evaluating optimized performance...")
-                optimized_score = evaluator(optimized_program)
+                optimized_score = evaluator(optimized_program).score
                 logger.info(f"Optimized score: {optimized_score:.3f}")
 
                 if baseline_score is not None:

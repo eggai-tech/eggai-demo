@@ -113,7 +113,7 @@ def run_optimization(config: OptimizerConfig):
         logger.info("Evaluating baseline...")
         print_progress("Evaluating baseline")
 
-        def evaluate_with_progress(program):
+        def evaluate_with_progress(program) -> float:
             spinner_thread = threading.Thread(
                 target=_show_spinner, args=("Evaluating baseline...", 60)
             )
@@ -122,7 +122,9 @@ def run_optimization(config: OptimizerConfig):
 
             result = evaluator(program)
             sys.stdout.write("\r" + " " * 60 + "\r")
-            return result
+            # Evaluate returns an EvaluationResult, not a float; unwrapping here
+            # keeps every caller working with a plain number.
+            return result.score
 
         base_score = evaluate_with_progress(config.program)
         logger.info(f"Baseline score: {base_score:.3f}")

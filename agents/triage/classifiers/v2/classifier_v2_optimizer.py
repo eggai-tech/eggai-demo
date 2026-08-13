@@ -105,7 +105,7 @@ if __name__ == "__main__":
         evaluator = Evaluate(devset=dev_set, metric=macro_f1, num_threads=8)
         sys.stdout.write("\r" + " " * 60 + "\r")  # Clear the spinner
 
-        def evaluate_with_progress(program, message="Evaluating"):
+        def evaluate_with_progress(program, message="Evaluating") -> float:
             def show_spinner():
                 elapsed = 0
                 while elapsed < 60:
@@ -127,7 +127,9 @@ if __name__ == "__main__":
             result = evaluator(program)
 
             sys.stdout.write("\r" + " " * 60 + "\r")
-            return result
+            # Evaluate returns an EvaluationResult, not a float; unwrapping here
+            # keeps every caller working with a plain number.
+            return result.score
 
         SEARCH_SPACE = {
             "max_labeled_demos": [8],
