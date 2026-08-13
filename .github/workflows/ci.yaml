@@ -25,6 +25,24 @@ jobs:
         with:
           src: .
 
+  type-check:
+    runs-on: ubuntu-latest
+    name: Type check
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # pyright needs the project's dependencies importable to resolve types,
+      # so this syncs the full environment rather than installing pyright alone.
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Type-check gated modules
+        run: make type-check
+
   test:
     runs-on: ubuntu-latest
     name: Run tests
