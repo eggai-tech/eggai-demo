@@ -4,7 +4,6 @@ import json
 import os
 import random
 import uuid
-from asyncio import iscoroutine
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -238,9 +237,7 @@ def traced_handler(span_name: str = None):
                     span, "message.id", str(getattr(msg, "id", "unknown"))
                 )
 
-                if iscoroutine(handler_func) or asyncio.iscoroutinefunction(
-                    handler_func
-                ):
+                if asyncio.iscoroutinefunction(handler_func):
                     return await handler_func(*args, **kwargs)
                 else:
                     return handler_func(*args, **kwargs)
