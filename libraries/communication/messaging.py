@@ -5,6 +5,7 @@ from typing import (
     Protocol,
     TypedDict,
     TypeVar,
+    cast,
 )
 
 from eggai import Agent, Channel
@@ -89,7 +90,13 @@ def subscribe(
     if group_id:
         subscribe_kwargs["group_id"] = group_id
 
-    return agent.subscribe(channel=channel, **subscribe_kwargs)
+    # eggai's Agent.subscribe is untyped (**kwargs, no return annotation), so
+    # pyright infers a dict-handler decorator. Restate the generic contract the
+    # typed handler Protocols in this module rely on.
+    return cast(
+        Callable[[HandlerT], HandlerT],
+        agent.subscribe(channel=channel, **subscribe_kwargs),
+    )
 
 
 typed_subscribe = subscribe
