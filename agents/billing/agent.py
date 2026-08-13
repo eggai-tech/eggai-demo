@@ -31,9 +31,12 @@ init_token_metrics(
 )
 @traced_handler("handle_billing_request")
 async def handle_billing_request(msg: TracedMessage) -> None:
+    # Bound before the try so the error handler below cannot raise
+    # UnboundLocalError and mask the exception it is meant to report.
+    connection_id: str = "unknown"
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
-        connection_id: str = msg.data.get("connection_id", "unknown")
+        connection_id = msg.data.get("connection_id", "unknown")
 
         if not chat_messages:
             logger.warning(f"Empty chat history for connection: {connection_id}")
@@ -59,9 +62,9 @@ async def handle_billing_request(msg: TracedMessage) -> None:
         logger.error(f"Error in {AGENT_NAME}: {e}", exc_info=True)
         await publish_error_message(
             human_channel, AGENT_NAME,
-            connection_id=locals().get("connection_id", "unknown"),
-            traceparent=msg.traceparent if "msg" in locals() else None,
-            tracestate=msg.tracestate if "msg" in locals() else None,
+            connection_id=connection_id,
+            traceparent=msg.traceparent,
+            tracestate=msg.tracestate,
         )
 
 

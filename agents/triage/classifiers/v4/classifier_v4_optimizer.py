@@ -114,7 +114,7 @@ if __name__ == "__main__":
         evaluator = Evaluate(devset=test_set, metric=macro_f1, num_threads=4)
         sys.stdout.write("\r" + " " * 60 + "\r")
 
-        def evaluate_with_progress(program, message="Evaluating"):
+        def evaluate_with_progress(program, message="Evaluating") -> float:
             def show_spinner():
                 elapsed = 0
                 while elapsed < 60:
@@ -136,7 +136,9 @@ if __name__ == "__main__":
             result = evaluator(program)
 
             sys.stdout.write("\r" + " " * 60 + "\r")
-            return result
+            # Evaluate returns an EvaluationResult, not a float; unwrapping here
+            # keeps every caller working with a plain number.
+            return result.score
 
         base_score = evaluate_with_progress(
             classifier_v4_program, "Evaluating baseline zero-shot model"

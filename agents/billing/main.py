@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info(f"Shutting down {settings.app_name}...")
-    billing_agent.stop()
+    await billing_agent.stop()
     await eggai_cleanup()
     logger.info(f"{settings.app_name} shutdown complete")
 

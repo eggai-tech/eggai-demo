@@ -62,7 +62,7 @@ def normalize_gen_ai_system(model_name: str) -> str:
 
 
 def normalize_operation_name(
-    model_name: str, prompt: str = None, messages: list = None
+    model_name: str, prompt: str | None = None, messages: list | None = None
 ) -> str:
     if messages:
         return "chat"

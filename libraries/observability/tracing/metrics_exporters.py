@@ -8,7 +8,7 @@ from .metrics_definitions import (
 from .metrics_normalizers import normalize_gen_ai_system, normalize_operation_name
 
 
-def export_semantic_metrics(lm, operation_duration: float = None, span=None):
+def export_semantic_metrics(lm, operation_duration: float | None = None, span=None):
     from . import init_metrics, metrics_definitions
 
     model_name = getattr(lm, "model_name", "unknown")

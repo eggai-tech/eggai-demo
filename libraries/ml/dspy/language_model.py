@@ -1,4 +1,5 @@
 from time import perf_counter
+from typing import Any
 
 import dspy
 from dotenv import load_dotenv
@@ -87,7 +88,10 @@ class TrackingLM(dspy.LM):
             if messages:
                 messages = self._truncate_messages(messages, self.max_context_window)
 
-        forward_result = super().forward(prompt, messages, **kwargs)
+        # dspy.LM.forward is unannotated and pyright infers a union that
+        # includes litellm's async overload. It is synchronous - the result is a
+        # litellm ModelResponse - so the awaitable branch is not reachable here.
+        forward_result: Any = super().forward(prompt, messages, **kwargs)
         self.completion_tokens += forward_result.usage.get("completion_tokens", 0)
         self.prompt_tokens += forward_result.usage.get("prompt_tokens", 0)
         self.total_tokens += forward_result.usage.get("total_tokens", 0)

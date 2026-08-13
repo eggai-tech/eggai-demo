@@ -5,6 +5,10 @@ from collections.abc import Callable
 
 import dspy
 import mlflow
+
+# Bound to its own name: mlflow is py.typed and does not re-export the dspy
+# submodule, so reaching it as an attribute of the package does not type-check.
+import mlflow.dspy as mlflow_dspy
 from dspy.evaluate import Evaluate
 
 from libraries.observability.logger import get_console_logger
@@ -56,7 +60,7 @@ class SIMBAOptimizer:
                 }
             )
 
-            mlflow.dspy.autolog(
+            mlflow_dspy.autolog(
                 log_compiles=True,
                 log_traces=True,
                 log_evals=True,
@@ -64,13 +68,19 @@ class SIMBAOptimizer:
                 log_traces_from_eval=True,
             )
 
-            if devset:
-                evaluator = Evaluate(
+            evaluator = (
+                Evaluate(
                     devset=devset, metric=self.metric, num_threads=min(4, len(devset))
                 )
+                if devset
+                else None
+            )
 
+            if evaluator is not None:
                 logger.info("Evaluating baseline performance...")
-                baseline_score = evaluator(program)
+                # Evaluate returns an EvaluationResult, not a float; .score is the
+                # number. The object supports neither arithmetic nor format specs.
+                baseline_score = evaluator(program).score
                 logger.info(f"Baseline score: {baseline_score:.3f}")
                 mlflow.log_metric("baseline_score", baseline_score)
             else:
@@ -88,9 +98,9 @@ class SIMBAOptimizer:
             logger.info(f"Optimization completed in {optimization_time:.1f} seconds")
             mlflow.log_metric("optimization_time_seconds", optimization_time)
 
-            if devset:
+            if evaluator is not None:
                 logger.info("Evaluating optimized performance...")
-                optimized_score = evaluator(optimized_program)
+                optimized_score = evaluator(optimized_program).score
                 logger.info(f"Optimized score: {optimized_score:.3f}")
 
                 if baseline_score is not None:
@@ -115,17 +125,6 @@ class SIMBAOptimizer:
     def _save_optimized_program(self, program: dspy.Module, output_path: str) -> None:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
         program.save(output_path)
-
-    @staticmethod
-    def load_optimized_program(path: str) -> dspy.Module:
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Optimized program file not found at {path}")
-
-        try:
-            return dspy.Program.load(path)
-        except Exception as e:
-            logger.error(f"Error loading optimized program: {e}")
-            raise
 
 
 def optimize_react_agent(
@@ -179,7 +178,13 @@ def load_optimized_react_agent(
     if os.path.exists(path):
         try:
             logger.info(f"Loading optimized agent from {path}")
-            return dspy.Program.load(path)
+            # _save_optimized_program uses Module.save(save_program=False), which
+            # writes state only. State has to be loaded into a constructed module;
+            # dspy.load() is for whole-program directories saved with
+            # save_program=True, so it is not the counterpart here.
+            agent = agent_class(signature_class, tools=tools, max_iters=max_iters)
+            agent.load(path)
+            return agent
         except Exception as e:
             logger.error(
                 f"Failed to load optimized agent: {e}. Creating unoptimized agent instead."

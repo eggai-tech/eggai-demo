@@ -22,6 +22,11 @@ def find_model(model_name: str, version: str, artifact_path: str = "model") -> s
     client = MlflowClient()
     mv = client.get_model_version(name=model_name, version=version)
     run_id = mv.run_id
+    if run_id is None:
+        raise ValueError(
+            f"Model version {model_name} v{version} has no associated run to "
+            "download artifacts from"
+        )
 
     dest = cache_path / model_name / version
     dest.mkdir(parents=True, exist_ok=True)
@@ -30,6 +35,11 @@ def find_model(model_name: str, version: str, artifact_path: str = "model") -> s
         return str(pickle_path)
     if pytorch_path.exists():
         return str(pytorch_path)
+
+    raise FileNotFoundError(
+        f"No model.pkl or data/model.pth under {artifact_path} for "
+        f"{model_name} v{version} after downloading to {dest}"
+    )
 
 
 if __name__ == "__main__":
