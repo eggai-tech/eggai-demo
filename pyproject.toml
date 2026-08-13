@@ -92,6 +92,7 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-html>=4.1.1",
     "ruff>=0.11.11",
+    "pyright==1.1.411",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.1",
     "seaborn>=0.13.2",
@@ -125,6 +126,10 @@ dev-dependencies = [
     "pytest-cov>=6.1.1",
     "pytest-html>=4.1.1",
     "ruff>=0.11.11",
+    # Pinned rather than floored: a pyright bump can surface new errors and
+    # turn the CI gate red without a code change. Bump deliberately, and keep
+    # your editor's pyright on the same version.
+    "pyright==1.1.411",
 ]
 
 [tool.pytest.ini_options]
@@ -146,6 +151,21 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
 ]
 addopts = "-m 'not integration and not slow and not requires_llm and not requires_kafka and not requires_vespa'"
+
+[tool.pyright]
+# Editors pick this up and check the whole tree, so you keep type feedback on
+# code that is not clean yet. CI gates only the subset listed in the Makefile's
+# TYPED_MODULES - see `make type-check` / `make type-check-all`.
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+exclude = [
+    "**/__pycache__",
+    "**/tests",
+    ".venv",
+    "temp",
+]
 
 [tool.ruff]
 line-length = 100

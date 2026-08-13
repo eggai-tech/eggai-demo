@@ -1,4 +1,4 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 from vespa.io import VespaQueryResponse
@@ -6,11 +6,25 @@ from vespa.io import VespaQueryResponse
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
 
+if TYPE_CHECKING:
+    from vespa.application import Vespa
+
+    from .config import VespaConfig
+
 logger = get_console_logger("vespa_client")
 tracer = create_tracer("vespa", "client")
 
 
 class VespaSearchMixin:
+    # Supplied by VespaClientBase, which this mixin is always combined with in
+    # VespaClient. Declared under TYPE_CHECKING so the mixin checks standalone
+    # without adding anything to the runtime MRO.
+    if TYPE_CHECKING:
+        config: "VespaConfig"
+
+        @property
+        def vespa_app(self) -> "Vespa": ...
+
     def _extract_search_results(
         self, response: VespaQueryResponse
     ) -> list[dict[str, Any]]:

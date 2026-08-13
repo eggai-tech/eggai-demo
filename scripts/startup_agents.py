@@ -68,6 +68,7 @@ def start_agents_foreground() -> None:
     console.print("[dim]Press Ctrl+C to stop all agents[/]\n")
 
     processes: list[subprocess.Popen] = []
+    names_by_pid: dict[int, str] = {}
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_ROOT)
 
@@ -104,6 +105,7 @@ def start_agents_foreground() -> None:
                 env=env,
             )
             processes.append(proc)
+            names_by_pid[proc.pid] = name
             console.print(f"  [green]Started[/] {name} (PID {proc.pid})")
         except Exception as e:
             console.print(f"  [red]Failed[/] {name}: {e}")
@@ -120,12 +122,7 @@ def start_agents_foreground() -> None:
         for proc in processes[:]:
             ret = proc.poll()
             if ret is not None:
-                # Find agent name
-                agent_name = "Unknown"
-                for name, module in AGENTS:
-                    if module in " ".join(proc.args or []):
-                        agent_name = name
-                        break
+                agent_name = names_by_pid.get(proc.pid, "Unknown")
                 console.print(f"\n[yellow]{agent_name} exited with code {ret}[/]")
                 processes.remove(proc)
         import time

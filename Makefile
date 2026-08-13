@@ -6,7 +6,8 @@
 # =============================================================================
 
 .PHONY: start start-foreground stop test test-ci test-all lint lint-fix clean help \
-        docker-up docker-down health benchmark-classifiers security-scan sast-scan deps-export
+        docker-up docker-down health benchmark-classifiers security-scan sast-scan deps-export \
+        type-check type-check-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -50,6 +51,20 @@ lint: ## Check code quality
 
 lint-fix: ## Auto-fix lint issues
 	@uv run ruff check --fix agents libraries scripts
+
+# Modules the type check gates in CI. Type checking is being adopted
+# incrementally: run `make type-check-all` to see the remaining backlog, clean
+# up a package, then add it here so it cannot regress.
+TYPED_MODULES := libraries/communication libraries/core libraries/integrations \
+                 libraries/testing scripts
+
+# --warnings makes pyright exit non-zero on warnings too, so the gated modules
+# stay at zero diagnostics rather than slowly accruing ignored warnings.
+type-check: ## Type-check the gated modules with pyright (fails on any diagnostic)
+	@uv run pyright --warnings $(TYPED_MODULES)
+
+type-check-all: ## Type-check everything, including modules not yet gated
+	@uv run pyright agents libraries scripts
 
 # -----------------------------------------------------------------------------
 # Dependencies & Security
@@ -132,7 +147,7 @@ help: ## Show this help message
 	@grep -E '^(start|start-foreground|stop|stop-all|health):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Development:"
-	@grep -E '^(test|test-ci|test-all|test-coverage|lint|lint-fix):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(test|test-ci|test-all|test-coverage|lint|lint-fix|type-check|type-check-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Dependencies & Security:"
 	@grep -E '^(security-scan|sast-scan|deps-export):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'

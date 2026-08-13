@@ -11,7 +11,7 @@ def create_mock_agent_response(
     connection_id: str = "test-connection-123"
 ) -> TracedMessage:
     return TracedMessage(
-        id=str(uuid4()),
+        id=uuid4(),
         type=MessageType.AGENT_MESSAGE,
         source=agent_name,
         data={
@@ -29,7 +29,7 @@ def create_mock_request_message(
     source: str = "Triage"
 ) -> TracedMessage:
     return TracedMessage(
-        id=str(uuid4()),
+        id=uuid4(),
         type=request_type,
         source=source,
         data={
@@ -69,7 +69,7 @@ def create_mock_audit_log(
     category: str = "Agent Processing"
 ) -> TracedMessage:
     return TracedMessage(
-        id=str(uuid4()),
+        id=uuid4(),
         type=MessageType.AUDIT_LOG,
         source="Audit",
         data={

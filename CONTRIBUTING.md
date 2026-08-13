@@ -95,6 +95,35 @@ tasks. It's the recommended way to work with the project.
    make lint-fix
    ```
 
+5. Run the type check:
+   ```bash
+   make type-check
+   ```
+
+### Type Checking
+
+Type checking with [pyright](https://microsoft.github.io/pyright/) is being
+adopted incrementally. CI gates only the modules listed in `TYPED_MODULES` in
+the `Makefile`; the rest of the tree still has errors to work through:
+
+```bash
+# what CI enforces - must stay at zero errors
+make type-check
+
+# the full picture, including modules not yet gated
+make type-check-all
+```
+
+To expand coverage, clear the errors in one package, add it to
+`TYPED_MODULES`, and confirm `make type-check` is still clean. Please don't
+widen the gate and suppress the errors with `# type: ignore` to get there -
+the point is to fix the annotations. Tests are excluded for now.
+
+`[tool.pyright]` in `pyproject.toml` is deliberately *not* scoped to
+`TYPED_MODULES`, so your editor reports on the whole tree even where CI does
+not yet. If you use an editor LSP, pin its pyright to the version in
+`pyproject.toml` so you see the same results as CI.
+
 ### Dependencies and Security Scanning
 
 `pyproject.toml` + `uv.lock` are the single source of truth for dependencies.
