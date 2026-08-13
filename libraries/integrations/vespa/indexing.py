@@ -1,5 +1,5 @@
 from asyncio import Semaphore, gather
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 from tenacity import RetryError, retry, stop_after_attempt, wait_exponential
@@ -9,11 +9,27 @@ from libraries.observability.tracing import create_tracer
 
 from .schemas import PolicyDocument
 
+if TYPE_CHECKING:
+    from vespa.application import Vespa
+
+    from .config import VespaConfig
+
 logger = get_console_logger("vespa_client")
 tracer = create_tracer("vespa", "client")
 
 
 class VespaIndexingMixin:
+    # Supplied by VespaClientBase, which this mixin is always combined with in
+    # VespaClient. Declared under TYPE_CHECKING so the mixin checks standalone
+    # without adding anything to the runtime MRO.
+    if TYPE_CHECKING:
+        config: "VespaConfig"
+
+        @property
+        def vespa_app(self) -> "Vespa": ...
+
+        async def check_connectivity(self) -> bool: ...
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2))
     async def _upload_single_document(self, session, document: PolicyDocument) -> bool:
         logger.debug(f"Uploading document: {document.id}")
