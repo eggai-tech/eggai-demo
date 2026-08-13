@@ -61,9 +61,12 @@ async def process_escalation_request(
 )
 @traced_handler("handle_ticketing_request")
 async def handle_ticketing_request(msg: TracedMessage) -> None:
+    # Bound before the try so the error handler below cannot raise
+    # UnboundLocalError and mask the exception it is meant to report.
+    connection_id: str = "unknown"
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
-        connection_id: str = msg.data.get("connection_id", "unknown")
+        connection_id = msg.data.get("connection_id", "unknown")
 
         if not chat_messages:
             logger.warning(f"Empty chat history for connection: {connection_id}")
@@ -85,8 +88,7 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
     except Exception as e:
         logger.error(f"Error in {AGENT_NAME}: {e}", exc_info=True)
         try:
-            connection_id = locals().get("connection_id", "unknown")
-            message_id = str(msg.id) if msg else "unknown"
+            message_id = str(msg.id)
             await process_escalation_request(
                 f"System: Error occurred - {str(e)}",
                 connection_id,

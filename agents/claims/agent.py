@@ -58,9 +58,12 @@ async def process_claims_request(
 )
 @traced_handler("handle_claim_request")
 async def handle_claim_request(msg: TracedMessage) -> None:
+    # Bound before the try so the error handler below cannot raise
+    # UnboundLocalError and mask the exception it is meant to report.
+    connection_id: str = "unknown"
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
-        connection_id: str = msg.data.get("connection_id", "unknown")
+        connection_id = msg.data.get("connection_id", "unknown")
 
         if not chat_messages:
             logger.warning(f"Empty chat history for connection: {connection_id}")
