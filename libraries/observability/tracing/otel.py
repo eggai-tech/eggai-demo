@@ -81,7 +81,22 @@ def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
     trace.set_tracer_provider(TracerProvider(resource=resource, span_limits=limits))
     otlp_exporter = OTLPSpanExporter(endpoint=f"{otlp_endpoint}/v1/traces")
     span_processor = BatchSpanProcessor(otlp_exporter)
-    trace.get_tracer_provider().add_span_processor(span_processor)
+
+    # Deliberately the *installed* provider rather than the one constructed
+    # above: set_tracer_provider is a no-op once a provider is set, so on a
+    # second call these are different objects and the exporter has to be
+    # attached to the one actually in use. The isinstance narrows the API-typed
+    # return of get_tracer_provider to the SDK class that has the method.
+    installed_provider = trace.get_tracer_provider()
+    if isinstance(installed_provider, TracerProvider):
+        installed_provider.add_span_processor(span_processor)
+    else:
+        logger.warning(
+            "Tracer provider is %s, not an SDK TracerProvider; spans will not be "
+            "exported to %s",
+            type(installed_provider).__name__,
+            otlp_endpoint,
+        )
 
     # Patch Span.set_attribute for safer attribute handling
     try:
@@ -156,9 +171,7 @@ def create_tracer(name: str, component: str | None = None) -> Tracer:
     tracer_name = (
         f"{normalized}.{_normalize_name(component)}" if component else normalized
     )
-    tracer = get_tracer(tracer_name)
-    tracer.name = tracer_name
-    return tracer
+    return get_tracer(tracer_name)
 
 
 def extract_span_context(
@@ -173,7 +186,10 @@ def extract_span_context(
         trace_flags = TraceFlags(int(parts[3], 16))
     except Exception:
         return None
-    state = TraceState.from_header(tracestate) if tracestate else TraceState()
+    # from_header takes a list of header values. Passing the bare string made it
+    # iterate characters, reject each as malformed, and return an empty
+    # TraceState - i.e. tracestate was silently dropped from every trace.
+    state = TraceState.from_header([tracestate]) if tracestate else TraceState()
     return SpanContext(
         trace_id=trace_id,
         span_id=span_id,
@@ -190,7 +206,7 @@ def format_span_as_traceparent(span) -> tuple:
     return traceparent, tracestate
 
 
-def traced_handler(span_name: str = None):
+def traced_handler(span_name: str | None = None):
     def decorator(handler_func: Callable[[dict], Awaitable[None]]):
         @functools.wraps(handler_func)
         async def wrapper(*args, **kwargs):
