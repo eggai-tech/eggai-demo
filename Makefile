@@ -57,8 +57,10 @@ lint-fix: ## Auto-fix lint issues
 # up a package, then add it here so it cannot regress.
 TYPED_MODULES := libraries/communication libraries/core libraries/testing scripts
 
-type-check: ## Type-check the gated modules with pyright (fails on any error)
-	@uv run pyright $(TYPED_MODULES)
+# --warnings makes pyright exit non-zero on warnings too, so the gated modules
+# stay at zero diagnostics rather than slowly accruing ignored warnings.
+type-check: ## Type-check the gated modules with pyright (fails on any diagnostic)
+	@uv run pyright --warnings $(TYPED_MODULES)
 
 type-check-all: ## Type-check everything, including modules not yet gated
 	@uv run pyright agents libraries scripts

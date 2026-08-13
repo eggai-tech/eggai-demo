@@ -23,11 +23,13 @@ from libraries.communication.protocol import (
 )
 from libraries.observability.tracing import TracedMessage
 
-T = TypeVar('T', bound=dict[str, Any])
+# Only ever appears in a parameter position, so it is contravariant: a filter
+# accepting a wider message type is usable wherever a narrower one is expected.
+T_contra = TypeVar('T_contra', bound=dict[str, Any], contravariant=True)
 
 
-class MessageFilter(Protocol[T]):
-    def __call__(self, msg: T) -> bool: ...
+class MessageFilter(Protocol[T_contra]):
+    def __call__(self, msg: T_contra) -> bool: ...
 
 
 def create_type_filter(message_type: str | MessageType) -> MessageFilter[dict[str, Any]]:
