@@ -179,7 +179,13 @@ def load_optimized_react_agent(
     if os.path.exists(path):
         try:
             logger.info(f"Loading optimized agent from {path}")
-            return dspy.Program.load(path)
+            # _save_optimized_program uses Module.save(save_program=False), which
+            # writes state only. State has to be loaded into a constructed module;
+            # dspy.load() is for whole-program directories saved with
+            # save_program=True, so it is not the counterpart here.
+            agent = agent_class(signature_class, tools=tools, max_iters=max_iters)
+            agent.load(path)
+            return agent
         except Exception as e:
             logger.error(
                 f"Failed to load optimized agent: {e}. Creating unoptimized agent instead."
