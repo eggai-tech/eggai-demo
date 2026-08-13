@@ -122,17 +122,6 @@ class SIMBAOptimizer:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
         program.save(output_path)
 
-    @staticmethod
-    def load_optimized_program(path: str) -> dspy.Module:
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Optimized program file not found at {path}")
-
-        try:
-            return dspy.Program.load(path)
-        except Exception as e:
-            logger.error(f"Error loading optimized program: {e}")
-            raise
-
 
 def optimize_react_agent(
     agent_class: type,
