@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterable
 from typing import Any
 
 from dspy import Prediction
@@ -67,7 +67,7 @@ def _build_conversation_string(
 
 
 async def stream_dspy_response(
-    chunks: AsyncIterator[Any],
+    chunks: AsyncIterable[Any],
     agent_name: str,
     connection_id: str,
     message_id: str,
