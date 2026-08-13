@@ -1,6 +1,7 @@
 import asyncio
 import functools
 from collections.abc import Callable
+from typing import Any
 
 import dspy
 from opentelemetry import trace
@@ -16,7 +17,7 @@ logger = get_console_logger("tracing.dspy")
 def add_gen_ai_attributes_to_span(
     span: trace.Span, model_name: str = "unknown", **kwargs
 ) -> None:
-    attr_dict = {"model_name": model_name}
+    attr_dict: dict[str, Any] = {"model_name": model_name}
 
     attr_dict.update({k: v for k, v in kwargs.items() if v is not None})
 
@@ -144,7 +145,11 @@ class TracedReAct(dspy.ReAct):
         tracer: trace.Tracer | None = None,
         model_name: str = "unknown",
     ):
-        super().__init__(signature, tools=tools, max_iters=max_iters)
+        # dspy.ReAct requires a concrete list and int; this wrapper accepts None
+        # for both, so substitute its defaults rather than passing None through.
+        super().__init__(
+            signature, tools=tools or [], max_iters=5 if max_iters is None else max_iters
+        )
         self.trace_name = name or self.__class__.__name__.lower()
         self.tracer = tracer or trace.get_tracer(f"dspy.{self.trace_name}")
         self.model_name = model_name
@@ -169,7 +174,12 @@ class TracedReAct(dspy.ReAct):
             add_gen_ai_attributes_to_span(span, model_name=self.model_name)
             span.set_attribute("dspy.forward_args", str(kwargs))
             res = super().forward(**kwargs)
-            lm: TrackingLM = dspy.settings.get("lm")
+            # No LM configured means nothing to record; tracing must not be the
+            # thing that breaks the call it is wrapping.
+            lm: TrackingLM | None = dspy.settings.get("lm")
+            if lm is None or not lm.history:
+                return res
+
             prompt = lm.history[-1].get("prompt", "")
             if prompt:
                 span.set_attribute("dspy.prompt", prompt)

@@ -5,6 +5,10 @@ from collections.abc import Callable
 
 import dspy
 import mlflow
+
+# Bound to its own name: mlflow is py.typed and does not re-export the dspy
+# submodule, so reaching it as an attribute of the package does not type-check.
+import mlflow.dspy as mlflow_dspy
 from dspy.evaluate import Evaluate
 
 from libraries.observability.logger import get_console_logger
@@ -56,7 +60,7 @@ class SIMBAOptimizer:
                 }
             )
 
-            mlflow.dspy.autolog(
+            mlflow_dspy.autolog(
                 log_compiles=True,
                 log_traces=True,
                 log_evals=True,

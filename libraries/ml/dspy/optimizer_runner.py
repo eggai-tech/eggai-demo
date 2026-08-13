@@ -52,10 +52,22 @@ def _show_spinner(message: str, timeout: float):
 
 def run_optimization(config: OptimizerConfig):
     import mlflow
+
+    # Bound to its own name: mlflow is py.typed and does not re-export the dspy
+    # submodule, so reaching it as an attribute of the package does not
+    # type-check.
+    import mlflow.dspy as mlflow_dspy
     from dspy.evaluate import Evaluate
     from sklearn.model_selection import train_test_split
 
-    from libraries.dspy_copro import SimpleCOPRO, save_and_log_optimized_instructions
+    # This module has never existed in the repository - see the PR that added
+    # the type-check gate. run_optimization() therefore raises ImportError as
+    # soon as it is called; the working optimizer is the SIMBA one documented in
+    # docs/advanced-topics/agent-optimization.md.
+    from libraries.dspy_copro import (  # type: ignore[reportMissingImports]
+        SimpleCOPRO,
+        save_and_log_optimized_instructions,
+    )
     from libraries.ml.dspy.language_model import dspy_set_language_model
 
     logger = get_console_logger(f"{config.agent_name}_optimizer")
@@ -74,7 +86,7 @@ def run_optimization(config: OptimizerConfig):
             }
         )
 
-        mlflow.dspy.autolog(
+        mlflow_dspy.autolog(
             log_compiles=True,
             log_traces=True,
             log_evals=True,
@@ -87,10 +99,15 @@ def run_optimization(config: OptimizerConfig):
         examples = config.dataset_converter(raw_examples)
 
         logger.info(f"Created {len(examples)} examples, splitting into train/test...")
-        train_set, test_set = train_test_split(
-            examples,
-            test_size=0.1,
-            random_state=42,
+        # train_test_split is typed as returning arrays; it preserves list
+        # inputs, and Evaluate below needs list[Example].
+        train_set, test_set = (
+            list(part)
+            for part in train_test_split(
+                examples,
+                test_size=0.1,
+                random_state=42,
+            )
         )
         if len(train_set) > 3:
             train_set = train_set[:3]
