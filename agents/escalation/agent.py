@@ -99,7 +99,7 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
             logger.error("Failed to send error response", exc_info=True)
 
 
-@escalation_agent.subscribe(channel=agents_channel)
+@subscribe(agent=escalation_agent, channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
     logger.debug("Received non-ticketing message: %s", msg)
 
