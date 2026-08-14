@@ -5,7 +5,7 @@ import os
 import random
 import uuid
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import SpanLimits
@@ -206,8 +206,11 @@ def format_span_as_traceparent(span) -> tuple:
     return traceparent, tracestate
 
 
-def traced_handler(span_name: str | None = None):
-    def decorator(handler_func: Callable[[dict], Awaitable[None]]):
+HandlerT = TypeVar("HandlerT", bound=Callable[..., Awaitable[Any]])
+
+
+def traced_handler(span_name: str | None = None) -> Callable[[HandlerT], HandlerT]:
+    def decorator(handler_func: HandlerT) -> HandlerT:
         @functools.wraps(handler_func)
         async def wrapper(*args, **kwargs):
             from libraries.observability.tracing.schemas import TracedMessage
@@ -222,12 +225,19 @@ def traced_handler(span_name: str | None = None):
                 msg = next(
                     (v for v in kwargs.values() if isinstance(v, TracedMessage)), None
                 )
+            raw = None
             if not msg:
                 raw = next(
                     (arg for arg in args if isinstance(arg, dict)), None
                 ) or next((v for v in kwargs.values() if isinstance(v, dict)), None)
                 if raw:
                     msg = TracedMessage(**raw)
+
+            # The handler itself expects the parsed TracedMessage, not the raw
+            # dict eggai delivers - substitute it back into the call args.
+            if raw is not None and msg is not None:
+                args = tuple(msg if a is raw else a for a in args)
+                kwargs = {k: (msg if v is raw else v) for k, v in kwargs.items()}
 
             if isinstance(msg, dict) and isinstance(msg.get("channel"), dict):
                 original = msg["channel"]
@@ -258,7 +268,7 @@ def traced_handler(span_name: str | None = None):
                 else:
                     return handler_func(*args, **kwargs)
 
-        return wrapper
+        return cast(HandlerT, wrapper)
 
     return decorator
 
