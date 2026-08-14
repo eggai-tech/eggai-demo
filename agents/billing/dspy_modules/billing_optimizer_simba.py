@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import dspy
 from sklearn.model_selection import train_test_split
@@ -97,7 +98,12 @@ def main():
     logger.info("Creating billing dataset...")
     examples = as_dspy_examples(create_billing_dataset())
 
-    train_set, test_set = train_test_split(examples, test_size=0.2, random_state=42)
+    # train_test_split's stub loses the input list's element type; a single
+    # list input with default settings always returns two lists back.
+    train_set, test_set = cast(
+        "tuple[list[dspy.Example], list[dspy.Example]]",
+        train_test_split(examples, test_size=0.2, random_state=42),
+    )
 
     max_train, max_test = 5, 3
     train_set = train_set[:max_train] if len(train_set) > max_train else train_set

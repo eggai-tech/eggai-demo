@@ -20,9 +20,10 @@ def get_billing_signature_prompt() -> str:
     spec = importlib.util.spec_from_file_location(
         "billing", Path(__file__).resolve().parent / "billing.py"
     )
+    assert spec is not None and spec.loader is not None
     billing_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(billing_module)
-    return inspect.getdoc(billing_module.BillingSignature)
+    return inspect.getdoc(billing_module.BillingSignature) or ""
 
 
 class BillingSignature(dspy.Signature):

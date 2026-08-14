@@ -68,7 +68,7 @@ async def handle_billing_request(msg: TracedMessage) -> None:
         )
 
 
-@billing_agent.subscribe(channel=agents_channel)
+@subscribe(agent=billing_agent, channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
     logger.debug("Received non-billing message: %s", msg)
 

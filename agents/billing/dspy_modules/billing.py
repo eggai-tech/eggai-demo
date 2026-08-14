@@ -1,11 +1,11 @@
 import json
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import dspy
 from dspy import Prediction
-from dspy.streaming import StreamResponse
+from dspy.streaming import StreamListener, StreamResponse
 
 from agents.billing.config import settings
 from agents.billing.types import ModelConfig
@@ -73,14 +73,15 @@ def load_optimized_instructions(path: Path) -> str | None:
 
 
 tracer = None
-_billing_model = None
+_billing_model: TracedReAct | None = None
 _initialized = False
 
 
-def _initialize_billing_model():
+def _initialize_billing_model() -> TracedReAct:
     global tracer, _billing_model, _initialized
 
     if _initialized:
+        assert _billing_model is not None
         return _billing_model
 
     tracer = create_tracer("billing_agent")
@@ -146,14 +147,20 @@ async def process_billing(
 
     billing_model = _initialize_billing_model()
 
-    streamify_func = dspy.streamify(
-        billing_model,
-        stream_listeners=[
-            dspy.streaming.StreamListener(signature_field_name="final_response"),
-        ],
-        include_final_prediction_in_output_stream=True,
-        is_async_program=False,
-        async_streaming=True,
+    # dspy.streamify's stub types the returned callable as taking exactly two
+    # positional Any args, when it actually forwards the program's own
+    # keyword arguments (chat_history= here) and returns an async iterable.
+    streamify_func = cast(
+        Callable[..., AsyncIterable[Any]],
+        dspy.streamify(
+            billing_model,
+            stream_listeners=[
+                StreamListener(signature_field_name="final_response"),
+            ],
+            include_final_prediction_in_output_stream=True,
+            is_async_program=False,
+            async_streaming=True,
+        ),
     )
 
     async for chunk in streamify_func(chat_history=chat_history):
