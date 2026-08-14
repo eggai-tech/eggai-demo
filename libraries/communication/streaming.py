@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Mapping, Sequence
 from typing import Any
 
 from dspy import Prediction
@@ -20,7 +20,7 @@ logger = get_console_logger("streaming")
 
 
 def get_conversation_string(
-    chat_messages: list[dict[str, Any]],
+    chat_messages: Sequence[Mapping[str, Any]],
     tracer: Any | None = None,
     *,
     role_key: str = "role",
@@ -32,7 +32,7 @@ def get_conversation_string(
 
 
 def _build_conversation_string(
-    chat_messages: list[dict[str, Any]],
+    chat_messages: Sequence[Mapping[str, Any]],
     span: Any | None = None,
     *,
     role_key: str = "role",
