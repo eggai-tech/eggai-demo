@@ -26,7 +26,7 @@ class FieldValidators:
             return False, "Invalid date format, use YYYY-MM-DD"
 
     @staticmethod
-    def validate_items_list(value: str) -> tuple[bool, list[str] | None]:
+    def validate_items_list(value: str) -> tuple[bool, str | list[str] | None]:
         if not value or not value.strip():
             return False, "Please provide at least one item"
         items = [item.strip() for item in value.split(",") if item.strip()]

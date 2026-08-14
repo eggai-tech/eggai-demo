@@ -19,9 +19,10 @@ def get_claims_signature_prompt() -> str:
     spec = importlib.util.spec_from_file_location(
         "claims", Path(__file__).resolve().parent / "claims.py"
     )
+    assert spec is not None and spec.loader is not None
     claims_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(claims_module)
-    return inspect.getdoc(claims_module.ClaimsSignature)
+    return inspect.getdoc(claims_module.ClaimsSignature) or ""
 
 
 class ClaimsSignature(dspy.Signature):

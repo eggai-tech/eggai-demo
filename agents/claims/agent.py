@@ -88,7 +88,7 @@ async def handle_claim_request(msg: TracedMessage) -> None:
         )
 
 
-@claims_agent.subscribe(channel=agents_channel)
+@subscribe(agent=claims_agent, channel=agents_channel)
 async def handle_other_messages(msg: TracedMessage) -> None:
     logger.debug("Received non-claim message: %s", msg)
 

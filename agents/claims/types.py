@@ -54,19 +54,21 @@ class ClaimRecord(BaseModel):
     outstanding_items: list[str] = Field(
         default_factory=list, description="Items pending for claim processing"
     )
-    estimate: float | None = Field(None, description="Estimated payout amount", gt=0)
+    estimate: float | None = Field(
+        default=None, description="Estimated payout amount", gt=0
+    )
     estimate_date: str | None = Field(
-        None, description="Estimated date for payout (YYYY-MM-DD)"
+        default=None, description="Estimated date for payout (YYYY-MM-DD)"
     )
     details: str | None = Field(
-        None, description="Detailed description of the claim"
+        default=None, description="Detailed description of the claim"
     )
-    address: str | None = Field(None, description="Address related to the claim")
-    phone: str | None = Field(None, description="Contact phone number")
+    address: str | None = Field(default=None, description="Address related to the claim")
+    phone: str | None = Field(default=None, description="Contact phone number")
     damage_description: str | None = Field(
-        None, description="Description of damage or loss"
+        default=None, description="Description of damage or loss"
     )
-    contact_email: str | None = Field(None, description="Contact email address")
+    contact_email: str | None = Field(default=None, description="Contact email address")
 
     model_config = {"extra": "forbid"}
 

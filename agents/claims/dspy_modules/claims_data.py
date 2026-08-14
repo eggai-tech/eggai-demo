@@ -218,11 +218,13 @@ def update_claim_info(claim_number: str, field: str, new_value: str) -> str:
 
         success, error = update_field_value(record, field, new_value)
         if not success:
+            # update_field_value only returns None for error on success.
+            assert error is not None
             logger.error(f"Error updating field: {error}")
             raise ClaimDataException(
                 error,
                 ErrorCategory.USER_INPUT
-                if "invalid" in str(error).lower()
+                if "invalid" in error.lower()
                 else ErrorCategory.SECURITY,
             )
 

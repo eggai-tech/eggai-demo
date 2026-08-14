@@ -1,12 +1,12 @@
 import json
 import time
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import dspy
 from dspy import Prediction
-from dspy.streaming import StreamResponse
+from dspy.streaming import StreamListener, StreamResponse
 
 from agents.claims.config import settings
 from agents.claims.types import ModelConfig
@@ -220,14 +220,20 @@ async def process_claims(
     truncation_result = truncate_long_history(chat_history, config)
     chat_history = truncation_result["history"]
 
-    streamify_func = dspy.streamify(
-        claims_optimized,
-        stream_listeners=[
-            dspy.streaming.StreamListener(signature_field_name="final_response"),
-        ],
-        include_final_prediction_in_output_stream=True,
-        is_async_program=False,
-        async_streaming=True,
+    # dspy.streamify's stub types the returned callable as taking exactly two
+    # positional Any args, when it actually forwards the program's own
+    # keyword arguments (chat_history= here) and returns an async iterable.
+    streamify_func = cast(
+        Callable[..., AsyncIterable[Any]],
+        dspy.streamify(
+            claims_optimized,
+            stream_listeners=[
+                StreamListener(signature_field_name="final_response"),
+            ],
+            include_final_prediction_in_output_stream=True,
+            is_async_program=False,
+            async_streaming=True,
+        ),
     )
 
     async for chunk in streamify_func(chat_history=chat_history):
