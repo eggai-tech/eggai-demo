@@ -118,11 +118,11 @@ class DocumentService:
                 category_counts[category] = category_counts.get(category, 0) + 1
 
             deleted_count = 0
-            async with self.vespa_client.app.http_session() as session:
+            async with self.vespa_client.vespa_app.asyncio(connections=1) as session:
                 for doc in all_results:
                     doc_id = doc.get("id")
                     if doc_id:
-                        response = await session.delete_data_point(
+                        response = await session.delete_data(
                             schema="policy_document",
                             data_id=doc_id,
                         )

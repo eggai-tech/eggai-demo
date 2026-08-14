@@ -29,10 +29,10 @@ class ReindexService:
                 return 0
 
             deleted_count = 0
-            async with self.vespa_client.app.http_session() as session:
+            async with self.vespa_client.vespa_app.asyncio(connections=1) as session:
                 for doc in existing_results:
                     try:
-                        response = await session.delete_data_point(
+                        response = await session.delete_data(
                             schema="policy_document", data_id=doc["id"]
                         )
                         if response.status_code == 200:
@@ -147,7 +147,7 @@ class ReindexService:
             if result.success:
                 logger.info(
                     f"Queued {config['category']} policy for ingestion, "
-                    f"workflow_id: {result.workflow_id}"
+                    f"request_id: {result.request_id}"
                 )
                 return True, config["category"], None
             else:

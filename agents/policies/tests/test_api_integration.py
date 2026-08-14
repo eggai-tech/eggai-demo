@@ -41,14 +41,14 @@ def mock_vespa_client():
     client.vector_search = AsyncMock(return_value=[])
     client.hybrid_search = AsyncMock(return_value=[])
 
-    client.app = MagicMock()
+    client.vespa_app = MagicMock()
 
     # Mock query results for vector search - return empty by default
     mock_query_result = MagicMock()
     mock_query_result.hits = []
 
-    client.app.query = AsyncMock(return_value=mock_query_result)
-    client.app.http_session = MagicMock()
+    client.vespa_app.query = AsyncMock(return_value=mock_query_result)
+    client.vespa_app.asyncio = MagicMock()
     return client
 
 
@@ -264,7 +264,7 @@ class TestSearchEndpoints:
         mock_query_result = MagicMock()
         mock_query_result.hits = []
 
-        mock_vespa_client.app.query = AsyncMock(return_value=mock_query_result)
+        mock_vespa_client.vespa_app.query = AsyncMock(return_value=mock_query_result)
 
         response = test_client.post(
             "/api/v1/kb/search/vector",
