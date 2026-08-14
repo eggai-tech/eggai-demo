@@ -27,10 +27,13 @@ def patch_usage_tracker():
                 sub2 = val2 if isinstance(val2, dict) else {}
                 result[key] = self._merge_usage_entries(sub1, sub2)
 
+            elif isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+                result[key] = val1 + val2
+
             else:
-                num1 = val1 or 0
-                num2 = val2 or 0
-                result[key] = num1 + num2
+                # Non-numeric usage fields (e.g. a model/service-tier label)
+                # can't be summed - keep whichever side actually has one.
+                result[key] = val2 if val2 is not None else val1
 
         return result
 
