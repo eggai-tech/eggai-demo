@@ -55,7 +55,10 @@ lint-fix: ## Auto-fix lint issues
 # Modules the type check gates in CI. Type checking is being adopted
 # incrementally: run `make type-check-all` to see the remaining backlog, clean
 # up a package, then add it here so it cannot regress.
-TYPED_MODULES := libraries scripts
+# agents/triage is not yet gated - see its classifiers/, data_sets/, and
+# evaluation/ backlog via `make type-check-all`.
+TYPED_MODULES := libraries scripts \
+	agents/billing agents/claims agents/escalation agents/frontend agents/audit agents/policies
 
 # --warnings makes pyright exit non-zero on warnings too, so the gated modules
 # stay at zero diagnostics rather than slowly accruing ignored warnings.
