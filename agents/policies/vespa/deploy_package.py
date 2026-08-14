@@ -19,7 +19,9 @@ from libraries.observability.logger import get_console_logger
 logger = get_console_logger("vespa_deployment")
 
 
-def check_schema_exists(config_server_url: str, query_url: str, expected_generation: int = None) -> bool:
+def check_schema_exists(
+    config_server_url: str, query_url: str, expected_generation: int | None = None
+) -> bool:
     try:
         app_status_url = f"{config_server_url}/application/v2/tenant/default/application/default/environment/prod/region/default/instance/default"
         response = httpx.get(app_status_url, timeout=10.0)
@@ -82,11 +84,11 @@ def deploy_to_vespa(
     config_server_url: str,
     query_url: str,
     force: bool = False,
-    artifacts_dir: Path = None,
+    artifacts_dir: Path | None = None,
     deployment_mode: str = "local",
     node_count: int = 1,
-    hosts_config: Path = None,
-    services_xml: Path = None,
+    hosts_config: Path | None = None,
+    services_xml: Path | None = None,
     app_name: str = "policies",
 ) -> bool:
     logger.info(f"Deploying to {config_server_url}")
@@ -170,6 +172,8 @@ def deploy_to_vespa(
                     pass
                 logger.error("Deployment verification failed after 100 seconds")
                 return False
+
+        return False
 
     except Exception as e:
         logger.error(f"Deployment failed: {e}", exc_info=True)

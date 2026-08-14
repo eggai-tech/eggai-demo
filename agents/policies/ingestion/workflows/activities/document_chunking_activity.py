@@ -1,9 +1,14 @@
 from typing import Any
 
-from docling.chunking import HierarchicalChunker
-from docling_core.types import DoclingDocument
+from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
+from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
+from docling_core.types.doc.document import DoclingDocument
 from temporalio import activity
-from transformers import GPT2TokenizerFast
+
+# transformers no longer ships a distinct fast GPT2 tokenizer implementation;
+# GPT2TokenizerFast is a dynamic backward-compat alias for GPT2Tokenizer that
+# isn't statically exported, so import the real class directly.
+from transformers import GPT2Tokenizer as GPT2TokenizerFast
 
 from libraries.observability.logger import get_console_logger
 
@@ -93,13 +98,9 @@ async def chunk_document_activity(load_result: dict[str, Any]) -> dict[str, Any]
 
         tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 
-        chunker = HierarchicalChunker(
-            tokenizer="gpt2",
-            max_tokens=500,
-            min_tokens=100,
+        chunker = HybridChunker(
+            tokenizer=HuggingFaceTokenizer(tokenizer=tokenizer, max_tokens=500),
             merge_peers=True,
-            respect_sentence_boundary=True,
-            overlap_sentences=2,
         )
 
         chunks = list(chunker.chunk(document))

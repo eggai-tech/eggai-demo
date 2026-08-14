@@ -93,7 +93,7 @@ class DocumentIngestionWorkflow:
                 total_documents_indexed=verification_result.get(
                     "existing_chunks", 0
                 ),
-                index_name=input_data.index_name,
+                index_name=input_data.index_name or "policies_index",
                 skipped=True,
                 skip_reason=verification_result.get("reason"),
             )
@@ -134,7 +134,7 @@ class DocumentIngestionWorkflow:
                 file_path=input_data.file_path,
                 documents_processed=1,
                 total_documents_indexed=0,
-                index_name=input_data.index_name,
+                index_name=input_data.index_name or "policies_index",
                 skipped=True,
                 skip_reason="No chunks generated from document",
             )
@@ -184,7 +184,7 @@ class DocumentIngestionWorkflow:
             documents_processed=indexing_result["documents_processed"],
             total_documents_indexed=indexing_result["total_documents_indexed"],
             total_chunks=indexing_result.get("total_chunks"),
-            index_name=input_data.index_name,
+            index_name=input_data.index_name or "policies_index",
             index_path=indexing_result.get("index_path"),
             document_metadata=load_result.get("metadata"),
         )

@@ -64,7 +64,7 @@ def create_services_xml(node_count: int = 1, redundancy: int = 1) -> str:
     nodes = ET.SubElement(content, "nodes")
     for i in range(node_count):
         ET.SubElement(
-            nodes, "node", **{"distribution-key": str(i), "hostalias": f"node{i}"}
+            nodes, "node", attrib={"distribution-key": str(i), "hostalias": f"node{i}"}
         )
 
     return _pretty(root)
