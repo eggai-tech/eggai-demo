@@ -1,39 +1,76 @@
+# -- Applied to EVERY agent, automatically prefixed with that agent's
+# pydantic-settings env_prefix (see agentMeta in _helpers.tpl).
+# Keys are the UNPREFIXED setting name, uppercased. Empty values are
+# omitted entirely, so the app keeps its own default.
+globalEnv:
+  KAFKA_BOOTSTRAP_SERVERS: ""
+  KAFKA_TOPIC_PREFIX: ""
+  OTEL_ENDPOINT: ""
+  TRACING_ENABLED: ""
+  DEPLOYMENT_NAMESPACE: ""
+  LANGUAGE_MODEL: ""
+  LANGUAGE_MODEL_API_BASE: ""
+
+# -- Verbatim env for every agent. No prefixing. Use for vars read outside
+# pydantic (LiteLLM's OPENAI_API_KEY) or with a non-agent prefix
+# (FEWSHOT_MLFLOW_TRACKING_URI, ATTENTION_NET_MLFLOW_TRACKING_URI).
+# Supports valueFrom.
+extraEnv: []
+
+# -- envFrom for every agent. The clean way to inject API keys.
+envFrom: []
+
 agents:
   audit:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
   billing:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
   claims:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
   escalation:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
   frontend:
     enabled: true
     replicaCount: 1
+    httpPort: true
     environment: []
+    envFrom: []
+    livenessProbe:
+      httpGet: {path: /, port: http}
+    readinessProbe:
+      httpGet: {path: /, port: http}
   policiesDocumentIngestion:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
+    nodeSelector: {}
+    tolerations: []
   policies:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
   triage:
     enabled: true
     replicaCount: 1
     environment: []
+    envFrom: []
 
 image:
-  repository: ghcr.io/eggai-tech/multi-agent-human-chat
+  repository: ghcr.io/eggai-tech/eggai-demo
   pullPolicy: IfNotPresent
   tag: latest
 
@@ -45,18 +82,24 @@ resources:
   limits:
     cpu: "250m"
     memory: "512Mi"
+    ephemeral-storage: "4Gi"
   requests:
     cpu: "100m"
     memory: "128Mi"
-    ephemeral-storage: "10Gi"
+    ephemeral-storage: "512Mi"
 
-cacheVolumeSize: "10Gi"
+cacheVolumeSize: "2Gi"
 
 podAnnotations: {}
 
-podSecurityContext: {}
+# -- The image runs as UID 1000 and /cache is an emptyDir, which mounts
+# root:root 0755. Without fsGroup the DSPy cache is unwritable.
+podSecurityContext:
+  fsGroup: 1000
 
 securityContext: {}
+
+affinity: {}
 
 service:
   type: ClusterIP
@@ -71,6 +114,3 @@ monitoring:
 
 nodeSelector: {}
 tolerations: []
-
-gpuNodeSelector: {}
-gpuTolerations: []

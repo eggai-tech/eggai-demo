@@ -1,14 +1,16 @@
 {{- if .Values.monitoring.enabled }}
-{{- range $name,$value := .Values.agents }}
+{{- range $name, $agent := .Values.agents }}
+{{- if $agent.enabled }}
+{{- $meta := include "eggai-multi-agent-chat.agentMeta" $name | fromJson }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eggai-multi-agent-chat.fullname" $ }}-{{ lower $name }}-metrics
+  name: {{ printf "%s-%s-metrics" (include "eggai-multi-agent-chat.fullname" $) $meta.label | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "eggai-multi-agent-chat.labels" $ | nindent 4 }}
     app.kubernetes.io/component: monitoring
-    egg-ai.com/agent: {{ $name }}
+    egg-ai.com/agent: {{ $meta.label }}
 spec:
   type: ClusterIP
   ports:
@@ -18,12 +20,12 @@ spec:
       name: metrics
   selector:
     {{- include "eggai-multi-agent-chat.selectorLabels" $ | nindent 4 }}
-    egg-ai.com/agent: {{ $name }}
+    egg-ai.com/agent: {{ $meta.label }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "eggai-multi-agent-chat.fullname" $ }}-{{ lower $name }}
+  name: {{ printf "%s-%s" (include "eggai-multi-agent-chat.fullname" $) $meta.label | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "eggai-multi-agent-chat.labels" $ | nindent 4 }}
 spec:
@@ -38,6 +40,7 @@ spec:
     matchLabels:
       {{- include "eggai-multi-agent-chat.selectorLabels" $ | nindent 6 }}
       app.kubernetes.io/component: monitoring
-      egg-ai.com/agent: {{ $name }}
+      egg-ai.com/agent: {{ $meta.label }}
+{{- end }}
 {{- end }}
 {{- end }}
