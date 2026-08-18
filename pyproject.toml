@@ -119,6 +119,7 @@ constraint-dependencies = [
     "lxml>=6.1.0",           # CVE-2026-41066
     "pyarrow>=23.0.1",       # CVE-2026-25087
     "sqlparse>=0.6.0",       # CVE-2026-59893, CVE-2026-59894, CVE-2026-54284
+    "faststream>=0.6,<0.7",  # keep it on 0.6.x until fix in eggai package 0.3.2 - msg/message name mismatch
 ]
 
 dev-dependencies = [
