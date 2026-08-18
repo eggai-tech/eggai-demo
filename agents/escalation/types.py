@@ -32,7 +32,7 @@ class TicketingRequestMessage(TypedDict):
 
 
 class ModelConfig(BaseModelConfig):
-    name: str = Field("ticketing_agent", description="Name of the DSPy ticketing model")
+    name: str = Field(default="ticketing_agent", description="Name of the DSPy ticketing model")
 
 
 class TicketInfo(BaseModel):

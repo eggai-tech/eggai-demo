@@ -3,6 +3,8 @@ from uuid import uuid4
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage
 
+from .types import SecurityContext
+
 logger = get_console_logger("audit_agent")
 
 def get_message_metadata(
@@ -17,7 +19,9 @@ def get_message_metadata(
         return mtype or "unknown", msource or "unknown"
 
     try:
-        return message.get("type", "unknown"), message.get("source", "unknown")
+        if isinstance(message, dict):
+            return message.get("type", "unknown"), message.get("source", "unknown")
+        return "unknown", "unknown"
     except Exception:
         logger.warning("Could not extract message type/source from %r", message)
         return "unknown", "unknown"
@@ -52,16 +56,16 @@ def get_message_id(message: TracedMessage | dict | None) -> str:
 def propagate_trace_context(
     source_message: TracedMessage | dict | None, target_message: TracedMessage
 ) -> None:
-    if source_message is None:
+    if not isinstance(source_message, TracedMessage):
         return
 
-    if hasattr(source_message, "traceparent") and source_message.traceparent:
+    if source_message.traceparent:
         target_message.traceparent = source_message.traceparent
-    if hasattr(source_message, "tracestate") and source_message.tracestate:
+    if source_message.tracestate:
         target_message.tracestate = source_message.tracestate
 
 
-def get_security_context(message: TracedMessage | dict | None) -> dict | None:
+def get_security_context(message: TracedMessage | dict | None) -> SecurityContext | None:
     """Extract security context from message data for audit logging."""
     if message is None:
         return None
@@ -70,4 +74,7 @@ def get_security_context(message: TracedMessage | dict | None) -> dict | None:
     if not isinstance(data, dict):
         return None
 
-    return data.get("security_context")
+    raw = data.get("security_context")
+    if not isinstance(raw, dict):
+        return None
+    return SecurityContext.model_validate(raw)

@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import aioboto3
 from botocore.exceptions import ClientError
@@ -24,9 +25,9 @@ class MinIODocumentMetadata:
 class MinIOClient:
     def __init__(
         self,
-        endpoint_url: str = None,
-        access_key: str = None,
-        secret_key: str = None,
+        endpoint_url: str | None = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
         bucket_name: str = "documents"
     ):
         self.endpoint_url = endpoint_url or os.getenv("MINIO_ENDPOINT_URL", "http://localhost:9000")
@@ -41,7 +42,10 @@ class MinIOClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def _get_client(self):
+    def _get_client(self) -> Any:
+        # aioboto3's dynamically-generated client type isn't stubbed, so
+        # pyright can't see that the returned context manager implements
+        # __aenter__/__aexit__ (it does, at runtime).
         return self.session.client(
             's3',
             endpoint_url=self.endpoint_url,

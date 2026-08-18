@@ -6,9 +6,11 @@ import uvicorn
 from eggai import Agent, Channel
 from fastapi import FastAPI, Query
 from opentelemetry import trace
+from opentelemetry.context import Context
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from libraries.communication.channels import channels
+from libraries.communication.messaging import subscribe
 from libraries.communication.protocol import AgentName, MessageType
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer
@@ -47,7 +49,7 @@ init_token_metrics(
     port=settings.prometheus_metrics_port, application_name=settings.app_name
 )
 
-def _extract_trace_context(connection_id: str) -> tuple[str, str, trace.SpanContext]:
+def _extract_trace_context(connection_id: str) -> tuple[str, str, Context]:
     with tracer.start_as_current_span("frontend_chat", context=None) as root_span:
         root_ctx = root_span.get_span_context()
         traceparent = (
@@ -56,6 +58,8 @@ def _extract_trace_context(connection_id: str) -> tuple[str, str, trace.SpanCont
         safe_set_attribute(root_span, "connection.id", str(connection_id))
         tracestate = str(root_ctx.trace_state) if root_ctx.trace_state else ""
     ctx = extract_span_context(traceparent, tracestate)
+    # traceparent is built from a live SpanContext above, so it always parses.
+    assert ctx is not None
     parent_ctx = trace.set_span_in_context(trace.NonRecordingSpan(ctx))
     return traceparent, tracestate, parent_ctx
 
@@ -94,7 +98,7 @@ async def _process_user_messages(
             if valid is None:
                 await human_channel.publish(
                     TracedMessage(
-                        id=message_id,
+                        id=uuid.UUID(message_id),
                         source=AGENT_NAME,
                         type=MessageType.AGENT_MESSAGE.value,
                         data={
@@ -116,7 +120,7 @@ async def _process_user_messages(
         )
         await human_channel.publish(
             TracedMessage(
-                id=message_id,
+                id=uuid.UUID(message_id),
                 source=AGENT_NAME,
                 type=MessageType.USER_MESSAGE.value,
                 data={
@@ -170,12 +174,12 @@ def add_websocket_gateway(route: str, app: FastAPI, server: uvicorn.Server) -> N
                 logger.info(f"WebSocket connection {connection_id} closed.")
 
 
-@frontend_agent.subscribe(channel=human_stream_channel)
+@subscribe(agent=frontend_agent, channel=human_stream_channel)
 async def handle_human_stream_messages(message: TracedMessage):
     message_type = message.type
     agent = message.source
     message_id = message.data.get("message_id")
-    connection_id = message.data.get("connection_id")
+    connection_id: str = message.data.get("connection_id", "unknown")
 
     if message_type == MessageType.AGENT_MESSAGE_STREAM_START.value:
         logger.info(f"Starting stream for message {message_id} from {agent}")
@@ -233,12 +237,12 @@ async def handle_human_stream_messages(message: TracedMessage):
         )
 
 
-@frontend_agent.subscribe(channel=human_channel)
+@subscribe(agent=frontend_agent, channel=human_channel)
 @traced_handler("handle_human_messages")
 async def handle_human_messages(message: TracedMessage):
     message_type = message.type
     agent = message.data.get("agent")
-    connection_id = message.data.get("connection_id")
+    connection_id: str = message.data.get("connection_id", "unknown")
     message_id = message.id
 
     if message_type == MessageType.AGENT_MESSAGE.value:

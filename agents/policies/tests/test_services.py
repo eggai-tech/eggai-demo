@@ -23,17 +23,17 @@ def mock_vespa_client():
     client.search_documents = AsyncMock()
     client.vector_search = AsyncMock()
     client.hybrid_search = AsyncMock()
-    client.app = MagicMock()
+    client.vespa_app = MagicMock()
 
     # Mock the app.query method for vector search
     mock_query_result = MagicMock()
     mock_query_result.hits = []
-    client.app.query = AsyncMock(return_value=mock_query_result)
+    client.vespa_app.query = AsyncMock(return_value=mock_query_result)
 
-    # Mock the http_session context manager
+    # Mock the asyncio() session context manager
     mock_session = AsyncMock()
-    mock_session.delete_data_point = AsyncMock(return_value=MagicMock(status_code=200))
-    client.app.http_session = MagicMock(return_value=AsyncMock(__aenter__=AsyncMock(return_value=mock_session)))
+    mock_session.delete_data = AsyncMock(return_value=MagicMock(status_code=200))
+    client.vespa_app.asyncio = MagicMock(return_value=AsyncMock(__aenter__=AsyncMock(return_value=mock_session)))
 
     return client
 
@@ -264,8 +264,8 @@ class TestReindexService:
 
         assert result == 5  # Should have deleted 5 documents
         # Verify delete was called for each document
-        session = mock_vespa_client.app.http_session().__aenter__.return_value
-        assert session.delete_data_point.call_count == 5
+        session = mock_vespa_client.vespa_app.asyncio().__aenter__.return_value
+        assert session.delete_data.call_count == 5
 
     @pytest.mark.asyncio
     async def test_clear_documents_empty_index(self, reindex_service, mock_vespa_client):

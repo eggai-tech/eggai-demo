@@ -15,7 +15,9 @@ logger = get_console_logger("ingestion.document_loading")
 
 
 @activity.defn
-async def load_document_activity(file_path: str, source: str = "filesystem", metadata: dict = None) -> dict[str, Any]:
+async def load_document_activity(
+    file_path: str, source: str = "filesystem", metadata: dict | None = None
+) -> dict[str, Any]:
     logger.info(f"Loading document: {file_path} from {source}")
 
     try:

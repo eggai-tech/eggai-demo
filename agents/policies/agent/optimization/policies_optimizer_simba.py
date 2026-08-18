@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import dspy
 from sklearn.model_selection import train_test_split
@@ -100,7 +100,12 @@ def main():
     examples = as_dspy_examples(raw_examples)
 
     logger.info(f"Created {len(examples)} examples, splitting into train/test...")
-    train_set, _ = train_test_split(examples, test_size=0.2, random_state=42)
+    # train_test_split's stub loses the input list's element type; a single
+    # list input with default settings always returns two lists back.
+    train_set, _ = cast(
+        "tuple[list[dspy.Example], list[dspy.Example]]",
+        train_test_split(examples, test_size=0.2, random_state=42),
+    )
 
     max_train = 5
 

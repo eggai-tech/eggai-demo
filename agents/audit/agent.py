@@ -4,7 +4,7 @@ from eggai import Agent, Channel
 from faststream.kafka import KafkaMessage
 
 from libraries.communication.channels import channels
-from libraries.communication.messaging import AgentName, MessageType
+from libraries.communication.messaging import AgentName, MessageType, subscribe
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
 from libraries.observability.tracing.init_metrics import init_token_metrics
@@ -35,13 +35,17 @@ human_channel = Channel(channels.human)
 audit_logs_channel = Channel(channels.audit_logs)
 
 
-@audit_agent.subscribe(channel=agents_channel)
-@audit_agent.subscribe(channel=human_channel)
+@subscribe(agent=audit_agent, channel=agents_channel)
+@subscribe(agent=audit_agent, channel=human_channel)
 @traced_handler("audit_message")
 async def audit_message(
     message: TracedMessage | dict, msg: KafkaMessage
 ) -> TracedMessage | dict | None:
-    channel = msg.raw_message.topic
+    raw_message = msg.raw_message
+    # Non-batch subscription: always a single ConsumerRecord, never a tuple.
+    channel = (
+        raw_message[0].topic if isinstance(raw_message, tuple) else raw_message.topic
+    )
     message_type, source = get_message_metadata(message)
     message_id = get_message_id(message)
     category: AuditCategory = audit_config.message_categories.get(
@@ -80,7 +84,7 @@ async def audit_message(
             data = audit_event.to_dict()
 
             log_message = TracedMessage(
-                id=str(uuid4()),
+                id=uuid4(),
                 type=MessageType.AUDIT_LOG,
                 source=AGENT_NAME,
                 data=data,
@@ -99,7 +103,7 @@ async def audit_message(
         )
         data_err = error_event.to_dict()
         log_error = TracedMessage(
-            id=str(uuid4()), type=MessageType.AUDIT_LOG, source=AGENT_NAME, data=data_err
+            id=uuid4(), type=MessageType.AUDIT_LOG, source=AGENT_NAME, data=data_err
         )
         propagate_trace_context(message, log_error)
         await audit_logs_channel.publish(log_error)

@@ -1,11 +1,12 @@
 import json
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 import dspy
 from dspy import Prediction
-from dspy.streaming import StreamResponse
+from dspy.streaming import StreamListener, StreamResponse
 
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import (
@@ -171,14 +172,20 @@ async def process_escalation(
 ) -> AsyncIterable[StreamResponse | Prediction]:
     config = config or ModelConfig()
 
-    streamify_func = dspy.streamify(
-        escalation_model,
-        stream_listeners=[
-            dspy.streaming.StreamListener(signature_field_name="final_response"),
-        ],
-        include_final_prediction_in_output_stream=True,
-        is_async_program=False,
-        async_streaming=True,
+    # dspy.streamify's stub types the returned callable as taking exactly two
+    # positional Any args, when it actually forwards the program's own
+    # keyword arguments (chat_history= here) and returns an async iterable.
+    streamify_func = cast(
+        Callable[..., AsyncIterable[Any]],
+        dspy.streamify(
+            escalation_model,
+            stream_listeners=[
+                StreamListener(signature_field_name="final_response"),
+            ],
+            include_final_prediction_in_output_stream=True,
+            is_async_program=False,
+            async_streaming=True,
+        ),
     )
 
     async for chunk in streamify_func(chat_history=chat_history):

@@ -75,7 +75,7 @@ class MinIOInboxWatcherWorkflow:
                 workflow.logger.info(f"Processing {file_key}")
                 try:
                     await workflow.execute_child_workflow(
-                        DocumentIngestionWorkflow,
+                        DocumentIngestionWorkflow.run,
                         args=[{
                             "file_path": file_key,
                             "force_rebuild": False,

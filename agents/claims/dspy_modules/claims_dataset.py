@@ -157,7 +157,7 @@ def as_dspy_examples(examples: list[ClaimsExample]) -> list[dspy.Example]:
     return dspy_examples
 
 
-def export_dataset(examples: list[ClaimsExample], output_path: str = None):
+def export_dataset(examples: list[ClaimsExample], output_path: str | Path | None = None):
     if not output_path:
         output_path = Path(__file__).resolve().parent / "claims_dataset.json"
 
@@ -174,7 +174,7 @@ def export_dataset(examples: list[ClaimsExample], output_path: str = None):
         logger.error(f"Error exporting dataset: {e}")
 
 
-def load_dataset(input_path: str = None) -> list[ClaimsExample]:
+def load_dataset(input_path: str | Path | None = None) -> list[ClaimsExample]:
     if not input_path:
         input_path = Path(__file__).resolve().parent / "claims_dataset.json"
 

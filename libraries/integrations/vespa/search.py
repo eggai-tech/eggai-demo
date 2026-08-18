@@ -113,6 +113,32 @@ class VespaSearchMixin:
             logger.error(f"Search error: {e}")
             return []
 
+    @tracer.start_as_current_span("get_document")
+    async def get_document(self, schema: str, doc_id: str) -> dict[str, Any] | None:
+        try:
+            async with self.vespa_app.asyncio(connections=1) as session:
+                response = await session.get_data(schema=schema, data_id=doc_id)
+
+            if not response.is_successful():
+                return None
+
+            fields = response.json.get("fields", {})
+            return {
+                "id": fields.get("id", doc_id),
+                "title": fields.get("title", ""),
+                "text": fields.get("text", ""),
+                "category": fields.get("category", ""),
+                "chunk_index": fields.get("chunk_index", 0),
+                "source_file": fields.get("source_file", ""),
+                "page_numbers": fields.get("page_numbers", []),
+                "page_range": fields.get("page_range"),
+                "headings": fields.get("headings", []),
+            }
+
+        except Exception as e:
+            logger.error(f"Get document error: {e}")
+            return None
+
     @tracer.start_as_current_span("get_document_count")
     async def get_document_count(self) -> int:
         try:

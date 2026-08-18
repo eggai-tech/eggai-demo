@@ -1,12 +1,12 @@
 import json
 import os
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Callable
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import dspy
 from dspy import Prediction
-from dspy.streaming import StreamResponse
+from dspy.streaming import StreamListener, StreamResponse
 
 from agents.policies.agent.config import settings
 from agents.policies.agent.tools.database.policy_data import get_personal_policy_details
@@ -181,15 +181,22 @@ def process_policies(
     truncation_result = truncate_long_history(chat_history, config)
     chat_history = truncation_result["history"]
 
-    return dspy.streamify(
-        policies_model,
-        stream_listeners=[
-            dspy.streaming.StreamListener(signature_field_name="final_response"),
-        ],
-        include_final_prediction_in_output_stream=True,
-        is_async_program=False,
-        async_streaming=True,
-    )(chat_history=chat_history)
+    # dspy.streamify's stub types the returned callable as taking exactly two
+    # positional Any args, when it actually forwards the program's own
+    # keyword arguments (chat_history= here) and returns an async iterable.
+    streamify_func = cast(
+        Callable[..., AsyncIterable[Any]],
+        dspy.streamify(
+            policies_model,
+            stream_listeners=[
+                StreamListener(signature_field_name="final_response"),
+            ],
+            include_final_prediction_in_output_stream=True,
+            is_async_program=False,
+            async_streaming=True,
+        ),
+    )
+    return streamify_func(chat_history=chat_history)
 
 
 if __name__ == "__main__":

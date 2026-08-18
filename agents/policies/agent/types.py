@@ -14,5 +14,7 @@ VALID_CATEGORIES: frozenset[str] = frozenset(get_args(PolicyCategory))
 
 
 class ModelConfig(BaseModelConfig):
-    name: str = Field("policies_react", description="Name of the model")
-    date_format: str = Field("YYYY-MM-DD", description="Required date format for responses")
+    name: str = Field(default="policies_react", description="Name of the model")
+    date_format: str = Field(
+        default="YYYY-MM-DD", description="Required date format for responses"
+    )

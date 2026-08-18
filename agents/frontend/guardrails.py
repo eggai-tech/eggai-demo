@@ -1,4 +1,7 @@
+from typing import cast
+
 from guardrails import AsyncGuard
+from guardrails.classes import ValidationOutcome
 
 from libraries.observability.logger import get_console_logger
 
@@ -13,17 +16,17 @@ except ImportError:
 _toxic_language_guard = None
 if ToxicLanguage:
     _toxic_language_guard = AsyncGuard().use(
-        ToxicLanguage,
-        threshold=0.5,
-        validation_method="sentence",
-        on_fail="noop",
+        ToxicLanguage(threshold=0.5, validation_method="sentence", on_fail="noop")
     )
 
 
 async def toxic_language_guard(text: str) -> str | None:
     if _toxic_language_guard is None:
         return text
-    result = await _toxic_language_guard.validate(text)
+    # guardrails' AsyncGuard.validate is annotated as returning
+    # Awaitable[ValidationOutcome] instead of ValidationOutcome, so `await`
+    # doesn't fully unwrap it under pyright even though it does at runtime.
+    result = cast(ValidationOutcome, await _toxic_language_guard.validate(text))
     if result.validation_passed is False:
         return None
     return result.validated_output
