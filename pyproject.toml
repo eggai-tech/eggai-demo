@@ -118,6 +118,7 @@ constraint-dependencies = [
     "cryptography>=49.0.0",  # CVE-2026-39892, CVE-2026-69249 (see osv-scanner.toml for CVE-2026-69247)
     "lxml>=6.1.0",           # CVE-2026-41066
     "pyarrow>=23.0.1",       # CVE-2026-25087
+    "sqlparse>=0.6.0",       # CVE-2026-59893, CVE-2026-59894, CVE-2026-54284
 ]
 
 dev-dependencies = [
