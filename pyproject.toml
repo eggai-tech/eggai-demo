@@ -19,7 +19,7 @@ classifiers = [
 
 dependencies = [
     # Core framework
-    "eggai>=0.1.46",
+    "eggai==0.2.13",   # fix to older version until fix in eggai package 0.3.2 - msg/message name mismatch
     "dspy>=2.6.24",
     "fastapi>=0.115.6",
     "uvicorn>=0.34.0",

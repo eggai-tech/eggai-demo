@@ -1489,15 +1489,15 @@ wheels = [
 
 [[package]]
 name = "eggai"
-version = "0.3.2"
+version = "0.2.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "faststream", extra = ["kafka", "redis"] },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/f5/a878212d76bb669996d4996f92b2d3c496938d4b6d7f5dd400e5767d6052/eggai-0.3.2.tar.gz", hash = "sha256:49caa4a509af6f331e831725c7968bdeb43596f68c326e63bd2be5072ff94f90", size = 59326, upload-time = "2026-06-15T12:22:45.944Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/c5/b692e8f8ff2ba20a4676e37bc2b6663d15fff20f721dce828c5dbae3661d/eggai-0.2.13.tar.gz", hash = "sha256:96b833f269e9201cd3728e2f46235d69d24f6f674fe161b9f1ce0a8b1104e3cf", size = 41448, upload-time = "2026-03-14T16:48:21.496Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/9a/18660bd43fbdc5dd6cd3378aa21988f1e7b546cd778b1c01d20b410aabc2/eggai-0.3.2-py3-none-any.whl", hash = "sha256:b18ed2eda36402e1a105dc6dea2468fc0a39a075767d454f199a1b0352f4f18d", size = 67177, upload-time = "2026-06-15T12:22:44.326Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/49/449c14ff00677f4907f6aeb143314b0f2a04be8cc76d9c529dc508b199ff/eggai-0.2.13-py3-none-any.whl", hash = "sha256:bbcb02d83b5a874d1c7a9558ba3590820e4f189b69b3f6a478c43fb162fe412f", size = 51311, upload-time = "2026-03-14T16:48:20.331Z" },
 ]
 
 [[package]]
@@ -1585,7 +1585,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=3.3.2" },
     { name = "docling", specifier = ">=2.37.0" },
     { name = "dspy", specifier = ">=2.6.24" },
-    { name = "eggai", specifier = ">=0.1.46" },
+    { name = "eggai", specifier = "==0.2.13" },
     { name = "fastapi", specifier = ">=0.115.6" },
     { name = "guardrails-ai", specifier = ">=0.10.2" },
     { name = "httpx", specifier = ">=0.28.1" },
