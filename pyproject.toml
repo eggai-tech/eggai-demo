@@ -20,7 +20,11 @@ classifiers = [
 dependencies = [
     # Core framework
     "eggai>=0.1.46",
-    "dspy>=2.6.24",
+    # dspy >=3.2 breaks LM Studio streaming: the reworked LM transport poisons
+    # the connection after the first streamed request in a process, surfacing
+    # as litellm MidStreamFallbackError ("Engine protocol predict request
+    # failed: fetch failed"). Verified by A/B repro against dspy 3.3.0.
+    "dspy==3.1.3",
     "fastapi>=0.115.6",
     "uvicorn>=0.34.0",
     "pydantic>=2.0.0",
