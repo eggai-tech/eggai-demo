@@ -1,0 +1,41 @@
+fullnameOverride: eggai
+resources:
+  limits:   {cpu: "1",   memory: "768Mi"}
+  requests: {cpu: "50m", memory: "256Mi"}
+
+globalEnv:
+  KAFKA_BOOTSTRAP_SERVERS: "redpanda:9093"
+  LANGUAGE_MODEL: "lm_studio/google/gemma-3-4b"
+  LANGUAGE_MODEL_API_BASE: "http://llm:1234/v1"
+  OTEL_ENDPOINT: "http://localhost:4318"
+
+extraEnv:
+  - name: OPENAI_API_KEY
+    value: "ollama"
+  - name: DEPLOYMENT_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: OTEL_ENDPOINT
+    value: "http://localhost:4318"
+
+agents:
+  frontend:
+    environment:
+      - { name: FRONTEND_HOST, value: "0.0.0.0" }
+  triage:
+    environment:
+      - {name: TRIAGE_CLASSIFIER_VERSION, value: v4}
+  policies:
+    enabled: true
+    resources:
+      limits: { cpu: "1",    memory: "3Gi" }
+      requests: { cpu: "500m", memory: "1Gi" }
+  policiesDocumentIngestion: {enabled: false}
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: chat.eggai.localhost
+      paths: [{path: /, pathType: Prefix}]

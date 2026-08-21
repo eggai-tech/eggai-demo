@@ -194,6 +194,53 @@ make lint-fix
 make full-reset
 ```
 
+## Running on Kubernetes (kind)
+
+`make start` runs the stack with Docker Compose. For a closer approximation of a
+real deployment the same Helm chart can run in a local [kind](https://kind.sigs.k8s.io/) cluster.
+
+### 1. Start LM Studio on the host
+
+The cluster reaches LM Studio on your machine, so it must serve on all
+interfaces — bound to `127.0.0.1` it is unreachable from inside a pod.
+
+```bash
+lms server start --host 0.0.0.0 --port 1234
+lms get   # selectr a model to download, e.g.google/gemma-3-4b 
+lms load  # load a model interactively
+lms ps    # confirm it is loaded
+```
+
+Put the model id from that last command into `kind/values-kind.yaml`, keeping
+the `lm_studio/` prefix, for example: `LANGUAGE_MODEL: "lm_studio/google/gemma-3-4b"`
+```
+
+### 2. Bring up the cluster
+
+```bash
+make kind-up       # create the cluster + local image registry
+make kind-deploy   # build, push, and deploy the whole stack
+make kind-urls     # where to reach it
+```
+
+Open **http://chat.eggai.localhost** and start chatting.
+
+### 3. Everything else
+
+```bash
+make help          # all kind-* targets and component toggles
+```
+
+Each component is a toggle — setting one to `false` uninstalls it, so the
+cluster always matches the flags:
+
+```bash
+make kind-deploy KIND_PROMETHEUS=true KIND_TEMPO=true
+```
+
+Manifests and values files live in [`kind/`](kind/). Requires `kind`, `kubectl`,
+and `helm`.
+
 ## Documentation
 
 - [System Architecture](docs/system-architecture.md)

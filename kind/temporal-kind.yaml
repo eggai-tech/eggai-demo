@@ -1,0 +1,93 @@
+# temporal-kind.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: temporal-data
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate            # RWO volume; rolling update would deadlock on the mount
+  selector:
+    matchLabels: {app: temporal}
+  template:
+    metadata:
+      labels: {app: temporal}
+    spec:
+      securityContext:
+        fsGroup: 1000         # image runs as uid 1000; local-path dirs come up root-owned
+      containers:
+      - name: temporal
+        image: temporalio/temporal:1.4.1      # CLI image; entrypoint is `temporal`
+        args:
+          - server
+          - start-dev
+          - --ip=0.0.0.0
+          - --db-filename=/data/temporal.db
+          - --namespace=default
+          - --log-level=warn
+        ports:
+        - {name: grpc, containerPort: 7233}
+        - {name: ui,   containerPort: 8233}
+        volumeMounts:
+        - {name: data, mountPath: /data}
+        readinessProbe:
+          exec:
+            command: ["temporal","operator","cluster","health","--address","127.0.0.1:7233"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket: {port: 7233}
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        resources:
+          requests: {cpu: 50m, memory: 256Mi}
+          limits:   {memory: 1Gi}
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: temporal-data}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-frontend           # matches the SKE DNS name; only the namespace differs
+spec:
+  selector: {app: temporal}
+  ports:
+  - {name: grpc, port: 7233, targetPort: 7233}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ui
+spec:
+  selector: {app: temporal}
+  ports:
+  - {name: http, port: 8233, targetPort: 8233}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: temporal-ui
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: temporal.eggai.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: temporal-ui
+            port: {number: 8233}

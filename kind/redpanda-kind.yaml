@@ -1,0 +1,55 @@
+# redpanda-kind.yaml
+# helm repo add redpanda https://charts.redpanda.com
+
+statefulset:
+  replicas: 1
+  budget:
+    maxUnavailable: 1
+  additionalRedpandaCmdFlags:
+    # Local disk
+    - --unsafe-bypass-fsync=true
+    # Without this Redpanda busy-polls and pegs a core permanently.
+    - --overprovisioned
+
+resources:
+  cpu:
+    cores: 1
+  memory:
+    enable_memory_locking: false
+    container:
+      max: 2Gi
+
+storage:
+  persistentVolume:
+    enabled: true
+    size: 8Gi
+    storageClass: standard          # kind's rancher local-path
+
+tls:
+  enabled: false
+
+external:
+  enabled: false                    # in-cluster only; no NodePort listeners
+
+console:
+  enabled: true
+  ingress:
+    enabled: true
+    className: traefik
+    hosts:
+      - host: redpanda.eggai.localhost
+        paths:
+          - path: /
+            pathType: Prefix
+  resources:
+    requests: {cpu: 25m, memory: 128Mi}
+    limits:   {memory: 256Mi}
+
+# Broker metrics in kube-prometheus-stack.
+monitoring:
+  enabled: true
+
+tuning:
+  tune_aio_events: false
+
+
