@@ -14,11 +14,10 @@ tempo:
     otlp:
       protocols:
         grpc: {endpoint: 0.0.0.0:4317}
-        http: {endpoint: 0.0.0.0:4318}
   # Service graphs: derives agent→agent call topology from spans.
   metricsGenerator:
     enabled: true
-    remoteWriteUrl: "http://kube-prom-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+    remoteWriteUrl: "http://kube-prom-kube-prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write"
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits:   {memory: 1Gi}

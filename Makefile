@@ -11,7 +11,7 @@
         security-scan sast-scan deps-export type-check type-check-all \
         train-v3 train-v5 train-v6 train-v7 \
         kind-up kind-down kind-recreate kind-repos kind-infra \
-        kind-llm kind-app kind-build kind-redeploy kind-deploy \
+        kind-llm kind-app kind-build kind-redeploy kind-deploy kind-dashboards \
         kind-status kind-gateway kind-gateway-api kind-urls kind-clean kind-destroy
 
 # Default target
@@ -159,6 +159,9 @@ KIND_APP_NS        ?= eggai-demo
 KIND_OBS_NS        ?= observability
 KIND_REGISTRY_PORT ?= 5001
 KIND_REGISTRY      := localhost:$(KIND_REGISTRY_PORT)
+# Override when auto-detection finds the wrong host (e.g. macOS/Colima, where
+# host.docker.internal resolves to the Lima VM rather than the Mac).
+KIND_LLM_HOST_IP ?=
 
 KIND_TRAEFIK_VER     ?= 41.3.0
 KIND_KUBEPROM_VER    ?= 68.3.0
@@ -176,8 +179,8 @@ KIND_TRAEFIK    ?= true
 KIND_REDPANDA   ?= true
 KIND_APP        ?= true
 KIND_OTEL       ?= true
-KIND_PROMETHEUS ?= false
-KIND_TEMPO      ?= false
+KIND_PROMETHEUS ?= true
+KIND_TEMPO      ?= true
 KIND_TEMPORAL   ?= false
 
 # $(call kind_helm,release,toggle,chart,namespace,values-file,extra-flags)
@@ -224,6 +227,7 @@ kind-repos: ## Add/update the Helm repos the local stack pulls from
 # before any later chart renders one, or the release fails on an unknown kind.
 kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,kube-prom,$(KIND_PROMETHEUS),prometheus-community/kube-prometheus-stack,$(KIND_OBS_NS),kube-prom-kind.yaml,--version $(KIND_KUBEPROM_VER) --wait --timeout 10m)
+	@[ "$(KIND_PROMETHEUS)" != "true" ] || $(MAKE) --no-print-directory kind-dashboards
 	@$(MAKE) --no-print-directory kind-gateway-api
 	$(call kind_helm,traefik,$(KIND_TRAEFIK),traefik/traefik,traefik,traefik-kind.yaml,--version $(KIND_TRAEFIK_VER))
 	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
@@ -250,26 +254,35 @@ KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set image.tag=$(KIND_IMAGE_TAG) \
                  --set image.pullPolicy=Always \
                  --set monitoring.enabled=$(KIND_PROMETHEUS) \
+                 --wait --timeout 5m \
                  $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318)
 
 kind-app: kind-build kind-gateway ## Build, push and deploy the app -- the inner loop
 	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
+	@$(MAKE) --no-print-directory kind-urls
 
 kind-redeploy: kind-gateway ## Redeploy the app chart without rebuilding
 	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
+	@$(MAKE) --no-print-directory kind-urls
 
-kind-gateway: ## Deploy the HTTPRoute (Gateway comes from the Traefik chart)
+kind-gateway: ## Deploy the HTTPRoutes (Gateway comes from the Traefik chart)
 	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
 		echo "==> httproute"; \
 		kubectl apply -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml; \
+		[ "$(KIND_PROMETHEUS)" != "true" ] || \
+			kubectl apply -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml; \
 	else \
 		kubectl delete -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
+		kubectl delete -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
 	fi
 
 kind-llm: ## Point the cluster at LM Studio on the host
 	@kubectl create ns $(KIND_APP_NS) --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-	@IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c \
-		"getent hosts host.docker.internal 2>/dev/null | awk '{print \$$1}' | head -1"); \
+	@IP="$(KIND_LLM_HOST_IP)"; \
+	if [ -z "$$IP" ]; then \
+		IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c \
+			"getent hosts host.docker.internal 2>/dev/null | awk '{print \$$1}' | head -1"); \
+	fi; \
 	if [ -z "$$IP" ]; then \
 		IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c "ip route | awk '/default/{print \$$3}'"); \
 	fi; \
@@ -286,6 +299,12 @@ kind-build: ## Build the image and push it to the local registry
 	@echo "==> building $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)"
 	@docker build -t $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG) .
 	@docker push $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)
+
+kind-dashboards: ## Load the repo's Grafana dashboard into the cluster
+	@kubectl create configmap grafana-dash-eggai -n $(KIND_OBS_NS) \
+		--from-file=dockerConfig/grafana-dashboard.json --dry-run=client -o yaml \
+		| kubectl label --local -f - grafana_dashboard=1 -o yaml \
+		| kubectl apply -f -
 
 kind-status: ## Show pods, restart counts and OOMKills across all namespaces
 	@kubectl get pods -A -o custom-columns=\
@@ -353,6 +372,11 @@ help: ## Show this help message
 	@echo "  make kind-deploy  # Build, push and deploy the stack"
 	@echo "  make kind-urls    # Where to reach it"
 	@echo ""
-	@echo "Toggles: KIND_PROMETHEUS KIND_TEMPO KIND_OTEL KIND_TEMPORAL"
-	@echo "  make kind-deploy KIND_PROMETHEUS=true KIND_TEMPO=true KIND_OTEL=true"
+	@echo "kind toggles (true/false):"
+	@echo "  KIND_TRAEFIK KIND_REDPANDA KIND_OTEL KIND_PROMETHEUS KIND_TEMPO KIND_APP  (default true)"
+	@echo "  KIND_TEMPORAL                                                             (default false)"
+	@echo "  KIND_LLM_HOST_IP=<ip>   LM Studio host override (macOS/Colima)"
 	@echo ""
+	@echo "  make kind-deploy KIND_PROMETHEUS=false KIND_TEMPO=false"
+	@echo ""
+

@@ -205,25 +205,38 @@ The cluster reaches LM Studio on your machine, so it must serve on all
 interfaces — bound to `127.0.0.1` it is unreachable from inside a pod.
 
 ```bash
-lms server start --host 0.0.0.0 --port 1234
-lms get   # selectr a model to download, e.g.google/gemma-3-4b 
+lms server start --bind 0.0.0.0 --port 1234
+lms get   # select a model to download, e.g. google/gemma-3-4b
 lms load  # load a model interactively
 lms ps    # confirm it is loaded
 ```
 
 Put the model id from that last command into `kind/values-kind.yaml`, keeping
 the `lm_studio/` prefix, for example: `LANGUAGE_MODEL: "lm_studio/google/gemma-3-4b"`
-```
+
+On macOS you will be prompted to allow incoming connections the first time —
+accept it, or the cluster cannot reach the server.
 
 ### 2. Bring up the cluster
 
 ```bash
 make kind-up       # create the cluster + local image registry
 make kind-deploy   # build, push, and deploy the whole stack
-make kind-urls     # where to reach it
+make kind-down     # delete the kind cluster (registry survives, keeping its layer cache)
 ```
 
 Open **http://chat.eggai.localhost** and start chatting.
+
+> **macOS (Docker Desktop or Colima):** LM Studio host auto-detection resolves
+> to the VM rather than your Mac, so pass the address explicitly:
+>
+> ```bash
+> make kind-deploy KIND_LLM_HOST_IP=$(ipconfig getifaddr en0)
+> ```
+>
+> On Colima, give the VM headroom before `make kind-up`
+> (`colima start --cpu 6 --memory 12 --disk 100`) and run the lighter stack:
+> `make kind-deploy KIND_PROMETHEUS=false KIND_TEMPO=false`.
 
 ### 3. Everything else
 

@@ -11,6 +11,12 @@ statefulset:
     # Without this Redpanda busy-polls and pegs a core permanently.
     - --overprovisioned
 
+config:
+  cluster:
+    default_topic_replications: 1
+    default_topic_partitions: 6
+    auto_create_topics_enabled: true
+
 resources:
   cpu:
     cores: 1

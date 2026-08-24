@@ -5,6 +5,26 @@ image:
 resources:
   requests: {cpu: 50m, memory: 128Mi}
   limits:   {memory: 512Mi}
+
+ports:
+  otlp:
+    enabled: true
+  otlp-http:
+    enabled: true
+  metrics:
+    enabled: true
+    containerPort: 8888
+    servicePort: 8888
+    protocol: TCP
+  jaeger-compact:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  zipkin:
+    enabled: false
+
 config:
   receivers:
     otlp:
@@ -17,17 +37,13 @@ config:
     batch:
       timeout: 5s
   exporters:
-    prometheus:
-      endpoint: 0.0.0.0:8889
-    debug:
-      verbosity: basic
+    otlp:
+      endpoint: tempo.observability.svc.cluster.local:4317
+      tls:
+        insecure: true
   service:
     pipelines:
       traces:
         receivers: [otlp]
         processors: [batch]
-        exporters: [debug]
-      metrics:
-        receivers: [otlp]
-        processors: [batch]
-        exporters: [prometheus]
+        exporters: [otlp]

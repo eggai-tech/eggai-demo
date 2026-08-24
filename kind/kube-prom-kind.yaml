@@ -19,12 +19,10 @@ grafana:
     ingressClassName: traefik
     hosts: ["grafana.eggai.localhost"]
   additionalDataSources:
-  - name: otel-collector
-    type: prometheus
-    url: http://otel-collector.observability.svc.cluster.local:8889
   - name: Tempo
     type: tempo
     uid: tempo
-    url: http://tempo.observability.svc.cluster.local:3200
+    url: http://tempo.observability.svc.cluster.local:3100
     jsonData:
+      timeout: 120
       serviceMap: { datasourceUid: prometheus }
