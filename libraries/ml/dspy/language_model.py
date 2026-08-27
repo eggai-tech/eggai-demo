@@ -24,18 +24,6 @@ class TrackingLM(dspy.LM):
         self.run_logs = []
         self.model_name = model_name
 
-    @property
-    def supported_params(self) -> set[str]:
-        # Never advertise response_format. With it, JSONAdapter sends a strict
-        # json_schema structured-output request, which vLLM/LM Studio backends may
-        # answer with empty content ("The LM returned an empty or null response").
-        # Without it, JSONAdapter asks for JSON in the prompt and parses it.
-        return super().supported_params - {"response_format"}
-
-    @property
-    def supports_response_schema(self) -> bool:
-        return False
-
     def __call__(self, *args, **kwargs):
         self.start_run()
         start_time = perf_counter()
