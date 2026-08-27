@@ -6,6 +6,7 @@ import dspy
 import pytest
 
 from libraries.ml.dspy import (
+    LenientChatAdapter,
     TrackingLM,
     dspy_set_language_model,
 )
@@ -91,7 +92,9 @@ class TestTrackingLM:
     @patch("dspy.settings")
     @patch("dspy.configure")
     @patch("libraries.ml.dspy.language_model.load_dotenv")
-    def test_dspy_set_language_model_basic(self, mock_load_dotenv, mock_configure, mock_dspy_settings):
+    def test_dspy_set_language_model_basic(
+        self, mock_load_dotenv, mock_configure, mock_dspy_settings
+    ):
         """Test basic language model setup."""
         # Create mock settings
         mock_settings = Mock()
@@ -109,21 +112,21 @@ class TestTrackingLM:
 
             # Verify
             mock_load_dotenv.assert_called_once()
-            mock_tracking_lm.assert_called_once_with(
-                "openai/gpt-4",
-                cache=True,
-                api_base=None
-            )
+            mock_tracking_lm.assert_called_once_with("openai/gpt-4", cache=True, api_base=None)
             mock_configure.assert_called_once()
             assert mock_configure.call_args.kwargs["lm"] is mock_lm_instance
-            assert isinstance(mock_configure.call_args.kwargs["adapter"], dspy.JSONAdapter)
+            adapter = mock_configure.call_args.kwargs["adapter"]
+            assert isinstance(adapter, LenientChatAdapter)
+            assert adapter.use_json_adapter_fallback is False
             mock_dspy_settings.configure.assert_called_once_with(track_usage=True)
             assert result is mock_lm_instance
 
     @patch("dspy.settings")
     @patch("dspy.configure")
     @patch("libraries.ml.dspy.language_model.TrackingLM")
-    def test_dspy_set_language_model_with_cache_control(self, mock_tracking_lm, mock_configure, mock_dspy_settings):
+    def test_dspy_set_language_model_with_cache_control(
+        self, mock_tracking_lm, mock_configure, mock_dspy_settings
+    ):
         """Test language model setup with cache control."""
         mock_settings = Mock()
         mock_settings.language_model = "anthropic/claude-3"
@@ -148,7 +151,9 @@ class TestTrackingLM:
     @patch("dspy.settings")
     @patch("dspy.configure")
     @patch("libraries.ml.dspy.language_model.TrackingLM")
-    def test_dspy_set_language_model_with_api_base(self, mock_tracking_lm, mock_configure, mock_dspy_settings):
+    def test_dspy_set_language_model_with_api_base(
+        self, mock_tracking_lm, mock_configure, mock_dspy_settings
+    ):
         """Test language model setup with custom API base."""
         mock_settings = Mock()
         mock_settings.language_model = "lm_studio/model"
@@ -161,15 +166,15 @@ class TestTrackingLM:
         dspy_set_language_model(mock_settings)
 
         mock_tracking_lm.assert_called_once_with(
-            "lm_studio/model",
-            cache=False,
-            api_base="http://localhost:1234/v1"
+            "lm_studio/model", cache=False, api_base="http://localhost:1234/v1"
         )
 
     @patch("dspy.settings")
     @patch("dspy.configure")
     @patch("libraries.ml.dspy.language_model.TrackingLM")
-    def test_dspy_set_language_model_with_max_context(self, mock_tracking_lm, mock_configure, mock_dspy_settings):
+    def test_dspy_set_language_model_with_max_context(
+        self, mock_tracking_lm, mock_configure, mock_dspy_settings
+    ):
         """Test language model setup with max context window."""
         mock_settings = Mock()
         mock_settings.language_model = "openai/gpt-4"
@@ -205,7 +210,9 @@ class TestTrackingLM:
     @patch("dspy.configure")
     @patch("libraries.observability.logger.get_console_logger")
     @patch("libraries.ml.dspy.language_model.TrackingLM")
-    def test_dspy_set_language_model_logging(self, mock_tracking_lm, mock_get_logger, mock_configure, mock_dspy_settings):
+    def test_dspy_set_language_model_logging(
+        self, mock_tracking_lm, mock_get_logger, mock_configure, mock_dspy_settings
+    ):
         """Test logging in language model setup."""
         mock_settings = Mock()
         mock_settings.language_model = "openai/gpt-4"
@@ -242,11 +249,7 @@ class TestDspySetLanguageModelExtras:
 
             # Mock forward result
             mock_result = Mock()
-            mock_result.usage = {
-                "completion_tokens": 50,
-                "prompt_tokens": 100,
-                "total_tokens": 150
-            }
+            mock_result.usage = {"completion_tokens": 50, "prompt_tokens": 100, "total_tokens": 150}
             mock_forward.return_value = mock_result
 
             # Call forward
@@ -275,3 +278,137 @@ class TestDspySetLanguageModelExtras:
             # Verify latency tracking
             assert lm.latency_ms == 500.0
             assert result == "result"
+
+
+class TestLenientChatAdapter:
+    """Test the lenient ChatAdapter used for local models."""
+
+    def test_parses_headers_glued_on_one_line(self):
+        from enum import StrEnum
+
+        class TargetAgent(StrEnum):
+            PolicyAgent = "PolicyAgent"
+            ClaimsAgent = "ClaimsAgent"
+
+        signature = dspy.Signature("chat_history -> target_agent: TargetAgent")
+        signature = signature.with_updated_fields("target_agent", annotation=TargetAgent)
+        adapter = LenientChatAdapter()
+
+        result = adapter.parse(
+            signature, "[[ ## target_agent ## ]]PolicyAgent[[ ## completed ## ]]"
+        )
+
+        assert result == {"target_agent": TargetAgent.PolicyAgent}
+
+    def test_parses_well_formed_output(self):
+        signature = dspy.Signature("chat_history -> response")
+        adapter = LenientChatAdapter()
+
+        result = adapter.parse(
+            signature, "[[ ## response ## ]]\nHello there!\n\n[[ ## completed ## ]]\n"
+        )
+
+        assert result == {"response": "Hello there!"}
+
+    def test_empty_dict_field_parses_as_empty_dict(self):
+
+        signature = dspy.Signature(
+            "chat_history -> next_thought: str, next_tool_name: str, next_tool_args: dict[str, Any]"
+        )
+        adapter = LenientChatAdapter()
+
+        result = adapter.parse(
+            signature,
+            "[[ ## next_thought ## ]]\n\nDone.\n\n[[ ## next_tool_name ## ]]\n\nfinish\n\n"
+            "[[ ## next_tool_args ## ]]\n\n\n\n[[ ## completed ## ]]\n",
+        )
+
+        assert result == {"next_thought": "Done.", "next_tool_name": "finish", "next_tool_args": {}}
+
+    def test_non_empty_dict_field_is_untouched(self):
+
+        signature = dspy.Signature("chat_history -> next_tool_args: dict[str, Any]")
+        adapter = LenientChatAdapter()
+
+        result = adapter.parse(
+            signature,
+            '[[ ## next_tool_args ## ]]\n{"policy_number": "A123"}\n[[ ## completed ## ]]',
+        )
+
+        assert result == {"next_tool_args": {"policy_number": "A123"}}
+
+    def test_think_block_is_ignored(self):
+        signature = dspy.Signature("chat_history -> response")
+        adapter = LenientChatAdapter()
+
+        result = adapter.parse(
+            signature,
+            "<think>\nThe user says hi. I should put the answer under [[ ## response ## ]].\n</think>\n"
+            "[[ ## response ## ]]\nHello!\n[[ ## completed ## ]]",
+        )
+
+        assert result == {"response": "Hello!"}
+
+    def test_format_appends_no_tool_call_instruction_to_system_prompt(self):
+        from libraries.ml.dspy.language_model import NO_TOOL_CALL_INSTRUCTION
+
+        signature = dspy.Signature("chat_history -> response")
+        messages = LenientChatAdapter().format(signature, demos=[], inputs={"chat_history": "hi"})
+
+        assert messages[0]["role"] == "system"
+        assert messages[0]["content"].endswith(NO_TOOL_CALL_INSTRUCTION)
+        assert NO_TOOL_CALL_INSTRUCTION not in messages[-1]["content"]
+
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            "ChattyAgent",
+            '"ChattyAgent"',
+            "'ChattyAgent'",
+            "TargetAgent('ChattyAgent')",
+            'TargetAgent("ChattyAgent")',
+            "TargetAgent.ChattyAgent",
+            "'TargetAgent.ChattyAgent'",
+            "ChattyAgent(policy_number=None)",
+            "The answer is ChattyAgent.",
+        ],
+    )
+    def test_enum_field_decorations_are_stripped(self, raw):
+        from enum import StrEnum
+
+        class TargetAgent(StrEnum):
+            PolicyAgent = "PolicyAgent"
+            ChattyAgent = "ChattyAgent"
+
+        signature = dspy.Signature("chat_history -> target_agent: TargetAgent")
+        signature = signature.with_updated_fields("target_agent", annotation=TargetAgent)
+
+        result = LenientChatAdapter().parse(
+            signature, f"[[ ## target_agent ## ]]\n\n{raw}\n\n[[ ## completed ## ]]\n"
+        )
+
+        assert result == {"target_agent": TargetAgent.ChattyAgent}
+
+    def test_enum_field_without_any_member_is_left_for_dspy_to_reject(self):
+        from enum import StrEnum
+
+        class TargetAgent(StrEnum):
+            PolicyAgent = "PolicyAgent"
+            ChattyAgent = "ChattyAgent"
+
+        signature = dspy.Signature("chat_history -> target_agent: TargetAgent")
+        signature = signature.with_updated_fields("target_agent", annotation=TargetAgent)
+
+        with pytest.raises(dspy.utils.exceptions.AdapterParseError):
+            LenientChatAdapter().parse(
+                signature, "[[ ## target_agent ## ]]\nSomethingElse\n[[ ## completed ## ]]"
+            )
+
+    def test_fallback_disabled_by_default(self):
+        assert LenientChatAdapter().use_json_adapter_fallback is False
+
+    def test_class_name_is_accepted_by_stream_listener(self):
+        # dspy.streaming.StreamListener dispatches on the adapter class name.
+        assert LenientChatAdapter.__name__ == "ChatAdapter"
+        listener = dspy.streaming.StreamListener(signature_field_name="response")
+        assert LenientChatAdapter.__name__ in listener.adapter_identifiers
