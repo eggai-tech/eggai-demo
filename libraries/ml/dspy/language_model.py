@@ -123,7 +123,10 @@ def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = Non
     logger.info(f"Max context window: {language_model.max_context_window}")
     logger.info(f"LM Studio model: {language_model.is_lm_studio}")
 
-    dspy.configure(lm=language_model)
+    # Pin JSONAdapter. The default ChatAdapter falls back to a full, non-streamed
+    # JSONAdapter regeneration whenever it fails to parse the streamed output,
+    # which shows up as a ~20s dead gap after the token stream is exhausted.
+    dspy.configure(lm=language_model, adapter=dspy.JSONAdapter())
     dspy.settings.configure(track_usage=True)
 
     return language_model
