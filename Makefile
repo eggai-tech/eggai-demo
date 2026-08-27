@@ -159,6 +159,9 @@ KIND_APP_NS        ?= eggai-demo
 KIND_OBS_NS        ?= observability
 KIND_REGISTRY_PORT ?= 5001
 KIND_REGISTRY      := localhost:$(KIND_REGISTRY_PORT)
+# Always target the kind cluster explicitly, never the current kubeconfig context
+KUBECTL            := kubectl --context kind-$(KIND_CLUSTER)
+HELM               := helm --kube-context kind-$(KIND_CLUSTER)
 # Override when auto-detection finds the wrong host (e.g. macOS/Colima, where
 # host.docker.internal resolves to the Lima VM rather than the Mac).
 KIND_LLM_HOST_IP ?=
@@ -187,11 +190,11 @@ KIND_TEMPORAL   ?= false
 define kind_helm
 @if [ "$(2)" = "true" ]; then \
 	echo "==> $(1)"; \
-	helm upgrade --install $(1) $(3) -n $(4) --create-namespace \
+	$(HELM) upgrade --install $(1) $(3) -n $(4) --create-namespace \
 		-f $(KIND_DIR)/$(5) $(6); \
 else \
 	echo "--- $(1) (disabled)"; \
-	helm uninstall $(1) -n $(4) >/dev/null 2>&1 || true; \
+	$(HELM) uninstall $(1) -n $(4) >/dev/null 2>&1 || true; \
 fi
 endef
 
@@ -232,10 +235,10 @@ kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,traefik,$(KIND_TRAEFIK),traefik/traefik,traefik,traefik-kind.yaml,--version $(KIND_TRAEFIK_VER))
 	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
 		echo "==> gateway"; \
-		kubectl apply -f $(KIND_DIR)/gateway-kind.yaml; \
+		$(KUBECTL) apply -f $(KIND_DIR)/gateway-kind.yaml; \
 	else \
 		echo "--- gateway (disabled)"; \
-		kubectl delete -f $(KIND_DIR)/gateway-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
+		$(KUBECTL) delete -f $(KIND_DIR)/gateway-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
 	fi
 	$(call kind_helm,tempo,$(KIND_TEMPO),grafana/tempo,$(KIND_OBS_NS),tempo-kind.yaml,--version $(KIND_TEMPO_VER) --set serviceMonitor.enabled=$(KIND_PROMETHEUS))
 	$(call kind_helm,otel-collector,$(KIND_OTEL),open-telemetry/opentelemetry-collector,$(KIND_OBS_NS),otel-collector-kind.yaml,--version $(KIND_OTEL_VER) --set serviceMonitor.enabled=$(KIND_PROMETHEUS))
@@ -243,11 +246,11 @@ kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	@$(MAKE) --no-print-directory kind-llm
 	@if [ "$(KIND_TEMPORAL)" = "true" ]; then \
 		echo "==> temporal"; \
-		kubectl create ns $(KIND_APP_NS) --dry-run=client -o yaml | kubectl apply -f - >/dev/null; \
-		kubectl apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml; \
+		$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null; \
+		$(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml; \
 	else \
 		echo "--- temporal (disabled)"; \
-		kubectl delete -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
+		$(KUBECTL) delete -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
 	fi
 
 KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
@@ -268,16 +271,16 @@ kind-redeploy: kind-gateway ## Redeploy the app chart without rebuilding
 kind-gateway: ## Deploy the HTTPRoutes (Gateway comes from the Traefik chart)
 	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
 		echo "==> httproute"; \
-		kubectl apply -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml; \
+		$(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml; \
 		[ "$(KIND_PROMETHEUS)" != "true" ] || \
-			kubectl apply -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml; \
+			$(KUBECTL) apply -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml; \
 	else \
-		kubectl delete -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-		kubectl delete -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
+		$(KUBECTL) delete -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
+		$(KUBECTL) delete -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
 	fi
 
 kind-llm: ## Point the cluster at LM Studio on the host
-	@kubectl create ns $(KIND_APP_NS) --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+	@$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
 	@IP="$(KIND_LLM_HOST_IP)"; \
 	if [ -z "$$IP" ]; then \
 		IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c \
@@ -287,11 +290,11 @@ kind-llm: ## Point the cluster at LM Studio on the host
 		IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c "ip route | awk '/default/{print \$$3}'"); \
 	fi; \
 	echo "==> llm -> host LM Studio at $$IP:1234"; \
-	sed "s|__HOST_IP__|$$IP|" $(KIND_DIR)/llm-host-kind.yaml | kubectl apply -n $(KIND_APP_NS) -f -
+	sed "s|__HOST_IP__|$$IP|" $(KIND_DIR)/llm-host-kind.yaml | $(KUBECTL) apply -n $(KIND_APP_NS) -f -
 
 kind-gateway-api: ## Install Gateway API CRDs (chart will stop shipping them)
 	@echo "==> gateway-api $(KIND_GATEWAY_API_VER)"
-	@kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/$(KIND_GATEWAY_API_VER)/standard-install.yaml >/dev/null
+	@$(KUBECTL) apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/$(KIND_GATEWAY_API_VER)/standard-install.yaml >/dev/null
 
 kind-deploy: kind-infra kind-app ## Deploy the whole enabled stack
 
@@ -301,13 +304,13 @@ kind-build: ## Build the image and push it to the local registry
 	@docker push $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)
 
 kind-dashboards: ## Load the repo's Grafana dashboard into the cluster
-	@kubectl create configmap grafana-dash-eggai -n $(KIND_OBS_NS) \
+	@$(KUBECTL) create configmap grafana-dash-eggai -n $(KIND_OBS_NS) \
 		--from-file=dockerConfig/grafana-dashboard.json --dry-run=client -o yaml \
-		| kubectl label --local -f - grafana_dashboard=1 -o yaml \
-		| kubectl apply -f -
+		| $(KUBECTL) label --local -f - grafana_dashboard=1 -o yaml \
+		| $(KUBECTL) apply -f -
 
 kind-status: ## Show pods, restart counts and OOMKills across all namespaces
-	@kubectl get pods -A -o custom-columns=\
+	@$(KUBECTL) get pods -A -o custom-columns=\
 NS:.metadata.namespace,NAME:.metadata.name,READY:.status.containerStatuses[0].ready,\
 RESTARTS:.status.containerStatuses[0].restartCount,\
 LAST:.status.containerStatuses[0].lastState.terminated.reason
