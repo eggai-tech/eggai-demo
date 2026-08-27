@@ -2,6 +2,7 @@
 
 from unittest.mock import Mock, patch
 
+import dspy
 import pytest
 
 from libraries.ml.dspy import (
@@ -113,7 +114,9 @@ class TestTrackingLM:
                 cache=True,
                 api_base=None
             )
-            mock_configure.assert_called_once_with(lm=mock_lm_instance)
+            mock_configure.assert_called_once()
+            assert mock_configure.call_args.kwargs["lm"] is mock_lm_instance
+            assert isinstance(mock_configure.call_args.kwargs["adapter"], dspy.JSONAdapter)
             mock_dspy_settings.configure.assert_called_once_with(track_usage=True)
             assert result is mock_lm_instance
 
