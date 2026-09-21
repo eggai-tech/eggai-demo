@@ -29,6 +29,7 @@ dependencies = [
 
     # Async & networking
     "httpx>=0.28.1",
+    "pyjwt[crypto]>=2.10.0",
     "websockets>=14.1",
     "requests>=2.32.2",
     "aiofiles>=24.1.0",
