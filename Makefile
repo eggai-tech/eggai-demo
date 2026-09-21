@@ -337,7 +337,7 @@ kind-clean: ## Uninstall everything but keep the cluster
 	@$(HELM) uninstall otel-collector tempo kube-prom -n $(KIND_OBS_NS) 2>/dev/null || true
 	@$(HELM) uninstall traefik -n traefik 2>/dev/null || true
 	@$(KUBECTL) delete -f $(KIND_DIR)/gateway-kind.yaml --ignore-not-found >/dev/null 2>&1 || true
-	@$(KUBECTL) delete ns $(KIND_APP_NS) $(KIND_OBS_NS) traefik --ignore-not-found --wait=false
+	@$(KUBECTL) delete ns $(KIND_APP_NS) $(KIND_OBS_NS) traefik --ignore-not-found
 	@echo "Releases and namespaces removed. Cluster $(KIND_CLUSTER) is still running."
 
 kind-destroy: ## Delete the cluster, registry, its volume, and local build images
