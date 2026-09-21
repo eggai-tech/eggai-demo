@@ -156,7 +156,8 @@ KIND_DIR           := kind
 KIND_CLUSTER       ?= eggai
 KIND_NODE_IMAGE    ?= kindest/node:v1.31.2
 KIND_APP_NS        ?= eggai-demo
-KIND_OBS_NS        ?= observability
+# Fixed: kube-prom, tempo and otel-collector values reference this namespace by name.
+KIND_OBS_NS        := observability
 KIND_REGISTRY_PORT ?= 5001
 KIND_REGISTRY      := localhost:$(KIND_REGISTRY_PORT)
 # Always target the kind cluster explicitly, never the current kubeconfig context
@@ -173,11 +174,12 @@ KIND_GATEWAY_API_VER ?= v1.5.1
 KIND_TEMPO_VER       ?= 1.18.2
 KIND_OTEL_VER        ?= 0.108.0
 
-KIND_GIT_SHA    := $(shell git rev-parse --short HEAD)
-KIND_IMAGE_REPO ?= $(KIND_REGISTRY)/eggai-demo
-KIND_IMAGE_TAG  ?= dev-$(KIND_GIT_SHA)
+KIND_IMAGE_REPO     ?= $(KIND_REGISTRY)/eggai-demo
+# Written by kind-build: dev-<image id>, so the tag changes exactly when the image does.
+KIND_IMAGE_TAG_FILE := $(KIND_DIR)/.image-tag
+KIND_IMAGE_TAG      ?= $(shell cat $(KIND_IMAGE_TAG_FILE) 2>/dev/null)
 
-# Component toggles -- lean by default; opt into observability when needed.
+# Component toggles. Everything but Temporal is on by default; set a toggle to false to leave it out.
 KIND_TRAEFIK    ?= true
 KIND_REDPANDA   ?= true
 KIND_APP        ?= true
@@ -195,6 +197,16 @@ define kind_helm
 else \
 	echo "--- $(1) (disabled)"; \
 	$(HELM) uninstall $(1) -n $(4) >/dev/null 2>&1 || true; \
+fi
+endef
+
+# $(call kind_manifest,toggle,namespace,file) -- apply when the toggle is true, delete otherwise
+define kind_manifest
+@if [ "$(1)" = "true" ]; then \
+	echo "==> $(3)"; \
+	$(KUBECTL) apply -n $(2) -f $(KIND_DIR)/$(3); \
+else \
+	$(KUBECTL) delete -n $(2) -f $(KIND_DIR)/$(3) --ignore-not-found >/dev/null 2>&1 || true; \
 fi
 endef
 
@@ -230,7 +242,8 @@ kind-repos: ## Add/update the Helm repos the local stack pulls from
 # before any later chart renders one, or the release fails on an unknown kind.
 kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,kube-prom,$(KIND_PROMETHEUS),prometheus-community/kube-prometheus-stack,$(KIND_OBS_NS),kube-prom-kind.yaml,--version $(KIND_KUBEPROM_VER) --wait --timeout 10m)
-	@[ "$(KIND_PROMETHEUS)" != "true" ] || $(MAKE) --no-print-directory kind-dashboards
+	@if [ "$(KIND_PROMETHEUS)" = "true" ]; then $(MAKE) --no-print-directory kind-dashboards; \
+	else $(KUBECTL) delete configmap grafana-dash-eggai -n $(KIND_OBS_NS) --ignore-not-found >/dev/null 2>&1 || true; fi
 	@$(MAKE) --no-print-directory kind-gateway-api
 	$(call kind_helm,traefik,$(KIND_TRAEFIK),traefik/traefik,traefik,traefik-kind.yaml,--version $(KIND_TRAEFIK_VER))
 	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
@@ -244,44 +257,32 @@ kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,otel-collector,$(KIND_OTEL),open-telemetry/opentelemetry-collector,$(KIND_OBS_NS),otel-collector-kind.yaml,--version $(KIND_OTEL_VER) --set serviceMonitor.enabled=$(KIND_PROMETHEUS))
 	$(call kind_helm,redpanda,$(KIND_REDPANDA),redpanda/redpanda,$(KIND_APP_NS),redpanda-kind.yaml,--version $(KIND_REDPANDA_VER) --set monitoring.enabled=$(KIND_PROMETHEUS))
 	@$(MAKE) --no-print-directory kind-llm
-	@if [ "$(KIND_TEMPORAL)" = "true" ]; then \
-		echo "==> temporal"; \
-		$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null; \
-		$(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml; \
-	else \
-		echo "--- temporal (disabled)"; \
-		$(KUBECTL) delete -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-	fi
+	@[ "$(KIND_TEMPORAL)" != "true" ] || $(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-pvc-kind.yaml
+	$(call kind_manifest,$(KIND_TEMPORAL),$(KIND_APP_NS),temporal-kind.yaml)
 
 KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set image.tag=$(KIND_IMAGE_TAG) \
                  --set image.pullPolicy=Always \
                  --set monitoring.enabled=$(KIND_PROMETHEUS) \
                  --wait --timeout 5m \
-                 $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318) \
+                 $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318,--set-string globalEnv.TRACING_ENABLED=false) \
                  --set platformLinks.Traefik=http://traefik.eggai.localhost \
                  $(if $(filter true,$(KIND_PROMETHEUS)),--set platformLinks.Grafana=http://grafana.eggai.localhost) \
                  $(if $(filter true,$(KIND_REDPANDA)),--set platformLinks.Redpanda=http://redpanda.eggai.localhost) \
                  $(if $(filter true,$(KIND_TEMPORAL)),--set platformLinks.Temporal=http://temporal.eggai.localhost)
 
-kind-app: kind-build kind-gateway ## Build, push and deploy the app -- the inner loop
+kind-app: kind-build ## Build, push and deploy the app -- the inner loop
+	@$(MAKE) --no-print-directory kind-redeploy
+
+kind-redeploy: kind-gateway ## Deploy the app chart with the last built image
+	@test -n "$(KIND_IMAGE_TAG)" || { echo "no image built yet, run: make kind-build"; exit 1; }
 	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
 	@$(MAKE) --no-print-directory kind-urls
 
-kind-redeploy: kind-gateway ## Redeploy the app chart without rebuilding
-	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
-	@$(MAKE) --no-print-directory kind-urls
-
-kind-gateway: ## Deploy the HTTPRoutes (Gateway comes from the Traefik chart)
-	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
-		echo "==> httproute"; \
-		$(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml; \
-		[ "$(KIND_PROMETHEUS)" != "true" ] || \
-			$(KUBECTL) apply -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml; \
-	else \
-		$(KUBECTL) delete -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-		$(KUBECTL) delete -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-	fi
+kind-gateway: ## Apply the routes of enabled components, remove the others
+	$(call kind_manifest,$(KIND_TRAEFIK),$(KIND_APP_NS),httproute-kind.yaml)
+	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_REDPANDA))),$(KIND_APP_NS),httproute-redpanda-kind.yaml)
+	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_PROMETHEUS))),$(KIND_OBS_NS),httproute-obs-kind.yaml)
 
 kind-llm: ## Point the cluster at LM Studio on the host
 	@$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
@@ -302,10 +303,13 @@ kind-gateway-api: ## Install Gateway API CRDs (chart will stop shipping them)
 
 kind-deploy: kind-infra kind-app ## Deploy the whole enabled stack
 
-kind-build: ## Build the image and push it to the local registry
-	@echo "==> building $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)"
-	@docker build -t $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG) .
-	@docker push $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)
+kind-build: ## Build the image, tag it by content and push it to the local registry
+	@docker build -t $(KIND_IMAGE_REPO):build .
+	@tag=dev-$$(docker image inspect -f '{{.Id}}' $(KIND_IMAGE_REPO):build | cut -c8-19); \
+	docker tag $(KIND_IMAGE_REPO):build $(KIND_IMAGE_REPO):$$tag; \
+	docker push -q $(KIND_IMAGE_REPO):$$tag; \
+	echo $$tag > $(KIND_IMAGE_TAG_FILE); \
+	echo "==> built $(KIND_IMAGE_REPO):$$tag"
 
 kind-dashboards: ## Load the repo's Grafana dashboard into the cluster
 	@$(KUBECTL) create configmap grafana-dash-eggai -n $(KIND_OBS_NS) \
@@ -327,9 +331,13 @@ kind-urls: ## Print the local ingress hostnames for enabled components
 	@[ "$(KIND_TEMPORAL)"   = "true" ] && echo "  temporal   http://temporal.eggai.localhost" || true
 
 kind-clean: ## Uninstall everything but keep the cluster
-	@$(MAKE) kind-infra kind-redeploy kind-gateway KIND_TRAEFIK=false \
-		KIND_PROMETHEUS=false KIND_TEMPO=false KIND_OTEL=false \
-		KIND_REDPANDA=false KIND_TEMPORAL=false KIND_APP=false
+	@$(HELM) uninstall eggai -n $(KIND_APP_NS) 2>/dev/null || true
+	@$(HELM) uninstall redpanda -n $(KIND_APP_NS) 2>/dev/null || true
+	@$(HELM) uninstall otel-collector tempo kube-prom -n $(KIND_OBS_NS) 2>/dev/null || true
+	@$(HELM) uninstall traefik -n traefik 2>/dev/null || true
+	@$(KUBECTL) delete -f $(KIND_DIR)/gateway-kind.yaml --ignore-not-found >/dev/null 2>&1 || true
+	@$(KUBECTL) delete ns $(KIND_APP_NS) $(KIND_OBS_NS) traefik --ignore-not-found --timeout=300s
+	@echo "Releases and namespaces removed. Cluster $(KIND_CLUSTER) is still running."
 
 kind-destroy: ## Delete the cluster, registry, its volume, and local build images
 	@kind delete cluster --name $(KIND_CLUSTER) 2>/dev/null || true
@@ -337,6 +345,7 @@ kind-destroy: ## Delete the cluster, registry, its volume, and local build image
 	@docker image ls --format '{{.Repository}}:{{.Tag}}' \
 		| grep '^$(KIND_REGISTRY)/eggai-demo:' \
 		| xargs -r docker rmi -f >/dev/null 2>&1 || true
+	@rm -f $(KIND_IMAGE_TAG_FILE)
 	@echo "Cluster, registry, registry volume and local eggai-demo images removed."
 
 # -----------------------------------------------------------------------------

@@ -261,7 +261,7 @@ Each component is a toggle — setting one to `false` uninstalls it, so the
 cluster always matches the flags:
 
 ```bash
-make kind-deploy KIND_PROMETHEUS=true KIND_TEMPO=true
+make kind-deploy KIND_PROMETHEUS=false KIND_TEMPO=false
 ```
 
 Manifests and values files live in [`kind/`](kind/). Requires `kind`, `kubectl`,

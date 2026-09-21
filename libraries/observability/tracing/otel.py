@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import json
-import os
 import random
 import uuid
 from collections.abc import Awaitable, Callable
@@ -66,20 +65,22 @@ def safe_set_attribute(span, key: str, value: Any) -> None:
 
 
 def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
+    if not endpoint:
+        logger.info("Tracing disabled for %s", app_name)
+        return
+
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    otlp_endpoint = endpoint or os.getenv("OTEL_ENDPOINT", "http://localhost:4318")
-
     resource = Resource.create({"service.name": app_name})
 
     limits = SpanLimits(max_span_attribute_length=32768)
 
     trace.set_tracer_provider(TracerProvider(resource=resource, span_limits=limits))
-    otlp_exporter = OTLPSpanExporter(endpoint=f"{otlp_endpoint}/v1/traces")
+    otlp_exporter = OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces")
     span_processor = BatchSpanProcessor(otlp_exporter)
 
     # Deliberately the *installed* provider rather than the one constructed
@@ -95,7 +96,7 @@ def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
             "Tracer provider is %s, not an SDK TracerProvider; spans will not be "
             "exported to %s",
             type(installed_provider).__name__,
-            otlp_endpoint,
+            endpoint,
         )
 
     # Patch Span.set_attribute for safer attribute handling

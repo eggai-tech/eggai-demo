@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     temporal_task_queue_base: str = Field(default="policy-rag")
 
     otel_endpoint: str = Field(default="http://localhost:4318")
+    tracing_enabled: bool = Field(default=True)
 
     vespa_config_url: str = Field(default="http://localhost:19071")
     vespa_query_url: str = Field(default="http://localhost:8080")
@@ -34,6 +35,12 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def clear_endpoint_when_tracing_disabled(self):
+        if not self.tracing_enabled:
+            self.otel_endpoint = ""
+        return self
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -14,10 +14,6 @@ prometheus:
 grafana:
   adminPassword: admin
   resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {memory: 256Mi}}
-  ingress:
-    enabled: true
-    ingressClassName: traefik
-    hosts: ["grafana.eggai.localhost"]
   additionalDataSources:
   - name: Tempo
     type: tempo

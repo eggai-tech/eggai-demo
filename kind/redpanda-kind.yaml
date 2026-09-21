@@ -39,14 +39,6 @@ external:
 
 console:
   enabled: true
-  ingress:
-    enabled: true
-    className: traefik
-    hosts:
-      - host: redpanda.eggai.localhost
-        paths:
-          - path: /
-            pathType: Prefix
   resources:
     requests: {cpu: 25m, memory: 128Mi}
     limits:   {memory: 256Mi}

@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +23,12 @@ class BaseAgentConfig(BaseSettings):
         env_ignore_empty=True,
         extra="ignore"
     )
+
+    @model_validator(mode="after")
+    def clear_endpoint_when_tracing_disabled(self):
+        if not self.tracing_enabled:
+            self.otel_endpoint = ""
+        return self
 
     def get_temporal_namespace(self) -> str:
         if self.temporal_namespace:
