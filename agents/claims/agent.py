@@ -11,8 +11,9 @@ from libraries.communication.streaming import (
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
 from libraries.observability.tracing.init_metrics import init_token_metrics
+from libraries.security.handler import authenticate
 
-from .config import settings
+from .config import keycloak, settings
 from .dspy_modules.claims import process_claims
 from .types import ChatMessage, ModelConfig
 
@@ -72,6 +73,9 @@ async def handle_claim_request(msg: TracedMessage) -> None:
                 message="I apologize, but I didn't receive any message content to process.",
                 traceparent=msg.traceparent, tracestate=msg.tracestate,
             )
+            return
+
+        if not await authenticate(keycloak, msg, human_channel, AGENT_NAME, connection_id):
             return
 
         conversation_string = get_conversation_string(chat_messages, tracer=tracer)
