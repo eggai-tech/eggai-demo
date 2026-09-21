@@ -2,6 +2,8 @@ import asyncio
 import os
 import uuid
 
+import httpx
+import jwt
 import uvicorn
 from eggai import Agent, Channel
 from fastapi import FastAPI, Query
@@ -21,7 +23,7 @@ from libraries.observability.tracing.otel import (
     traced_handler,
 )
 
-from .config import settings
+from .config import keycloak, settings
 from .websocket_manager import WebSocketManager
 
 logger = get_console_logger("frontend_agent")
@@ -44,6 +46,21 @@ frontend_agent = Agent(AGENT_NAME)
 human_channel = Channel(channels.human)
 human_stream_channel = Channel(channels.human_stream)
 websocket_manager = WebSocketManager()
+
+
+async def security_context(connection_id: str, token: str | None) -> dict:
+    if not keycloak.enabled:
+        return {
+            "user_id": f"demo-user-{connection_id[:8]}",
+            "name": "",
+            "policy_numbers": [],
+            "roles": [],
+            "access_token": "",
+        }
+    caller = keycloak.validate(token or "")
+    return caller.to_context(await keycloak.exchange(token or "", "insurance-triage"))
+
+
 tracer = create_tracer("frontend_agent")
 init_token_metrics(
     port=settings.prometheus_metrics_port, application_name=settings.app_name
@@ -93,6 +110,20 @@ async def _process_user_messages(
         message_id = str(uuid.uuid4())
         content = data.get("payload")
 
+        try:
+            context = await security_context(connection_id, data.get("token"))
+        except (jwt.InvalidTokenError, httpx.HTTPError) as e:
+            logger.warning(f"Authentication failed for {connection_id}: {e}")
+            await websocket_manager.send_message_to_connection(
+                connection_id,
+                {
+                    "sender": "System",
+                    "content": f"Authentication failed: {e}",
+                    "type": MessageType.ASSISTANT_MESSAGE.value,
+                },
+            )
+            continue
+
         if GUARDRAILS_ENABLED and toxic_language_guard:
             valid = await toxic_language_guard(content)
             if valid is None:
@@ -126,12 +157,7 @@ async def _process_user_messages(
                 data={
                     "chat_messages": websocket_manager.chat_messages[connection_id],
                     "connection_id": connection_id,
-                    "security_context": {
-                        "user_id": f"demo-user-{connection_id[:8]}",
-                        "tenant_id": "demo-insurance-corp",
-                        "consent_scope": ["policy_read", "claims_read", "billing_read"],
-                        "retention_policy": "30d",
-                    },
+                    "security_context": context,
                 },
                 traceparent=traceparent,
                 tracestate=tracestate,
