@@ -10,24 +10,6 @@
 # Ignores are matched by alias too, so one id per advisory is enough.
 
 [[IgnoredVulns]]
-id = "GHSA-g6cj-pr64-35w5"           # CVE-2026-69247 / PYSEC-2026-3552
-ignoreUntil = 2026-11-10
-reason = """
-cryptography <50.0.0: Bleichenbacher oracle in PKCS#7 EnvelopedData decryption
-(pkcs7_decrypt_der / _pem / _smime).
-
-Not reachable: no first-party code decrypts PKCS#7 EnvelopedData - grep for
-pkcs7 over agents/, libraries/ and scripts/ has no hits. cryptography is a
-transitive dependency only.
-
-Cannot upgrade: mlflow (all versions up to 3.15.1) requires cryptography<50, so
-pinning 50.0.0 forces mlflow down to 3.2.0, which reintroduces several CRITICAL
-mlflow advisories. Holding at cryptography 49.0.0 - which does fix the CRITICAL
-CVE-2026-39892 and the HIGH CVE-2026-69249 - is the safer trade.
-Revisit when mlflow relaxes its cryptography upper bound.
-"""
-
-[[IgnoredVulns]]
 id = "PYSEC-2026-2132"              # CVE-2026-7246 / GHSA-47fr-3ffg-hgmw
 ignoreUntil = 2026-11-10
 reason = """
