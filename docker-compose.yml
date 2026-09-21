@@ -10,6 +10,33 @@ volumes:
   vespa-node1-data: null
   vespa-node2-data: null
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.0
+    container_name: keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: http://localhost:8180
+      INSURANCE_WEB_URL: http://localhost:8000
+      INSURANCE_FRONTEND_CLIENT_SECRET: ${INSURANCE_FRONTEND_CLIENT_SECRET:-dev-frontend-secret}
+      INSURANCE_TRIAGE_CLIENT_SECRET: ${INSURANCE_TRIAGE_CLIENT_SECRET:-dev-triage-secret}
+      INSURANCE_USER_PASSWORD: ${INSURANCE_USER_PASSWORD:-insurance}
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    networks:
+      - eggai-example-network
+    ports:
+      - 8180:8080
+    healthcheck:
+      test: ["CMD-SHELL", "{ printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3; grep -q '200 OK' <&3; } 3<>/dev/tcp/localhost/9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
   redpanda:
     command:
       - redpanda

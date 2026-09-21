@@ -43,6 +43,7 @@ def wait_for_infrastructure(timeout: float = 120.0) -> bool:
         import httpx
 
         services = [
+            ("Keycloak", "http://localhost:8180/realms/insurance"),
             ("Redpanda", "http://localhost:19644/v1/status/ready"),
             ("Vespa", "http://localhost:19071/state/v1/health"),
             ("Temporal UI", "http://localhost:8081"),
