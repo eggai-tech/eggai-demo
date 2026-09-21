@@ -156,7 +156,8 @@ KIND_DIR           := kind
 KIND_CLUSTER       ?= eggai
 KIND_NODE_IMAGE    ?= kindest/node:v1.31.2
 KIND_APP_NS        ?= eggai-demo
-KIND_OBS_NS        ?= observability
+# Fixed: kube-prom, tempo and otel-collector values reference this namespace by name.
+KIND_OBS_NS        := observability
 KIND_REGISTRY_PORT ?= 5001
 KIND_REGISTRY      := localhost:$(KIND_REGISTRY_PORT)
 # Always target the kind cluster explicitly, never the current kubeconfig context
@@ -178,7 +179,7 @@ KIND_IMAGE_REPO     ?= $(KIND_REGISTRY)/eggai-demo
 KIND_IMAGE_TAG_FILE := $(KIND_DIR)/.image-tag
 KIND_IMAGE_TAG      ?= $(shell cat $(KIND_IMAGE_TAG_FILE) 2>/dev/null)
 
-# Component toggles -- lean by default; opt into observability when needed.
+# Component toggles. Everything but Temporal is on by default; set a toggle to false to leave it out.
 KIND_TRAEFIK    ?= true
 KIND_REDPANDA   ?= true
 KIND_APP        ?= true
@@ -331,9 +332,13 @@ kind-urls: ## Print the local ingress hostnames for enabled components
 	@[ "$(KIND_TEMPORAL)"   = "true" ] && echo "  temporal   http://temporal.eggai.localhost" || true
 
 kind-clean: ## Uninstall everything but keep the cluster
-	@$(MAKE) kind-infra kind-redeploy kind-gateway KIND_TRAEFIK=false \
-		KIND_PROMETHEUS=false KIND_TEMPO=false KIND_OTEL=false \
-		KIND_REDPANDA=false KIND_TEMPORAL=false KIND_APP=false
+	@$(HELM) uninstall eggai -n $(KIND_APP_NS) 2>/dev/null || true
+	@$(HELM) uninstall redpanda -n $(KIND_APP_NS) 2>/dev/null || true
+	@$(HELM) uninstall otel-collector tempo kube-prom -n $(KIND_OBS_NS) 2>/dev/null || true
+	@$(HELM) uninstall traefik -n traefik 2>/dev/null || true
+	@$(KUBECTL) delete -f $(KIND_DIR)/gateway-kind.yaml --ignore-not-found >/dev/null 2>&1 || true
+	@$(KUBECTL) delete ns $(KIND_APP_NS) $(KIND_OBS_NS) traefik --ignore-not-found --wait=false
+	@echo "Releases and namespaces removed. Cluster $(KIND_CLUSTER) is still running."
 
 kind-destroy: ## Delete the cluster, registry, its volume, and local build images
 	@kind delete cluster --name $(KIND_CLUSTER) 2>/dev/null || true
