@@ -6,6 +6,7 @@ from agents.policies.agent.tools.database.example_data import (
 )
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
+from libraries.security.keycloak import assert_policy_access
 
 logger = get_console_logger("policies_agent.tools.database")
 tracer = create_tracer("policies_agent_tools_database")
@@ -34,6 +35,10 @@ def get_personal_policy_details(policy_number: str) -> str:
     Returns JSON with policy data or error message.
     """
     logger.info(f"Retrieving policy details for policy number: '{policy_number}'")
+
+    denied = assert_policy_access(policy_number or "")
+    if denied:
+        return denied
 
     if not policy_number:
         return "Policy not found."
