@@ -34,16 +34,16 @@ def test_registry_maps_agents_to_clients():
 @pytest.mark.asyncio
 async def test_publish_to_agent_exchanges_token(monkeypatch):
     monkeypatch.setattr(agent_mod.keycloak, "url", "http://kc:8080")
-    monkeypatch.setattr(agent_mod.keycloak, "exchange", AsyncMock(return_value="billing-token"))
+    monkeypatch.setattr(agent_mod.keycloak, "exchange", AsyncMock(return_value="claims-token"))
     publish = AsyncMock()
     monkeypatch.setattr(agent_mod.agents_channel, "publish", publish)
     context = {"user_id": "john", "name": "John Doe", "policy_numbers": ["A12345"], "roles": [], "access_token": "triage-token"}
 
-    await agent_mod._publish_to_agent("User: hi\n", TargetAgent.BillingAgent, _msg(context), context)
+    await agent_mod._publish_to_agent("User: hi\n", TargetAgent.ClaimsAgent, _msg(context), context)
 
-    agent_mod.keycloak.exchange.assert_awaited_once_with("triage-token", "insurance-billing")
+    agent_mod.keycloak.exchange.assert_awaited_once_with("triage-token", "insurance-claims")
     published = publish.call_args.args[0]
-    assert published.data["security_context"]["access_token"] == "billing-token"
+    assert published.data["security_context"]["access_token"] == "claims-token"
     assert published.data["security_context"]["user_id"] == "john"
 
 
