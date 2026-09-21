@@ -6,8 +6,9 @@ from libraries.communication.streaming import publish_error_message
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
 from libraries.observability.tracing.init_metrics import init_token_metrics
+from libraries.security.handler import authenticate
 
-from .config import settings
+from .config import keycloak, settings
 from .types import ChatMessage
 from .utils import get_conversation_string, process_billing_request
 
@@ -45,6 +46,9 @@ async def handle_billing_request(msg: TracedMessage) -> None:
                 message="I apologize, but I didn't receive any message content to process.",
                 traceparent=msg.traceparent, tracestate=msg.tracestate,
             )
+            return
+
+        if not await authenticate(keycloak, msg, human_channel, AGENT_NAME, connection_id):
             return
 
         conversation_string = get_conversation_string(chat_messages, tracer=tracer)
