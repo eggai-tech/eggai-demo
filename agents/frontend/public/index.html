@@ -239,15 +239,7 @@
         },
       ];
 
-      const platformServices = [
-        { name: "Redpanda", url: "http://localhost:8082" },
-        { name: "Temporal", url: "http://localhost:8081" },
-        { name: "Grafana", url: "http://localhost:3000" },
-        { name: "MLflow", url: "http://localhost:5001" },
-        { name: "Vespa", url: "http://localhost:19071" },
-        { name: "Prometheus", url: "http://localhost:9090" },
-        { name: "MinIO", url: "http://localhost:9001" },
-      ];
+      let platformServices = [];
 
       function App() {
         const [messages, setMessages] = useState([]);
@@ -817,8 +809,12 @@
         );
       }
 
-      const root = createRoot(document.getElementById("root"));
-      root.render(<App />);
+      fetch("/config")
+        .then((response) => response.json())
+        .then((config) => {
+          platformServices = config.platformLinks;
+          createRoot(document.getElementById("root")).render(<App />);
+        });
     </script>
   </body>
 </html>

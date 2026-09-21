@@ -38,22 +38,12 @@
       } from "https://esm.sh/react@18.2.0";
       import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
 
-      // API endpoint configuration
+      let platformServices = [];
       const API_ENDPOINTS = {
-        policies: "http://localhost:8002/api/v1",
-        claims: "http://localhost:8003/api/v1",
-        billing: "http://localhost:8004/api/v1",
+        policies: "/api/policies",
+        claims: "/api/claims",
+        billing: "/api/billing",
       };
-
-      const platformServices = [
-        { name: "Redpanda", url: "http://localhost:8082" },
-        { name: "Temporal", url: "http://localhost:8081" },
-        { name: "Grafana", url: "http://localhost:3000" },
-        { name: "MLflow", url: "http://localhost:5001" },
-        { name: "Vespa", url: "http://localhost:19071" },
-        { name: "Prometheus", url: "http://localhost:9090" },
-        { name: "MinIO", url: "http://localhost:9001" },
-      ];
 
       function App() {
         const [activeTab, setActiveTab] = useState("overview");
@@ -1331,8 +1321,12 @@
         );
       }
 
-      const root = createRoot(document.getElementById("root"));
-      root.render(<App />);
+      fetch("/config")
+        .then((response) => response.json())
+        .then((config) => {
+          platformServices = config.platformLinks;
+          createRoot(document.getElementById("root")).render(<App />);
+        });
     </script>
   </body>
 </html>

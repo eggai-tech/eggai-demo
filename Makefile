@@ -258,7 +258,11 @@ KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set image.pullPolicy=Always \
                  --set monitoring.enabled=$(KIND_PROMETHEUS) \
                  --wait --timeout 5m \
-                 $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318)
+                 $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318) \
+                 --set platformLinks.Traefik=http://traefik.eggai.localhost \
+                 $(if $(filter true,$(KIND_PROMETHEUS)),--set platformLinks.Grafana=http://grafana.eggai.localhost) \
+                 $(if $(filter true,$(KIND_REDPANDA)),--set platformLinks.Redpanda=http://redpanda.eggai.localhost) \
+                 $(if $(filter true,$(KIND_TEMPORAL)),--set platformLinks.Temporal=http://temporal.eggai.localhost)
 
 kind-app: kind-build kind-gateway ## Build, push and deploy the app -- the inner loop
 	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))

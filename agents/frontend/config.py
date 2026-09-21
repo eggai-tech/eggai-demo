@@ -20,6 +20,20 @@ class Settings(BaseAgentConfig):
 
     public_dir: str = Field(default="")
 
+    platform_links: str = Field(
+        default=(
+            "Redpanda=http://localhost:8082,Temporal=http://localhost:8081,"
+            "Grafana=http://localhost:3000,MLflow=http://localhost:5001,"
+            "Vespa=http://localhost:19071,Prometheus=http://localhost:9090,"
+            "MinIO=http://localhost:9001"
+        ),
+        description="Comma-separated Name=URL list shown in the header",
+    )
+    # Agent APIs the admin page reaches through this process at /api/<agent>/.
+    api_policies_url: str = Field(default="http://localhost:8002/api/v1")
+    api_claims_url: str = Field(default="http://localhost:8003/api/v1")
+    api_billing_url: str = Field(default="http://localhost:8004/api/v1")
+
     @property
     def default_public_dir(self) -> str:
         if not self.public_dir:
