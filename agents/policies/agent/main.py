@@ -4,15 +4,16 @@ from contextlib import asynccontextmanager
 import uvicorn
 from eggai import eggai_cleanup
 from eggai.transport import eggai_set_default_transport
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents.policies.agent.api.routes import router as api_router
-from agents.policies.agent.config import settings
+from agents.policies.agent.config import keycloak, settings
 from libraries.communication.transport import create_kafka_transport
 from libraries.ml.dspy.language_model import dspy_set_language_model
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import init_telemetry
+from libraries.security.fastapi import require_bearer
 
 eggai_set_default_transport(
     lambda: create_kafka_transport(
@@ -51,6 +52,7 @@ app = FastAPI(
     description="API for querying and managing insurance policy documents",
     version="1.0.0",
     lifespan=lifespan,
+    dependencies=[Depends(require_bearer(keycloak))],
 )
 
 app.add_middleware(
