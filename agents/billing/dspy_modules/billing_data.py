@@ -62,9 +62,7 @@ def update_billing_info(policy_number: str, field: str, new_value: str):
     denied = assert_policy_access(policy_number)
     if denied:
         return json.dumps({"error": denied})
-    logger.info(
-        f"Updating billing info for policy {policy_number}: {field} -> {new_value}"
-    )
+    logger.info(f"Updating billing info for policy {policy_number}: {field}")
     record = get_policy_record(policy_number)
 
     if not record:
@@ -80,9 +78,8 @@ def update_billing_info(policy_number: str, field: str, new_value: str):
         try:
             record[field] = float(new_value)
         except ValueError:
-            error_msg = f"Invalid numeric value for {field}: {new_value}"
-            logger.error(error_msg)
-            return json.dumps({"error": error_msg})
+            logger.error(f"Invalid numeric value for {field}")
+            return json.dumps({"error": f"Invalid numeric value for {field}: {new_value}"})
     else:
         record[field] = new_value
 
