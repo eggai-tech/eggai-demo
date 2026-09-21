@@ -2,12 +2,30 @@
 
 from unittest.mock import Mock, patch
 
+import dspy
+import litellm
 import pytest
+from dspy.utils.exceptions import AdapterParseError
 
 from libraries.ml.dspy import (
     TrackingLM,
     dspy_set_language_model,
 )
+
+
+class UnparseableLM(dspy.BaseLM):
+    """Answers without dspy's field markers, so every adapter parse fails."""
+
+    def __init__(self):
+        super().__init__(model="fake")
+        self.calls = 0
+
+    def forward(self, prompt=None, messages=None, **kwargs):
+        self.calls += 1
+        return litellm.ModelResponse(
+            choices=[{"message": {"content": "no field markers here"}, "finish_reason": "stop"}],
+            usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        )
 
 
 class TestTrackingLM:
@@ -113,9 +131,24 @@ class TestTrackingLM:
                 cache=True,
                 api_base=None
             )
-            mock_configure.assert_called_once_with(lm=mock_lm_instance)
+            configure_kwargs = mock_configure.call_args.kwargs
+            assert configure_kwargs["lm"] is mock_lm_instance
+            assert isinstance(configure_kwargs["adapter"], dspy.ChatAdapter)
+            assert configure_kwargs["adapter"].use_json_adapter_fallback is False
             mock_dspy_settings.configure.assert_called_once_with(track_usage=True)
             assert result is mock_lm_instance
+
+    def test_parse_failure_makes_a_single_lm_call(self):
+        """A parse failure must not trigger dspy's hidden JSONAdapter regeneration."""
+        settings = Mock(language_model="openai/gpt-4o-mini", cache_enabled=False, language_model_api_base=None)
+        settings.max_context_window = None
+        dspy_set_language_model(settings)
+
+        lm = UnparseableLM()
+        with dspy.context(lm=lm), pytest.raises(AdapterParseError):
+            dspy.Predict("question -> answer")(question="hi")
+
+        assert lm.calls == 1
 
     @patch("dspy.settings")
     @patch("dspy.configure")
