@@ -109,11 +109,15 @@ async def proxy_api(agent: str, path: str, request: Request):
         token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
         try:
             caller = keycloak.validate(token)
-        except jwt.InvalidTokenError as e:
+        except jwt.PyJWTError as e:
             raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
         if "insurance-admin" not in caller.roles:
             raise HTTPException(status_code=403, detail="insurance-admin role required")
-        headers["authorization"] = f"Bearer {await keycloak.exchange(token, f'insurance-{agent}')}"
+        try:
+            exchanged = await keycloak.exchange(token, f"insurance-{agent}")
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=502, detail=f"Token exchange failed: {e}")
+        headers["authorization"] = f"Bearer {exchanged}"
     response = await upstream.request(request.method, url, content=await request.body(), headers=headers)
     return Response(
         content=response.content,

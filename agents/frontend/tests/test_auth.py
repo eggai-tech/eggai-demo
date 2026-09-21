@@ -81,3 +81,12 @@ def test_proxy_forwards_exchanged_token(enabled, monkeypatch):
     assert response.status_code == 200
     enabled.exchange.assert_awaited_once_with("t", "insurance-billing")
     assert upstream.call_args.kwargs["headers"]["authorization"] == "Bearer obo-token"
+
+
+def test_proxy_returns_502_on_exchange_failure(enabled, monkeypatch):
+    monkeypatch.setattr(enabled, "validate", lambda token: Caller("alice", "Alice", ["C24680"], ["insurance-admin"]))
+    monkeypatch.setattr(enabled, "exchange", AsyncMock(side_effect=httpx.HTTPError("down")))
+
+    response = TestClient(main_mod.api).get("/api/billing/billing", headers={"Authorization": "Bearer t"})
+
+    assert response.status_code == 502

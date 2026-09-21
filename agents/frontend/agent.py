@@ -112,7 +112,7 @@ async def _process_user_messages(
 
         try:
             context = await security_context(connection_id, data.get("token"))
-        except (jwt.InvalidTokenError, httpx.HTTPError) as e:
+        except (jwt.PyJWTError, httpx.HTTPError) as e:
             logger.warning(f"Authentication failed for {connection_id}: {e}")
             await websocket_manager.send_message_to_connection(
                 connection_id,
