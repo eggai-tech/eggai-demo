@@ -101,6 +101,19 @@ Usage: include "eggai-multi-agent-chat.agentEnv" (dict "root" $ "agent" $name)
 {{- $prefix := (include "eggai-multi-agent-chat.agentMeta" .agent | fromJson).prefix -}}
 - name: DSPY_CACHEDIR
   value: /cache/dspy
+{{- if eq .agent "frontend" }}
+{{- $fullname := include "eggai-multi-agent-chat.fullname" $root }}
+{{- range $api := list "policies" "claims" "billing" }}
+- name: FRONTEND_API_{{ upper $api }}_URL
+  value: http://{{ $fullname }}-{{ $api }}:{{ (index $root.Values.agents $api).httpPort }}/api/v1
+{{- end }}
+{{- with $root.Values.platformLinks }}
+{{- $links := list }}
+{{- range $name, $url := . }}{{ $links = append $links (printf "%s=%s" $name $url) }}{{ end }}
+- name: FRONTEND_PLATFORM_LINKS
+  value: {{ join "," $links | quote }}
+{{- end }}
+{{- end }}
 {{- if $root.Values.monitoring.enabled }}
 - name: {{ $prefix }}PROMETHEUS_METRICS_PORT
   value: {{ $root.Values.monitoring.port | quote }}

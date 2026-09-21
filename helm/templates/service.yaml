@@ -1,16 +1,24 @@
+{{- range $name, $agent := .Values.agents }}
+{{- if and $agent.enabled $agent.httpPort }}
+{{- $meta := include "eggai-multi-agent-chat.agentMeta" $name | fromJson }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eggai-multi-agent-chat.fullname" . }}
+  {{- /* The frontend is the release's public entrypoint and keeps the bare release name. */}}
+  name: {{ include "eggai-multi-agent-chat.fullname" $ }}{{ if ne $name "frontend" }}-{{ $meta.label }}{{ end }}
   labels:
-    {{- include "eggai-multi-agent-chat.labels" . | nindent 4 }}
+    {{- include "eggai-multi-agent-chat.labels" $ | nindent 4 }}
+    egg-ai.com/agent: {{ $meta.label }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ $.Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ $agent.httpPort }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
-    {{- include "eggai-multi-agent-chat.selectorLabels" . | nindent 4 }}
-    egg-ai.com/agent: frontend
+    {{- include "eggai-multi-agent-chat.selectorLabels" $ | nindent 4 }}
+    egg-ai.com/agent: {{ $meta.label }}
+{{- end }}
+{{- end }}

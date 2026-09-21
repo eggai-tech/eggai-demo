@@ -12,7 +12,7 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "eggai-multi-agent-chat.fullname" . }}:{{ .Values.service.port }}']
+      args: ['{{ include "eggai-multi-agent-chat.fullname" . }}:{{ .Values.agents.frontend.httpPort }}']
       resources:
         limits:
           cpu: "250m"

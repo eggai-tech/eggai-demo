@@ -20,6 +20,10 @@ extraEnv: []
 # -- envFrom for every agent. The clean way to inject API keys.
 envFrom: []
 
+# -- Links shown in the chat header, name -> URL. List only services that have
+# a route on this cluster. Empty keeps the frontend's compose defaults.
+platformLinks: {}
+
 agents:
   audit:
     enabled: true
@@ -29,11 +33,13 @@ agents:
   billing:
     enabled: true
     replicaCount: 1
+    httpPort: 8004
     environment: []
     envFrom: []
   claims:
     enabled: true
     replicaCount: 1
+    httpPort: 8003
     environment: []
     envFrom: []
   escalation:
@@ -44,7 +50,7 @@ agents:
   frontend:
     enabled: true
     replicaCount: 1
-    httpPort: true
+    httpPort: 8000
     environment: []
     envFrom: []
     livenessProbe:
@@ -61,6 +67,7 @@ agents:
   policies:
     enabled: true
     replicaCount: 1
+    httpPort: 8002
     environment: []
     envFrom: []
   triage:
@@ -103,7 +110,6 @@ affinity: {}
 
 service:
   type: ClusterIP
-  port: 8000
 
 monitoring:
   enabled: true

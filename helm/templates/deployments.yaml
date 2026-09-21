@@ -47,7 +47,7 @@ spec:
           ports:
             {{- if $agent.httpPort }}
             - name: http
-              containerPort: {{ $.Values.service.port }}
+              containerPort: {{ $agent.httpPort }}
               protocol: TCP
             {{- end }}
             {{- if $.Values.monitoring.enabled }}

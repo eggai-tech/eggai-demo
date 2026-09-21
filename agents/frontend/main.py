@@ -3,11 +3,12 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import aiofiles
+import httpx
 import uvicorn
 from eggai import eggai_cleanup
 from eggai.transport import eggai_set_default_transport
-from fastapi import FastAPI, HTTPException
-from starlette.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from starlette.responses import HTMLResponse, Response
 
 from libraries.communication.transport import create_kafka_transport
 from libraries.observability.logger import get_console_logger
@@ -67,6 +68,41 @@ async def read_root():
 @api.get("/admin.html", response_class=HTMLResponse)
 async def read_admin():
     return await _serve_html("admin.html")
+
+
+@api.get("/config")
+async def read_config():
+    links = [
+        {"name": name.strip(), "url": url.strip()}
+        for name, url in (item.split("=", 1) for item in settings.platform_links.split(","))
+    ]
+    return {"platformLinks": links}
+
+
+upstream = httpx.AsyncClient(timeout=30)
+
+HOP_BY_HOP = {"host", "content-length", "content-encoding", "transfer-encoding", "connection"}
+
+
+@api.api_route("/api/{agent}/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+async def proxy_api(agent: str, path: str, request: Request):
+    targets = {
+        "policies": settings.api_policies_url,
+        "claims": settings.api_claims_url,
+        "billing": settings.api_billing_url,
+    }
+    if agent not in targets:
+        raise HTTPException(status_code=404)
+    url = f"{targets[agent]}/{path}"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_BY_HOP}
+    response = await upstream.request(request.method, url, content=await request.body(), headers=headers)
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers={k: v for k, v in response.headers.items() if k.lower() not in HOP_BY_HOP},
+    )
 
 
 frontend_server = uvicorn.Server(
