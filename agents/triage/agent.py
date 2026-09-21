@@ -135,7 +135,7 @@ async def handle_user_message(msg: TracedMessage) -> None:
     security_context: dict = msg.data.get("security_context") or {}
     if keycloak.enabled:
         try:
-            keycloak.validate(security_context.get("access_token", ""))
+            caller = keycloak.validate(security_context.get("access_token", ""))
         except jwt.PyJWTError as e:
             logger.warning("Authentication failed for %s: %s", connection_id, e)
             await human_channel.publish(
@@ -150,8 +150,11 @@ async def handle_user_message(msg: TracedMessage) -> None:
                 )
             )
             return
+        identity = identity_line(caller.to_context(""))
+    else:
+        identity = identity_line(security_context)
 
-    conversation_string = identity_line(security_context) + build_conversation_string(chat_messages)
+    conversation_string = identity + build_conversation_string(chat_messages)
     safe_set_attribute(span, "conversation_length", len(conversation_string))
 
     await publish_waiting_message(

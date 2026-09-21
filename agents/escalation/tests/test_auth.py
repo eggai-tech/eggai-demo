@@ -61,6 +61,26 @@ async def test_handler_refuses_invalid_token(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_empty_chat_is_refused_without_token(monkeypatch):
+    monkeypatch.setattr(agent_mod.keycloak, "url", "http://kc:8080")
+
+    def bad(token):
+        raise jwt.InvalidTokenError("expired")
+
+    monkeypatch.setattr(agent_mod.keycloak, "validate", bad)
+    error = AsyncMock()
+    monkeypatch.setattr("libraries.security.handler.publish_error_message", error)
+    process = AsyncMock()
+    monkeypatch.setattr(agent_mod, "process_escalation_request", process)
+
+    msg = _msg("bad")
+    msg.data["chat_messages"] = []
+    await agent_mod.handle_ticketing_request(msg)
+
+    process.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_handler_sets_caller(monkeypatch):
     monkeypatch.setattr(agent_mod.keycloak, "url", "http://kc:8080")
     monkeypatch.setattr(agent_mod.keycloak, "validate", lambda token: Caller("john", "John Doe", ["A12345"], []))

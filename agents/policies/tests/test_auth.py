@@ -27,6 +27,14 @@ def test_tool_without_caller_returns_any_policy():
     assert json.loads(get_personal_policy_details("A12345"))["name"] == "John Doe"
 
 
+def test_empty_policy_number_is_not_found_even_with_caller():
+    token = caller_var.set(Caller("jane", "Jane Smith", ["B67890"], []))
+    try:
+        assert get_personal_policy_details("") == "Policy not found."
+    finally:
+        caller_var.reset(token)
+
+
 @pytest.mark.asyncio
 async def test_handler_refuses_invalid_token(monkeypatch):
     monkeypatch.setattr(agent_mod.keycloak, "url", "http://kc:8080")

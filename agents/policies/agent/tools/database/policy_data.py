@@ -36,12 +36,12 @@ def get_personal_policy_details(policy_number: str) -> str:
     """
     logger.info(f"Retrieving policy details for policy number: '{policy_number}'")
 
-    denied = assert_policy_access(policy_number or "")
-    if denied:
-        return denied
-
     if not policy_number:
         return "Policy not found."
+
+    denied = assert_policy_access(policy_number)
+    if denied:
+        return denied
 
     try:
         cleaned_policy_number = policy_number.strip().upper()

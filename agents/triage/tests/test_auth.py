@@ -91,7 +91,7 @@ async def test_identity_line_prefixes_conversation(monkeypatch):
         latency_ms = 1.0
 
     monkeypatch.setattr(agent_mod.current_classifier, "classify", lambda chat_history: Result())
-    context = {"user_id": "john", "name": "John Doe", "policy_numbers": ["A12345"], "roles": [], "access_token": "t"}
+    context = {"user_id": "john", "name": "Mallory", "policy_numbers": ["A12345"], "roles": [], "access_token": "t"}
 
     await agent_mod.handle_user_message(_msg(context))
 

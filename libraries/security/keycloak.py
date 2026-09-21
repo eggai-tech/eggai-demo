@@ -61,14 +61,19 @@ class Keycloak:
     def _jwks(self) -> PyJWKClient:
         uri = f"{self.url}/realms/{self.realm}/protocol/openid-connect/certs"
         if uri not in _jwks_clients:
-            _jwks_clients[uri] = PyJWKClient(uri)
+            _jwks_clients[uri] = PyJWKClient(uri, timeout=5)
         return _jwks_clients[uri]
 
     def validate(self, token: str) -> Caller:
         key = self._jwks().get_signing_key_from_jwt(token)
-        claims = jwt.decode(token, key.key, algorithms=["RS256"], audience=self.client_id, leeway=5)
+        claims = jwt.decode(
+            token, key.key, algorithms=["RS256"], audience=self.client_id, leeway=5,
+            options={"require": ["exp"]},
+        )
         if self.scope not in claims.get("scp", "").split():
             raise jwt.InvalidTokenError(f"token missing scope {self.scope}")
+        if "preferred_username" not in claims:
+            raise jwt.InvalidTokenError("token missing preferred_username")
         return Caller.from_claims(claims)
 
     async def exchange(self, token: str, audience: str) -> str:

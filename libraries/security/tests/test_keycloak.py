@@ -160,3 +160,39 @@ def test_identity_line():
     assert kc.identity_line({"name": "John Doe", "policy_numbers": ["A12345", "D1"]}) == (
         "Authenticated customer: John Doe, policies: A12345, D1\n"
     )
+
+
+def _token_without(rsa_key, monkeypatch, *drop):
+    class SigningKey:
+        def __init__(self, key):
+            self.key = key
+
+    monkeypatch.setattr(
+        kc.PyJWKClient,
+        "get_signing_key_from_jwt",
+        lambda self, token: SigningKey(rsa_key.public_key()),
+    )
+    claims = {
+        "preferred_username": "john",
+        "name": "John Doe",
+        "aud": "insurance-triage",
+        "scp": SCOPE,
+        "policy_numbers": ["A12345"],
+        "roles": [],
+        "exp": int(time.time()) + 300,
+    }
+    for key in drop:
+        del claims[key]
+    return jwt.encode(claims, rsa_key, algorithm="RS256", headers={"kid": "test"})
+
+
+def test_validate_rejects_token_without_exp(rsa_key, monkeypatch):
+    token = _token_without(rsa_key, monkeypatch, "exp")
+    with pytest.raises(jwt.InvalidTokenError):
+        kc.Keycloak(Settings(), scope=SCOPE).validate(token)
+
+
+def test_validate_rejects_token_without_preferred_username(rsa_key, monkeypatch):
+    token = _token_without(rsa_key, monkeypatch, "preferred_username")
+    with pytest.raises(jwt.InvalidTokenError):
+        kc.Keycloak(Settings(), scope=SCOPE).validate(token)

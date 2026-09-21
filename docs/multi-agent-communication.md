@@ -84,13 +84,17 @@ and makes it easy to integrate with other event-driven systems.
     ],
     "security_context": {
       "user_id": "user-789",
-      "tenant_id": "tenant-abc",
-      "consent_scope": ["billing_read"],
-      "retention_policy": "30d"
+      "name": "Jane Smith",
+      "policy_numbers": ["A12345"],
+      "roles": ["insurance-admin"],
+      "access_token": "eyJ..."
     }
   }
 }
 ```
+
+`security_context.access_token` carries the RFC 8693 on-behalf-of token minted
+for the receiving agent, not the original browser token.
 
 #### CloudEvents Fields
 

@@ -69,6 +69,9 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id = msg.data.get("connection_id", "unknown")
 
+        if not await authenticate(keycloak, msg, human_channel, AGENT_NAME, connection_id):
+            return
+
         if not chat_messages:
             logger.warning(f"Empty chat history for connection: {connection_id}")
             await process_escalation_request(
@@ -77,9 +80,6 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
                 str(msg.id),
                 timeout_seconds=30.0,
             )
-            return
-
-        if not await authenticate(keycloak, msg, human_channel, AGENT_NAME, connection_id):
             return
 
         conversation_string = get_conversation_string(chat_messages, tracer=tracer)

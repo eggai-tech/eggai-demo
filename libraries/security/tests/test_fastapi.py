@@ -53,6 +53,13 @@ def test_valid_bearer_passes(monkeypatch):
     assert response.status_code == 200
 
 
+def test_valid_bearer_without_admin_role_is_403(monkeypatch):
+    keycloak = Keycloak(Settings(), scope="s")
+    monkeypatch.setattr(keycloak, "validate", lambda token: Caller("john", "John Doe", ["A12345"], []))
+    response = TestClient(_app(keycloak)).get("/api/v1/billing", headers={"Authorization": "Bearer x"})
+    assert response.status_code == 403
+
+
 def test_prefixed_health_is_open():
     app = _app(Keycloak(Settings(), scope="s"))
 

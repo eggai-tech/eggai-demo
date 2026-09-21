@@ -1,9 +1,10 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import jwt
 import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from agents.frontend import agent as agent_mod
 from agents.frontend import main as main_mod
@@ -81,6 +82,34 @@ def test_proxy_forwards_exchanged_token(enabled, monkeypatch):
     assert response.status_code == 200
     enabled.exchange.assert_awaited_once_with("t", "insurance-billing")
     assert upstream.call_args.kwargs["headers"]["authorization"] == "Bearer obo-token"
+
+
+@pytest.mark.asyncio
+async def test_process_user_messages_sends_refusal_on_invalid_token(enabled, monkeypatch):
+    def bad(token):
+        raise jwt.InvalidTokenError("expired")
+
+    monkeypatch.setattr(enabled, "validate", bad)
+    send = AsyncMock()
+    monkeypatch.setattr(agent_mod.websocket_manager, "send_message_to_connection", send)
+    publish = AsyncMock()
+    monkeypatch.setattr(agent_mod.human_channel, "publish", publish)
+
+    server = MagicMock()
+    server.should_exit = False
+    websocket = MagicMock()
+    websocket.receive_json = AsyncMock(
+        side_effect=[{"payload": "hi", "token": "bad"}, WebSocketDisconnect()]
+    )
+
+    with pytest.raises(WebSocketDisconnect):
+        await agent_mod._process_user_messages(server, websocket, "conn-1", "tp", "ts")
+
+    send.assert_awaited_once_with(
+        "conn-1",
+        {"sender": "System", "content": "Authentication failed: expired", "type": "assistant_message"},
+    )
+    publish.assert_not_awaited()
 
 
 def test_proxy_returns_502_on_exchange_failure(enabled, monkeypatch):

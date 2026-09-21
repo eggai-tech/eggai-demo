@@ -12,8 +12,11 @@ def require_bearer(keycloak: Keycloak):
         if not auth.lower().startswith("bearer "):
             raise HTTPException(status_code=401, detail="Missing Bearer token", headers={"WWW-Authenticate": "Bearer"})
         try:
-            return keycloak.validate(auth[7:].strip())
+            caller = keycloak.validate(auth[7:].strip())
         except jwt.PyJWTError as e:
             raise HTTPException(status_code=401, detail=f"Invalid token: {e}", headers={"WWW-Authenticate": "Bearer"})
+        if "insurance-admin" not in caller.roles:
+            raise HTTPException(status_code=403, detail="insurance-admin role required")
+        return caller
 
     return dependency
