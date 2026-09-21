@@ -6,7 +6,7 @@ from .keycloak import Caller, Keycloak
 
 def require_bearer(keycloak: Keycloak):
     async def dependency(request: Request) -> Caller | None:
-        if not keycloak.enabled or request.url.path == "/health":
+        if not keycloak.enabled or request.url.path.endswith("/health"):
             return None
         auth = request.headers.get("authorization", "")
         if not auth.lower().startswith("bearer "):

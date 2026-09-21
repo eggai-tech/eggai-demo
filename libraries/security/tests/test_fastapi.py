@@ -53,6 +53,16 @@ def test_valid_bearer_passes(monkeypatch):
     assert response.status_code == 200
 
 
+def test_prefixed_health_is_open():
+    app = _app(Keycloak(Settings(), scope="s"))
+
+    @app.get("/api/v1/health")
+    def health():
+        return {"ok": True}
+
+    assert TestClient(app).get("/api/v1/health").status_code == 200
+
+
 def test_disabled_keycloak_passes():
     class Off(Settings):
         keycloak_url = ""
