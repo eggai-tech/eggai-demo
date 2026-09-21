@@ -32,10 +32,3 @@ agents:
       limits: { cpu: "1",    memory: "3Gi" }
       requests: { cpu: "500m", memory: "1Gi" }
   policiesDocumentIngestion: {enabled: false}
-
-ingress:
-  enabled: true
-  className: traefik
-  hosts:
-    - host: chat.eggai.localhost
-      paths: [{path: /, pathType: Prefix}]
