@@ -4,7 +4,7 @@ volumes:
 services:
   minio-setup:
     container_name: minio-setup
-    image: minio/mc
+    image: quay.io/minio/mc
     depends_on:
       minio:
         condition: service_healthy
@@ -15,7 +15,7 @@ services:
     ]
   minio:
     container_name: minio
-    image: minio/minio
+    image: quay.io/minio/minio
     expose:
       - "9000"
     ports:
