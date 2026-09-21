@@ -187,6 +187,7 @@ KIND_OTEL       ?= true
 KIND_PROMETHEUS ?= true
 KIND_TEMPO      ?= true
 KIND_TEMPORAL   ?= false
+KIND_KEYCLOAK   ?= true
 
 # $(call kind_helm,release,toggle,chart,namespace,values-file,extra-flags)
 define kind_helm
@@ -259,6 +260,9 @@ kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	@$(MAKE) --no-print-directory kind-llm
 	@[ "$(KIND_TEMPORAL)" != "true" ] || $(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-pvc-kind.yaml
 	$(call kind_manifest,$(KIND_TEMPORAL),$(KIND_APP_NS),temporal-kind.yaml)
+	@[ "$(KIND_KEYCLOAK)" != "true" ] || $(KUBECTL) create configmap keycloak-realm -n $(KIND_APP_NS) \
+		--from-file=realm-export.json=keycloak/realm-export.json --dry-run=client -o yaml | $(KUBECTL) apply -f -
+	$(call kind_manifest,$(KIND_KEYCLOAK),$(KIND_APP_NS),keycloak-kind.yaml)
 
 KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set image.tag=$(KIND_IMAGE_TAG) \
@@ -269,7 +273,8 @@ KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set platformLinks.Traefik=http://traefik.eggai.localhost \
                  $(if $(filter true,$(KIND_PROMETHEUS)),--set platformLinks.Grafana=http://grafana.eggai.localhost) \
                  $(if $(filter true,$(KIND_REDPANDA)),--set platformLinks.Redpanda=http://redpanda.eggai.localhost) \
-                 $(if $(filter true,$(KIND_TEMPORAL)),--set platformLinks.Temporal=http://temporal.eggai.localhost)
+                 $(if $(filter true,$(KIND_TEMPORAL)),--set platformLinks.Temporal=http://temporal.eggai.localhost) \
+                 $(if $(filter true,$(KIND_KEYCLOAK)),--set globalEnv.KEYCLOAK_URL=http://keycloak.$(KIND_APP_NS).svc.cluster.local:8080 --set platformLinks.Keycloak=http://keycloak.eggai.localhost)
 
 kind-app: kind-build ## Build, push and deploy the app -- the inner loop
 	@$(MAKE) --no-print-directory kind-redeploy
@@ -283,6 +288,7 @@ kind-gateway: ## Apply the routes of enabled components, remove the others
 	$(call kind_manifest,$(KIND_TRAEFIK),$(KIND_APP_NS),httproute-kind.yaml)
 	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_REDPANDA))),$(KIND_APP_NS),httproute-redpanda-kind.yaml)
 	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_PROMETHEUS))),$(KIND_OBS_NS),httproute-obs-kind.yaml)
+	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_KEYCLOAK))),$(KIND_APP_NS),httproute-keycloak-kind.yaml)
 
 kind-llm: ## Point the cluster at LM Studio on the host
 	@$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
@@ -329,6 +335,7 @@ kind-urls: ## Print the local ingress hostnames for enabled components
 	@[ "$(KIND_REDPANDA)"   = "true" ] && echo "  redpanda   http://redpanda.eggai.localhost" || true
 	@[ "$(KIND_PROMETHEUS)" = "true" ] && echo "  grafana    http://grafana.eggai.localhost   (admin/admin)" || true
 	@[ "$(KIND_TEMPORAL)"   = "true" ] && echo "  temporal   http://temporal.eggai.localhost" || true
+	@[ "$(KIND_KEYCLOAK)"   = "true" ] && echo "  keycloak   http://keycloak.eggai.localhost (admin/admin, users john jane alice / insurance)" || true
 
 kind-clean: ## Uninstall everything but keep the cluster
 	@$(HELM) uninstall eggai -n $(KIND_APP_NS) 2>/dev/null || true
