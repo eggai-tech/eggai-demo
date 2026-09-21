@@ -123,7 +123,7 @@ def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = Non
     logger.info(f"Max context window: {language_model.max_context_window}")
     logger.info(f"LM Studio model: {language_model.is_lm_studio}")
 
-    dspy.configure(lm=language_model)
+    dspy.configure(lm=language_model, adapter=dspy.ChatAdapter(use_json_adapter_fallback=False))
     dspy.settings.configure(track_usage=True)
 
     return language_model
