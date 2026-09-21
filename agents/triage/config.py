@@ -3,6 +3,7 @@ from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
 from libraries.core import BaseAgentConfig
+from libraries.security.keycloak import Keycloak
 
 load_dotenv()
 
@@ -49,3 +50,6 @@ class Settings(BaseAgentConfig):
 
 
 settings = Settings()
+
+SCOPE = "api://insurance-triage/Route.ReadWrite"
+keycloak = Keycloak(settings, scope=SCOPE)
