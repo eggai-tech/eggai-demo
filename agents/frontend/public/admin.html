@@ -267,14 +267,14 @@
               API_ENDPOINTS.claims,
             );
             const [claimsResp, statsResp] = await Promise.all([
-              fetch(`${API_ENDPOINTS.claims}/claims?limit=100`, {
+              apiFetch(`${API_ENDPOINTS.claims}/claims?limit=100`, {
                 method: "GET",
                 mode: "cors",
                 headers: {
                   "Accept": "application/json",
                 },
               }),
-              fetch(`${API_ENDPOINTS.claims}/claims/stats`, {
+              apiFetch(`${API_ENDPOINTS.claims}/claims/stats`, {
                 method: "GET",
                 mode: "cors",
                 headers: {
@@ -325,14 +325,14 @@
               API_ENDPOINTS.billing,
             );
             const [billingResp, statsResp] = await Promise.all([
-              fetch(`${API_ENDPOINTS.billing}/billing?limit=100`, {
+              apiFetch(`${API_ENDPOINTS.billing}/billing?limit=100`, {
                 method: "GET",
                 mode: "cors",
                 headers: {
                   "Accept": "application/json",
                 },
               }),
-              fetch(`${API_ENDPOINTS.billing}/billing/stats`, {
+              apiFetch(`${API_ENDPOINTS.billing}/billing/stats`, {
                 method: "GET",
                 mode: "cors",
                 headers: {
@@ -1365,7 +1365,9 @@
         }
         createRoot(document.getElementById("root")).render(<App />);
       }
-      boot();
+      boot().catch((error) => {
+        document.getElementById("root").textContent = `Login failed: ${error}`;
+      });
     </script>
   </body>
 </html>
