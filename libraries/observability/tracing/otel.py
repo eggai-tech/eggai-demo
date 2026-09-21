@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import json
-import os
 import random
 import uuid
 from collections.abc import Awaitable, Callable
@@ -66,13 +65,17 @@ def safe_set_attribute(span, key: str, value: Any) -> None:
 
 
 def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
+    if not endpoint:
+        logger.info("Tracing disabled for %s", app_name)
+        return
+
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    otlp_endpoint = endpoint or os.getenv("OTEL_ENDPOINT", "http://localhost:4318")
+    otlp_endpoint = endpoint
 
     resource = Resource.create({"service.name": app_name})
 

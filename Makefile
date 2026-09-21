@@ -265,7 +265,7 @@ KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set image.pullPolicy=Always \
                  --set monitoring.enabled=$(KIND_PROMETHEUS) \
                  --wait --timeout 5m \
-                 $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318) \
+                 $(if $(filter true,$(KIND_OTEL)),--set globalEnv.OTEL_ENDPOINT=http://otel-collector.$(KIND_OBS_NS).svc.cluster.local:4318,--set-string globalEnv.TRACING_ENABLED=false) \
                  --set platformLinks.Traefik=http://traefik.eggai.localhost \
                  $(if $(filter true,$(KIND_PROMETHEUS)),--set platformLinks.Grafana=http://grafana.eggai.localhost) \
                  $(if $(filter true,$(KIND_REDPANDA)),--set platformLinks.Redpanda=http://redpanda.eggai.localhost) \
