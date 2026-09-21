@@ -14,6 +14,7 @@ from libraries.observability.tracing import (
     create_tracer,
     traced_dspy_function,
 )
+from libraries.security.keycloak import assert_policy_access
 
 from ..config import settings
 from ..types import ModelConfig, TicketDepartment, TicketInfo
@@ -101,6 +102,9 @@ logger.info(
 @tracer.start_as_current_span("get_tickets_by_policy")
 def get_tickets_by_policy(policy_number: str) -> str:
     cleaned = policy_number.strip()
+    denied = assert_policy_access(cleaned)
+    if denied:
+        return json.dumps({"found": False, "message": denied, "tickets": []})
     logger.info(f"Searching for tickets with policy number: {cleaned!r}")
 
     matching_tickets = [
@@ -131,6 +135,9 @@ def get_tickets_by_policy(policy_number: str) -> str:
 def create_ticket(
     policy_number: str, dept: TicketDepartment, title: str, contact: str
 ) -> str:
+    denied = assert_policy_access(policy_number)
+    if denied:
+        return json.dumps({"error": denied})
     logger.info("Creating ticket in database...")
     ticket = TicketInfo(
         id=f"TICKET-{len(ticket_database) + 1:03}",
