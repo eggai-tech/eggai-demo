@@ -199,6 +199,16 @@ else \
 fi
 endef
 
+# $(call kind_manifest,toggle,namespace,file) -- apply when the toggle is true, delete otherwise
+define kind_manifest
+@if [ "$(1)" = "true" ]; then \
+	echo "==> $(3)"; \
+	$(KUBECTL) apply -n $(2) -f $(KIND_DIR)/$(3); \
+else \
+	$(KUBECTL) delete -n $(2) -f $(KIND_DIR)/$(3) --ignore-not-found >/dev/null 2>&1 || true; \
+fi
+endef
+
 kind-up: ## Create the kind cluster and local image registry
 	@docker inspect kind-registry >/dev/null 2>&1 || \
 		docker run -d --restart=always -p 127.0.0.1:$(KIND_REGISTRY_PORT):5000 \
@@ -231,7 +241,8 @@ kind-repos: ## Add/update the Helm repos the local stack pulls from
 # before any later chart renders one, or the release fails on an unknown kind.
 kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,kube-prom,$(KIND_PROMETHEUS),prometheus-community/kube-prometheus-stack,$(KIND_OBS_NS),kube-prom-kind.yaml,--version $(KIND_KUBEPROM_VER) --wait --timeout 10m)
-	@[ "$(KIND_PROMETHEUS)" != "true" ] || $(MAKE) --no-print-directory kind-dashboards
+	@if [ "$(KIND_PROMETHEUS)" = "true" ]; then $(MAKE) --no-print-directory kind-dashboards; \
+	else $(KUBECTL) delete configmap grafana-dash-eggai -n $(KIND_OBS_NS) --ignore-not-found >/dev/null 2>&1 || true; fi
 	@$(MAKE) --no-print-directory kind-gateway-api
 	$(call kind_helm,traefik,$(KIND_TRAEFIK),traefik/traefik,traefik,traefik-kind.yaml,--version $(KIND_TRAEFIK_VER))
 	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
@@ -245,14 +256,9 @@ kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,otel-collector,$(KIND_OTEL),open-telemetry/opentelemetry-collector,$(KIND_OBS_NS),otel-collector-kind.yaml,--version $(KIND_OTEL_VER) --set serviceMonitor.enabled=$(KIND_PROMETHEUS))
 	$(call kind_helm,redpanda,$(KIND_REDPANDA),redpanda/redpanda,$(KIND_APP_NS),redpanda-kind.yaml,--version $(KIND_REDPANDA_VER) --set monitoring.enabled=$(KIND_PROMETHEUS))
 	@$(MAKE) --no-print-directory kind-llm
-	@if [ "$(KIND_TEMPORAL)" = "true" ]; then \
-		echo "==> temporal"; \
-		$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null; \
-		$(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml; \
-	else \
-		echo "--- temporal (disabled)"; \
-		$(KUBECTL) delete -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-	fi
+	@$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
+	@[ "$(KIND_TEMPORAL)" != "true" ] || $(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-pvc-kind.yaml
+	$(call kind_manifest,$(KIND_TEMPORAL),$(KIND_APP_NS),temporal-kind.yaml)
 
 KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  --set image.tag=$(KIND_IMAGE_TAG) \
@@ -273,16 +279,10 @@ kind-redeploy: kind-gateway ## Deploy the app chart with the last built image
 	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
 	@$(MAKE) --no-print-directory kind-urls
 
-kind-gateway: ## Deploy the HTTPRoutes (Gateway comes from the Traefik chart)
-	@if [ "$(KIND_TRAEFIK)" = "true" ]; then \
-		echo "==> httproute"; \
-		$(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml; \
-		[ "$(KIND_PROMETHEUS)" != "true" ] || \
-			$(KUBECTL) apply -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml; \
-	else \
-		$(KUBECTL) delete -n $(KIND_APP_NS) -f $(KIND_DIR)/httproute-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-		$(KUBECTL) delete -n $(KIND_OBS_NS) -f $(KIND_DIR)/httproute-obs-kind.yaml --ignore-not-found >/dev/null 2>&1 || true; \
-	fi
+kind-gateway: ## Apply the routes of enabled components, remove the others
+	$(call kind_manifest,$(KIND_TRAEFIK),$(KIND_APP_NS),httproute-kind.yaml)
+	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_REDPANDA))),$(KIND_APP_NS),httproute-redpanda-kind.yaml)
+	$(call kind_manifest,$(and $(filter true,$(KIND_TRAEFIK)),$(filter true,$(KIND_PROMETHEUS))),$(KIND_OBS_NS),httproute-obs-kind.yaml)
 
 kind-llm: ## Point the cluster at LM Studio on the host
 	@$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
