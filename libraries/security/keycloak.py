@@ -21,7 +21,7 @@ class Caller:
     @classmethod
     def from_claims(cls, claims: dict) -> Caller:
         return cls(
-            user_id=claims.get("preferred_username", claims["sub"]),
+            user_id=claims["preferred_username"],
             name=claims.get("name", ""),
             policy_numbers=list(claims.get("policy_numbers", [])),
             roles=list(claims.get("roles", [])),

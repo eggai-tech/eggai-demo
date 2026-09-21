@@ -38,7 +38,6 @@ def make_token(rsa_key, monkeypatch):
 
     def _make(**overrides):
         claims = {
-            "sub": "john",
             "preferred_username": "john",
             "name": "John Doe",
             "aud": "insurance-triage",
