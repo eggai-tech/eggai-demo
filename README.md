@@ -227,8 +227,9 @@ make kind-down     # delete the kind cluster (registry survives, keeping its lay
 
 Open **http://chat.eggai.localhost** and start chatting.
 
-> **macOS (Docker Desktop or Colima):** LM Studio host auto-detection resolves
-> to the VM rather than your Mac, so pass the address explicitly:
+> **macOS:** with OrbStack the LM Studio host auto-detection works. With
+> Docker Desktop or Colima it resolves to the VM rather than your Mac, so pass
+> the address explicitly:
 >
 > ```bash
 > make kind-deploy KIND_LLM_HOST_IP=$(ipconfig getifaddr en0)
@@ -237,6 +238,18 @@ Open **http://chat.eggai.localhost** and start chatting.
 > On Colima, give the VM headroom before `make kind-up`
 > (`colima start --cpu 6 --memory 12 --disk 100`) and run the lighter stack:
 > `make kind-deploy KIND_PROMETHEUS=false KIND_TEMPO=false`.
+
+> **Linux:** a default-deny firewall (Omarchy's ufw, for example) silently drops
+> traffic from pods to LM Studio on the host and every LLM call times out.
+> Allow the kind Docker network once, using the IPv4 subnet shown by
+> `docker network inspect kind`:
+>
+> ```bash
+> sudo ufw allow in proto tcp from 172.18.0.0/16 to any port 1234 comment eggai-kind-llm
+> ```
+
+> **LM Studio on another machine:** start it there with `--bind 0.0.0.0`, open
+> its firewall to your LAN, and deploy with `KIND_LLM_HOST_IP=<its LAN IP>`.
 
 ### 3. Everything else
 

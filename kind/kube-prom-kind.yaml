@@ -1,6 +1,6 @@
 # kube-prom-kind.yaml
 alertmanager: {enabled: false}
-prometheus-node-exporter: {enabled: false}
+nodeExporter: {enabled: false}
 prometheusOperator:
   resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {memory: 256Mi}}
 prometheus:
