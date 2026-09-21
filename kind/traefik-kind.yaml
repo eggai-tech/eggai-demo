@@ -1,0 +1,33 @@
+service:
+  type: NodePort
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    expose:
+      default: false
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesGateway:
+    enabled: true
+  kubernetesIngress:
+    enabled: false
+gateway:
+  enabled: false
+gatewayClass:
+  enabled: true
+log:
+  level: INFO
+accessLog:
+  enabled: true
+  format: json
+ingressRoute:
+  dashboard:
+    enabled: true
+    matchRule: Host(`traefik.eggai.localhost`)
+    entryPoints: ["web"]
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits:   {memory: 256Mi}
