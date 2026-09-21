@@ -37,6 +37,9 @@
         useState,
       } from "https://esm.sh/react@18.2.0";
       import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
+      import Keycloak from "https://esm.sh/keycloak-js@26.2.0";
+
+      let keycloak = null;
 
       let platformServices = [];
       const API_ENDPOINTS = {
@@ -44,6 +47,12 @@
         claims: "/api/claims",
         billing: "/api/billing",
       };
+
+      function apiFetch(url, options = {}) {
+        const headers = { ...(options.headers || {}) };
+        if (keycloak) headers.Authorization = `Bearer ${keycloak.token}`;
+        return fetch(url, { ...options, headers });
+      }
 
       function App() {
         const [activeTab, setActiveTab] = useState("overview");
@@ -100,7 +109,7 @@
           for (const [name, url] of Object.entries(endpoints)) {
             try {
               console.log(`Checking ${name} API at ${url}`);
-              const response = await fetch(url, {
+              const response = await apiFetch(url, {
                 method: "GET",
                 mode: "cors",
                 headers: {
@@ -126,7 +135,7 @@
           try {
             setLoading(true);
             setError(null);
-            const response = await fetch(
+            const response = await apiFetch(
               `${API_ENDPOINTS.policies}/policies?limit=100`,
             );
             if (!response.ok) {
@@ -148,7 +157,7 @@
           try {
             setLoading(true);
             setError(null);
-            const response = await fetch(
+            const response = await apiFetch(
               `${API_ENDPOINTS.policies}/kb/documents?limit=100`,
             );
             if (!response.ok) {
@@ -195,7 +204,7 @@
 
         const fetchKBStatus = async () => {
           try {
-            const response = await fetch(
+            const response = await apiFetch(
               `${API_ENDPOINTS.policies}/kb/status`,
             );
             if (!response.ok) {
@@ -220,7 +229,7 @@
             setLoading(true);
             setError(null);
             setDocumentChunks([]); // Clear previous chunks
-            const response = await fetch(
+            const response = await apiFetch(
               `${API_ENDPOINTS.policies}/kb/documents/${documentId}/chunks`,
             );
             if (!response.ok) {
@@ -432,6 +441,20 @@
                     </nav>
                   </div>
                   <div className="flex items-center space-x-4">
+                    {keycloak && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {keycloak.tokenParsed.name}
+                      </span>
+                    )}
+                    {keycloak && (
+                      <button
+                        onClick={() =>
+                          keycloak.logout({ redirectUri: window.location.origin })}
+                        className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    )}
                     <a
                       href="/"
                       className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
@@ -1321,12 +1344,28 @@
         );
       }
 
-      fetch("/config")
-        .then((response) => response.json())
-        .then((config) => {
-          platformServices = config.platformLinks;
-          createRoot(document.getElementById("root")).render(<App />);
-        });
+      async function boot() {
+        const config = await (await fetch("/config")).json();
+        platformServices = config.platformLinks;
+        if (config.keycloak) {
+          keycloak = new Keycloak({
+            url: config.keycloak.url,
+            realm: config.keycloak.realm,
+            clientId: config.keycloak.clientId,
+          });
+          await keycloak.init({
+            onLoad: "login-required",
+            pkceMethod: "S256",
+            checkLoginIframe: false,
+          });
+          setInterval(
+            () => keycloak.updateToken(30).catch(() => keycloak.login()),
+            10000,
+          );
+        }
+        createRoot(document.getElementById("root")).render(<App />);
+      }
+      boot();
     </script>
   </body>
 </html>
