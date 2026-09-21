@@ -4,6 +4,7 @@ from pathlib import Path
 
 import aiofiles
 import httpx
+import jwt
 import uvicorn
 from eggai import eggai_cleanup
 from eggai.transport import eggai_set_default_transport
@@ -14,7 +15,7 @@ from libraries.communication.transport import create_kafka_transport
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import init_telemetry
 
-from .config import settings
+from .config import keycloak, settings
 
 eggai_set_default_transport(
     lambda: create_kafka_transport(
@@ -76,7 +77,14 @@ async def read_config():
         {"name": name.strip(), "url": url.strip()}
         for name, url in (item.split("=", 1) for item in settings.platform_links.split(","))
     ]
-    return {"platformLinks": links}
+    keycloak_config = None
+    if settings.keycloak_url:
+        keycloak_config = {
+            "url": settings.keycloak_public_url or settings.keycloak_url,
+            "realm": settings.keycloak_realm,
+            "clientId": settings.keycloak_web_client_id,
+        }
+    return {"platformLinks": links, "keycloak": keycloak_config}
 
 
 upstream = httpx.AsyncClient(timeout=30)
@@ -97,6 +105,19 @@ async def proxy_api(agent: str, path: str, request: Request):
     if request.url.query:
         url = f"{url}?{request.url.query}"
     headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_BY_HOP}
+    if keycloak.enabled:
+        token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+        try:
+            caller = keycloak.validate(token)
+        except jwt.PyJWTError as e:
+            raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+        if "insurance-admin" not in caller.roles:
+            raise HTTPException(status_code=403, detail="insurance-admin role required")
+        try:
+            exchanged = await keycloak.exchange(token, f"insurance-{agent}")
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=502, detail=f"Token exchange failed: {e}")
+        headers["authorization"] = f"Bearer {exchanged}"
     response = await upstream.request(request.method, url, content=await request.body(), headers=headers)
     return Response(
         content=response.content,

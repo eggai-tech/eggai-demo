@@ -17,6 +17,10 @@ class BaseAgentConfig(BaseSettings):
     prometheus_metrics_port: int = Field(...)
     temporal_namespace: str | None = Field(default=None)
     temporal_task_queue: str | None = Field(default=None)
+    keycloak_url: str = Field(default="")
+    keycloak_realm: str = Field(default="insurance")
+    keycloak_client_id: str = Field(default="")
+    keycloak_client_secret: str = Field(default="")
 
     model_config = SettingsConfigDict(
         env_file=".env",

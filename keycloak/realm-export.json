@@ -1,0 +1,121 @@
+{
+  "realm": "insurance",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "insurance-admin", "description": "Can open the admin dashboard" }
+    ]
+  },
+  "users": [
+    {
+      "username": "john", "enabled": true, "emailVerified": true,
+      "firstName": "John", "lastName": "Doe", "email": "john@example.com",
+      "attributes": { "policy_numbers": ["A12345"] },
+      "credentials": [{ "type": "password", "value": "${INSURANCE_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": []
+    },
+    {
+      "username": "jane", "enabled": true, "emailVerified": true,
+      "firstName": "Jane", "lastName": "Smith", "email": "jane@example.com",
+      "attributes": { "policy_numbers": ["B67890"] },
+      "credentials": [{ "type": "password", "value": "${INSURANCE_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": []
+    },
+    {
+      "username": "alice", "enabled": true, "emailVerified": true,
+      "firstName": "Alice", "lastName": "Johnson", "email": "alice@example.com",
+      "attributes": { "policy_numbers": ["C24680"] },
+      "credentials": [{ "type": "password", "value": "${INSURANCE_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["insurance-admin"]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"policy_numbers\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":true}],\"groups\":[]}"
+          ]
+        }
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "profile", "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" },
+      "protocolMappers": [
+        { "name": "full name", "protocol": "openid-connect", "protocolMapper": "oidc-full-name-mapper", "consentRequired": false,
+          "config": { "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } },
+        { "name": "username", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "consentRequired": false,
+          "config": { "user.attribute": "username", "claim.name": "preferred_username", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } }
+      ]
+    },
+    {
+      "name": "policy-numbers", "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" },
+      "protocolMappers": [
+        { "name": "policy numbers", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "consentRequired": false,
+          "config": { "user.attribute": "policy_numbers", "claim.name": "policy_numbers", "jsonType.label": "String", "multivalued": "true", "aggregate.attrs": "false", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } },
+        { "name": "realm roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-realm-role-mapper", "consentRequired": false,
+          "config": { "claim.name": "roles", "jsonType.label": "String", "multivalued": "true", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } }
+      ]
+    },
+    { "name": "insurance-frontend-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-frontend", "id.token.claim": "false", "access.token.claim": "true" } },
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-frontend/Chat.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
+    { "name": "insurance-triage-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-triage", "id.token.claim": "false", "access.token.claim": "true" } },
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-triage/Route.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
+    { "name": "insurance-policies-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-policies", "id.token.claim": "false", "access.token.claim": "true" } },
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-policies/Policies.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
+    { "name": "insurance-billing-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-billing", "id.token.claim": "false", "access.token.claim": "true" } },
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-billing/Billing.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
+    { "name": "insurance-claims-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-claims", "id.token.claim": "false", "access.token.claim": "true" } },
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-claims/Claims.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
+    { "name": "insurance-escalation-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-escalation", "id.token.claim": "false", "access.token.claim": "true" } },
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-escalation/Tickets.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] }
+  ],
+  "defaultDefaultClientScopes": ["profile", "policy-numbers"],
+  "defaultOptionalClientScopes": [],
+  "clients": [
+    {
+      "clientId": "insurance-web", "enabled": true, "publicClient": true,
+      "standardFlowEnabled": true, "implicitFlowEnabled": false, "directAccessGrantsEnabled": true, "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "rootUrl": "${INSURANCE_WEB_URL}", "baseUrl": "/",
+      "redirectUris": ["${INSURANCE_WEB_URL}/*"], "webOrigins": ["${INSURANCE_WEB_URL}"],
+      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+" },
+      "defaultClientScopes": ["profile", "policy-numbers", "insurance-frontend-scope"], "optionalClientScopes": []
+    },
+    {
+      "clientId": "insurance-frontend", "enabled": true, "publicClient": false, "secret": "${INSURANCE_FRONTEND_CLIENT_SECRET}",
+      "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": true, "fullScopeAllowed": true,
+      "attributes": { "standard.token.exchange.enabled": "true" },
+      "defaultClientScopes": ["profile", "policy-numbers"],
+      "optionalClientScopes": ["insurance-triage-scope", "insurance-policies-scope", "insurance-billing-scope", "insurance-claims-scope", "insurance-escalation-scope"]
+    },
+    {
+      "clientId": "insurance-triage", "enabled": true, "publicClient": false, "secret": "${INSURANCE_TRIAGE_CLIENT_SECRET}",
+      "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": true, "fullScopeAllowed": true,
+      "attributes": { "standard.token.exchange.enabled": "true" },
+      "defaultClientScopes": ["profile", "policy-numbers"],
+      "optionalClientScopes": ["insurance-policies-scope", "insurance-billing-scope", "insurance-claims-scope", "insurance-escalation-scope"]
+    },
+    { "clientId": "insurance-policies", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] },
+    { "clientId": "insurance-billing", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] },
+    { "clientId": "insurance-claims", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] },
+    { "clientId": "insurance-escalation", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] }
+  ]
+}

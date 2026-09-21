@@ -3,6 +3,7 @@ from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
 from libraries.core import BaseAgentConfig
+from libraries.security.keycloak import Keycloak
 
 from .types import ModelConfig
 
@@ -29,6 +30,9 @@ class Settings(BaseAgentConfig):
     )
 
 settings = Settings()
+
+SCOPE = "api://insurance-billing/Billing.ReadWrite"
+keycloak = Keycloak(settings, scope=SCOPE)
 
 model_config = ModelConfig(
     name=settings.model_name,

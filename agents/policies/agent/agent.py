@@ -3,6 +3,7 @@ from eggai import Agent, Channel
 from agents.policies.agent.config import (
     AGENT_NAME,
     CONSUMER_GROUP_ID,
+    keycloak,
     model_config,
     settings,
 )
@@ -19,6 +20,7 @@ from libraries.communication.streaming import (
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
 from libraries.observability.tracing.init_metrics import init_token_metrics
+from libraries.security.handler import authenticate
 
 policies_agent = Agent(name=AGENT_NAME)
 logger = get_console_logger("policies_agent.handler")
@@ -78,6 +80,9 @@ async def handle_policy_request(msg: TracedMessage) -> None:
                 message="I apologize, but I didn't receive any message content to process.",
                 traceparent=msg.traceparent, tracestate=msg.tracestate,
             )
+            return
+
+        if not await authenticate(keycloak, msg, human_channel, AGENT_NAME, connection_id):
             return
 
         conversation_string = get_conversation_string(chat_messages, tracer=tracer)

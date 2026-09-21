@@ -166,6 +166,9 @@
         useState,
       } from "https://esm.sh/react@18.2.0";
       import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
+      import Keycloak from "https://esm.sh/keycloak-js@26.2.0";
+
+      let keycloak = null;
 
       const AGENTS = {
         TriageAgent: {
@@ -485,7 +488,11 @@
           if (!messageText || !wsRef.current) return;
           if (wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(
-              JSON.stringify({ payload: messageText }),
+              JSON.stringify(
+                keycloak
+                  ? { payload: messageText, token: keycloak.token }
+                  : { payload: messageText },
+              ),
             );
             setMessages((
               prev,
@@ -536,6 +543,20 @@
                     <span className="text-xs text-gray-400 px-4">
                       |
                     </span>
+                    {keycloak && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {keycloak.tokenParsed.name}
+                      </span>
+                    )}
+                    {keycloak && (
+                      <button
+                        onClick={() =>
+                          keycloak.logout({ redirectUri: window.location.origin })}
+                        className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    )}
                     <a
                       href="/admin.html"
                       className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
@@ -809,12 +830,30 @@
         );
       }
 
-      fetch("/config")
-        .then((response) => response.json())
-        .then((config) => {
-          platformServices = config.platformLinks;
-          createRoot(document.getElementById("root")).render(<App />);
-        });
+      async function boot() {
+        const config = await (await fetch("/config")).json();
+        platformServices = config.platformLinks;
+        if (config.keycloak) {
+          keycloak = new Keycloak({
+            url: config.keycloak.url,
+            realm: config.keycloak.realm,
+            clientId: config.keycloak.clientId,
+          });
+          await keycloak.init({
+            onLoad: "login-required",
+            pkceMethod: "S256",
+            checkLoginIframe: false,
+          });
+          setInterval(
+            () => keycloak.updateToken(30).catch(() => keycloak.login()),
+            10000,
+          );
+        }
+        createRoot(document.getElementById("root")).render(<App />);
+      }
+      boot().catch((error) => {
+        document.getElementById("root").textContent = `Login failed: ${error}`;
+      });
     </script>
   </body>
 </html>

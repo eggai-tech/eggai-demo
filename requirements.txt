@@ -581,6 +581,7 @@ cryptography==50.0.1 \
     # via
     #   google-auth
     #   mlflow
+    #   pyjwt
     #   pyvespa
 cuda-bindings==13.3.1 ; python_full_version < '3.15' and sys_platform == 'linux' \
     --hash=sha256:04436a9364059c84b8f9636f359eccda1cf814341f5b670c71d80d2f79dbc708 \
@@ -3095,7 +3096,9 @@ pygments==2.20.0 \
 pyjwt==2.13.0 \
     --hash=sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423 \
     --hash=sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728
-    # via guardrails-ai
+    # via
+    #   eggai-demo
+    #   guardrails-ai
 pylatexenc==2.11 \
     --hash=sha256:305a072a99ce736246049c9da05841b9d718c0f7ea8888f5f596cf15cb621053 \
     --hash=sha256:e78e7391d6c104f1ed150e21cfaa58016cdb50aa54406a2eecb793649ffdfdd0

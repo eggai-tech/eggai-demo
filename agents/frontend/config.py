@@ -4,6 +4,7 @@ from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
 from libraries.core import BaseAgentConfig
+from libraries.security.keycloak import Keycloak
 
 
 class Settings(BaseAgentConfig):
@@ -34,6 +35,9 @@ class Settings(BaseAgentConfig):
     api_claims_url: str = Field(default="http://localhost:8003/api/v1")
     api_billing_url: str = Field(default="http://localhost:8004/api/v1")
 
+    keycloak_public_url: str = Field(default="")
+    keycloak_web_client_id: str = Field(default="insurance-web")
+
     @property
     def default_public_dir(self) -> str:
         if not self.public_dir:
@@ -46,3 +50,6 @@ class Settings(BaseAgentConfig):
 
 
 settings = Settings()
+
+SCOPE = "api://insurance-frontend/Chat.ReadWrite"
+keycloak = Keycloak(settings, scope=SCOPE)

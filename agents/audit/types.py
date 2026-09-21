@@ -22,11 +22,10 @@ class AuditConfig(BaseModel):
     model_config = {"validate_assignment": True, "extra": "forbid"}
 
 class SecurityContext(BaseModel):
-    """Security context for compliance (GKV-ready architecture)."""
     user_id: str | None = Field(default=None)
-    tenant_id: str | None = Field(default=None)
-    consent_scope: list[str] = Field(default_factory=list)
-    retention_policy: str | None = Field(default=None)
+    name: str | None = Field(default=None)
+    policy_numbers: list[str] = Field(default_factory=list)
+    roles: list[str] = Field(default_factory=list)
 
 
 class AuditEvent(BaseModel):

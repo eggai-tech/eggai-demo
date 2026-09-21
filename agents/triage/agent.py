@@ -1,11 +1,12 @@
 from collections.abc import Callable
 from typing import Any
 
+import jwt
 from eggai import Agent, Channel
 from opentelemetry import trace
 
 from agents.triage.classifiers import get_classifier
-from agents.triage.config import GROUP_ID, settings
+from agents.triage.config import GROUP_ID, keycloak, settings
 from agents.triage.dspy_modules.small_talk import chatty
 from agents.triage.models import AGENT_REGISTRY, TargetAgent
 from libraries.communication.channels import channels
@@ -23,6 +24,7 @@ from libraries.observability.tracing import (
     traced_handler,
 )
 from libraries.observability.tracing.otel import safe_set_attribute
+from libraries.security.keycloak import identity_line
 
 AGENT_NAME = AgentName.TRIAGE
 triage_agent = Agent(name=AGENT_NAME)
@@ -47,13 +49,18 @@ def build_conversation_string(chat_messages: list[dict[str, str]]) -> str:
 
 
 async def _publish_to_agent(
-    conversation_string: str, target_agent: TargetAgent, msg: TracedMessage
+    conversation_string: str, target_agent: TargetAgent, msg: TracedMessage, security_context: dict
 ) -> None:
     logger.info(f"Routing message to {target_agent}")
     with tracer.start_as_current_span("publish_to_agent") as span:
         safe_set_attribute(span, "target_agent", str(target_agent))
         safe_set_attribute(span, "conversation_length", len(conversation_string))
         child_traceparent, child_tracestate = format_span_as_traceparent(span)
+        if keycloak.enabled:
+            token = await keycloak.exchange(
+                security_context["access_token"], AGENT_REGISTRY[target_agent]["client_id"]
+            )
+            security_context = {**security_context, "access_token": token}
         triage_to_agent_messages = [
             {
                 "role": "user",
@@ -68,6 +75,7 @@ async def _publish_to_agent(
                     "chat_messages": triage_to_agent_messages,
                     "message_id": msg.id,
                     "connection_id": msg.data.get("connection_id", "unknown"),
+                    "security_context": security_context,
                 },
                 traceparent=child_traceparent,
                 tracestate=child_tracestate,
@@ -124,7 +132,29 @@ async def handle_user_message(msg: TracedMessage) -> None:
         )
         return
 
-    conversation_string = build_conversation_string(chat_messages)
+    security_context: dict = msg.data.get("security_context") or {}
+    if keycloak.enabled:
+        try:
+            caller = keycloak.validate(security_context.get("access_token", ""))
+        except jwt.PyJWTError as e:
+            logger.warning("Authentication failed for %s: %s", connection_id, e)
+            await human_channel.publish(
+                TracedMessage(
+                    type=MessageType.AGENT_MESSAGE,
+                    source=AGENT_NAME,
+                    data={
+                        "message": f"Authentication failed: {e}",
+                        "connection_id": connection_id,
+                        "agent": AGENT_NAME,
+                    },
+                )
+            )
+            return
+        identity = identity_line(caller.to_context(""))
+    else:
+        identity = identity_line(security_context)
+
+    conversation_string = identity + build_conversation_string(chat_messages)
     safe_set_attribute(span, "conversation_length", len(conversation_string))
 
     await publish_waiting_message(
@@ -185,7 +215,7 @@ async def handle_user_message(msg: TracedMessage) -> None:
                 message_id=str(msg.id),
                 message=f"Connecting you to {target_agent.value}...",
             )
-            await _publish_to_agent(conversation_string, target_agent, msg)
+            await _publish_to_agent(conversation_string, target_agent, msg, security_context)
         except Exception as e:
             logger.error("Error routing to agent %s: %s", target_agent, e, exc_info=True)
             await human_channel.publish(

@@ -29,6 +29,7 @@ dependencies = [
 
     # Async & networking
     "httpx>=0.28.1",
+    "pyjwt[crypto]>=2.10.0",
     "websockets>=14.1",
     "requests>=2.32.2",
     "aiofiles>=24.1.0",
@@ -134,7 +135,7 @@ dev-dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["agents", "libraries", "tests"]
+testpaths = ["agents", "libraries", "tests", "keycloak"]
 python_files = ["*_test.py", "test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

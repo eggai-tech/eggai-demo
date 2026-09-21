@@ -1,6 +1,7 @@
 import json
 
 from libraries.observability.logger import get_console_logger
+from libraries.security.keycloak import assert_policy_access
 
 logger = get_console_logger("billing_agent.data")
 
@@ -42,6 +43,9 @@ def get_policy_record(policy_number: str):
 
 def get_billing_info(policy_number: str):
     """Retrieve billing information for a policy number."""
+    denied = assert_policy_access(policy_number)
+    if denied:
+        return json.dumps({"error": denied})
     logger.info(f"Retrieving billing info for policy number: {policy_number}")
     record = get_policy_record(policy_number)
 
@@ -55,6 +59,9 @@ def get_billing_info(policy_number: str):
 
 def update_billing_info(policy_number: str, field: str, new_value: str):
     """Update billing information for a policy record."""
+    denied = assert_policy_access(policy_number)
+    if denied:
+        return json.dumps({"error": denied})
     logger.info(
         f"Updating billing info for policy {policy_number}: {field} -> {new_value}"
     )

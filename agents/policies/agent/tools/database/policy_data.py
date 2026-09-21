@@ -6,6 +6,7 @@ from agents.policies.agent.tools.database.example_data import (
 )
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
+from libraries.security.keycloak import assert_policy_access
 
 logger = get_console_logger("policies_agent.tools.database")
 tracer = create_tracer("policies_agent_tools_database")
@@ -37,6 +38,10 @@ def get_personal_policy_details(policy_number: str) -> str:
 
     if not policy_number:
         return "Policy not found."
+
+    denied = assert_policy_access(policy_number)
+    if denied:
+        return denied
 
     try:
         cleaned_policy_number = policy_number.strip().upper()

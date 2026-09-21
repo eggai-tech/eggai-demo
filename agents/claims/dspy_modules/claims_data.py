@@ -4,6 +4,7 @@ from agents.claims.types import ClaimRecord
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import create_tracer
 from libraries.observability.tracing.otel import safe_set_attribute
+from libraries.security.keycloak import assert_policy_access
 
 from .claims_errors import ErrorCategory, ErrorResponse, get_user_friendly_error
 from .claims_validators import ALLOWED_FIELDS, FIELD_VALIDATORS, FieldValidators
@@ -91,6 +92,10 @@ def get_claim_status(claim_number: str) -> str:
                 f"Claim {claim_number} not found", ErrorCategory.USER_INPUT
             )
 
+        denied = assert_policy_access(record.policy_number)
+        if denied:
+            return format_error_response(denied)
+
         logger.info(f"Found claim record {claim_number}")
         return record.to_json()
 
@@ -114,6 +119,10 @@ def file_claim(policy_number: str, claim_details: str) -> str:
         if not claim_details:
             logger.warning("Missing claim details")
             raise ClaimDataException("Missing claim details", ErrorCategory.USER_INPUT)
+
+        denied = assert_policy_access(policy_number)
+        if denied:
+            return format_error_response(denied)
 
         logger.info(f"Filing new claim for policy: {policy_number}")
 
@@ -209,6 +218,10 @@ def update_claim_info(claim_number: str, field: str, new_value: str) -> str:
             raise ClaimDataException(
                 f"Claim {claim_number} not found", ErrorCategory.USER_INPUT
             )
+
+        denied = assert_policy_access(record.policy_number)
+        if denied:
+            return format_error_response(denied)
 
         if not hasattr(record, field):
             logger.warning(f"Field '{field}' not in claim record")

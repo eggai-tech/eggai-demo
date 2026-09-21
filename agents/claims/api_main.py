@@ -1,13 +1,15 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from agents.claims.config import keycloak
 from agents.claims.dspy_modules.claims_data import (
     CLAIMS_DATABASE,
     get_claim_record,
 )
 from agents.claims.types import ClaimRecord
 from libraries.observability.logger import get_console_logger
+from libraries.security.fastapi import require_bearer
 
 logger = get_console_logger("claims_api")
 
@@ -15,6 +17,7 @@ app = FastAPI(
     title="Claims Agent API",
     description="API for managing and monitoring insurance claims",
     version="1.0.0",
+    dependencies=[Depends(require_bearer(keycloak))],
 )
 
 app.add_middleware(

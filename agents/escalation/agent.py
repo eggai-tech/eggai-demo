@@ -10,8 +10,9 @@ from libraries.communication.streaming import (
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage, create_tracer, traced_handler
 from libraries.observability.tracing.init_metrics import init_token_metrics
+from libraries.security.handler import authenticate
 
-from .config import AGENT_NAME, GROUP_ID, settings
+from .config import AGENT_NAME, GROUP_ID, keycloak, settings
 from .dspy_modules.escalation import process_escalation
 from .types import ChatMessage
 
@@ -67,6 +68,9 @@ async def handle_ticketing_request(msg: TracedMessage) -> None:
     try:
         chat_messages: list[ChatMessage] = msg.data.get("chat_messages", [])
         connection_id = msg.data.get("connection_id", "unknown")
+
+        if not await authenticate(keycloak, msg, human_channel, AGENT_NAME, connection_id):
+            return
 
         if not chat_messages:
             logger.warning(f"Empty chat history for connection: {connection_id}")

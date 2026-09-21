@@ -49,7 +49,7 @@ def test_config_defaults():
     body = client.get("/config").json()
     assert {"name": "Grafana", "url": "http://localhost:3000"} in body["platformLinks"]
     assert len(body["platformLinks"]) == 7
-    assert list(body) == ["platformLinks"]
+    assert list(body) == ["platformLinks", "keycloak"]
 
 
 def test_config_from_settings(monkeypatch):

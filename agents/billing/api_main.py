@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from agents.billing.config import keycloak
 from agents.billing.dspy_modules.billing_data import BILLING_DATABASE
 from libraries.observability.logger import get_console_logger
+from libraries.security.fastapi import require_bearer
 
 logger = get_console_logger("billing_api")
 
@@ -11,6 +13,7 @@ app = FastAPI(
     title="Billing Agent API",
     description="API for managing and monitoring billing records",
     version="1.0.0",
+    dependencies=[Depends(require_bearer(keycloak))],
 )
 
 app.add_middleware(

@@ -146,6 +146,37 @@ for info in list_classifiers():
 | Grafana          | http://localhost:3000 | Dashboards          |
 | Prometheus       | http://localhost:9090 | Metrics             |
 
+## Authentication (Keycloak)
+
+The compose stack runs Keycloak at http://localhost:8180 (admin console
+login `admin`/`admin`), with realm `insurance` imported from
+`keycloak/realm-export.json`. Demo users, all with password `insurance`:
+
+| User    | Policy   | Admin |
+| ------- | -------- | ----- |
+| `john`  | A12345   | No    |
+| `jane`  | B67890   | No    |
+| `alice` | C24680   | Yes   |
+
+Each agent only reads its own prefixed Keycloak settings
+(`FRONTEND_KEYCLOAK_URL`, `TRIAGE_KEYCLOAK_URL`, `POLICIES_KEYCLOAK_URL`,
+`BILLING_KEYCLOAK_URL`, `CLAIMS_KEYCLOAK_URL`, `ESCALATION_KEYCLOAK_URL`).
+Leaving them empty disables authentication everywhere; copying
+`.env.example` to `.env` turns enforcement on. On kind, set
+`KIND_KEYCLOAK=false` to remove Keycloak from the cluster.
+
+Realm edits in `keycloak/realm-export.json` do not re-import into an
+already-running Keycloak. To pick them up:
+
+```bash
+# Docker Compose
+docker compose rm -sf keycloak && docker compose up -d keycloak
+
+# kind
+make kind-infra
+kubectl -n eggai-demo rollout restart deploy/keycloak
+```
+
 ## Configuration
 
 Configuration uses a 3-layer approach:
