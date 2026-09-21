@@ -173,9 +173,10 @@ KIND_GATEWAY_API_VER ?= v1.5.1
 KIND_TEMPO_VER       ?= 1.18.2
 KIND_OTEL_VER        ?= 0.108.0
 
-KIND_GIT_SHA    := $(shell git rev-parse --short HEAD)
-KIND_IMAGE_REPO ?= $(KIND_REGISTRY)/eggai-demo
-KIND_IMAGE_TAG  ?= dev-$(KIND_GIT_SHA)
+KIND_IMAGE_REPO     ?= $(KIND_REGISTRY)/eggai-demo
+# Written by kind-build: dev-<image id>, so the tag changes exactly when the image does.
+KIND_IMAGE_TAG_FILE := $(KIND_DIR)/.image-tag
+KIND_IMAGE_TAG      ?= $(shell cat $(KIND_IMAGE_TAG_FILE) 2>/dev/null)
 
 # Component toggles -- lean by default; opt into observability when needed.
 KIND_TRAEFIK    ?= true
@@ -264,11 +265,11 @@ KIND_APP_FLAGS = --set image.repository=$(KIND_IMAGE_REPO) \
                  $(if $(filter true,$(KIND_REDPANDA)),--set platformLinks.Redpanda=http://redpanda.eggai.localhost) \
                  $(if $(filter true,$(KIND_TEMPORAL)),--set platformLinks.Temporal=http://temporal.eggai.localhost)
 
-kind-app: kind-build kind-gateway ## Build, push and deploy the app -- the inner loop
-	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
-	@$(MAKE) --no-print-directory kind-urls
+kind-app: kind-build ## Build, push and deploy the app -- the inner loop
+	@$(MAKE) --no-print-directory kind-redeploy
 
-kind-redeploy: kind-gateway ## Redeploy the app chart without rebuilding
+kind-redeploy: kind-gateway ## Deploy the app chart with the last built image
+	@test -n "$(KIND_IMAGE_TAG)" || { echo "no image built yet, run: make kind-build"; exit 1; }
 	$(call kind_helm,eggai,$(KIND_APP),./helm,$(KIND_APP_NS),values-kind.yaml,$(KIND_APP_FLAGS))
 	@$(MAKE) --no-print-directory kind-urls
 
@@ -302,10 +303,13 @@ kind-gateway-api: ## Install Gateway API CRDs (chart will stop shipping them)
 
 kind-deploy: kind-infra kind-app ## Deploy the whole enabled stack
 
-kind-build: ## Build the image and push it to the local registry
-	@echo "==> building $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)"
-	@docker build -t $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG) .
-	@docker push $(KIND_IMAGE_REPO):$(KIND_IMAGE_TAG)
+kind-build: ## Build the image, tag it by content and push it to the local registry
+	@docker build -t $(KIND_IMAGE_REPO):build .
+	@tag=dev-$$(docker image inspect -f '{{.Id}}' $(KIND_IMAGE_REPO):build | cut -c8-19); \
+	docker tag $(KIND_IMAGE_REPO):build $(KIND_IMAGE_REPO):$$tag; \
+	docker push -q $(KIND_IMAGE_REPO):$$tag; \
+	echo $$tag > $(KIND_IMAGE_TAG_FILE); \
+	echo "==> built $(KIND_IMAGE_REPO):$$tag"
 
 kind-dashboards: ## Load the repo's Grafana dashboard into the cluster
 	@$(KUBECTL) create configmap grafana-dash-eggai -n $(KIND_OBS_NS) \
@@ -337,6 +341,7 @@ kind-destroy: ## Delete the cluster, registry, its volume, and local build image
 	@docker image ls --format '{{.Repository}}:{{.Tag}}' \
 		| grep '^$(KIND_REGISTRY)/eggai-demo:' \
 		| xargs -r docker rmi -f >/dev/null 2>&1 || true
+	@rm -f $(KIND_IMAGE_TAG_FILE)
 	@echo "Cluster, registry, registry volume and local eggai-demo images removed."
 
 # -----------------------------------------------------------------------------
