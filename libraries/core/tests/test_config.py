@@ -12,5 +12,6 @@ def test_tracing_disabled_clears_endpoint(monkeypatch):
 
 
 def test_tracing_enabled_keeps_endpoint(monkeypatch):
+    monkeypatch.setenv("TRACING_ENABLED", "true")
     monkeypatch.setenv("OTEL_ENDPOINT", "http://collector:4318")
     assert Settings().otel_endpoint == "http://collector:4318"

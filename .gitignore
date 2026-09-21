@@ -127,4 +127,6 @@ CLAUDE.md
 # Vespa
 agents/policies/vespa/artifacts/*
 !agents/policies/vespa/artifacts/.gitkeep
+
+# kind local registry tag
 kind/.image-tag

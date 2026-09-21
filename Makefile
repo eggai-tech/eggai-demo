@@ -257,7 +257,6 @@ kind-infra: kind-repos ## Deploy enabled infrastructure components only
 	$(call kind_helm,otel-collector,$(KIND_OTEL),open-telemetry/opentelemetry-collector,$(KIND_OBS_NS),otel-collector-kind.yaml,--version $(KIND_OTEL_VER) --set serviceMonitor.enabled=$(KIND_PROMETHEUS))
 	$(call kind_helm,redpanda,$(KIND_REDPANDA),redpanda/redpanda,$(KIND_APP_NS),redpanda-kind.yaml,--version $(KIND_REDPANDA_VER) --set monitoring.enabled=$(KIND_PROMETHEUS))
 	@$(MAKE) --no-print-directory kind-llm
-	@$(KUBECTL) create ns $(KIND_APP_NS) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
 	@[ "$(KIND_TEMPORAL)" != "true" ] || $(KUBECTL) apply -n $(KIND_APP_NS) -f $(KIND_DIR)/temporal-pvc-kind.yaml
 	$(call kind_manifest,$(KIND_TEMPORAL),$(KIND_APP_NS),temporal-kind.yaml)
 
@@ -337,7 +336,7 @@ kind-clean: ## Uninstall everything but keep the cluster
 	@$(HELM) uninstall otel-collector tempo kube-prom -n $(KIND_OBS_NS) 2>/dev/null || true
 	@$(HELM) uninstall traefik -n traefik 2>/dev/null || true
 	@$(KUBECTL) delete -f $(KIND_DIR)/gateway-kind.yaml --ignore-not-found >/dev/null 2>&1 || true
-	@$(KUBECTL) delete ns $(KIND_APP_NS) $(KIND_OBS_NS) traefik --ignore-not-found
+	@$(KUBECTL) delete ns $(KIND_APP_NS) $(KIND_OBS_NS) traefik --ignore-not-found --timeout=300s
 	@echo "Releases and namespaces removed. Cluster $(KIND_CLUSTER) is still running."
 
 kind-destroy: ## Delete the cluster, registry, its volume, and local build images

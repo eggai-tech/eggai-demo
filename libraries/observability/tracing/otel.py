@@ -75,14 +75,12 @@ def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    otlp_endpoint = endpoint
-
     resource = Resource.create({"service.name": app_name})
 
     limits = SpanLimits(max_span_attribute_length=32768)
 
     trace.set_tracer_provider(TracerProvider(resource=resource, span_limits=limits))
-    otlp_exporter = OTLPSpanExporter(endpoint=f"{otlp_endpoint}/v1/traces")
+    otlp_exporter = OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces")
     span_processor = BatchSpanProcessor(otlp_exporter)
 
     # Deliberately the *installed* provider rather than the one constructed
@@ -98,7 +96,7 @@ def init_telemetry(app_name: str, endpoint: str | None = None) -> None:
             "Tracer provider is %s, not an SDK TracerProvider; spans will not be "
             "exported to %s",
             type(installed_provider).__name__,
-            otlp_endpoint,
+            endpoint,
         )
 
     # Patch Span.set_attribute for safer attribute handling
