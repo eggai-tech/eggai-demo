@@ -25,18 +25,22 @@ AGENT_REGISTRY = {
     TargetAgent.BillingAgent: {
         "description": "Handling invoices, bills, payments, payment methods, receipts, refunds, and all financial transactions",
         "message_type": MessageType.BILLING_REQUEST,
+        "client_id": "insurance-billing",
     },
     TargetAgent.PolicyAgent: {
         "description": "Explaining policy coverage, terms, conditions, policy changes, renewals, and policy documents. You will always ask the user for their policy number first.",
         "message_type": MessageType.POLICY_REQUEST,
+        "client_id": "insurance-policies",
     },
     TargetAgent.ClaimsAgent: {
         "description": "Processing new claims, claim status inquiries, incident reports, claim documentation, and claim history. You will always ask the user for their claim number first.",
         "message_type": MessageType.CLAIM_REQUEST,
+        "client_id": "insurance-claims",
     },
     TargetAgent.EscalationAgent: {
         "description": "Handling escalations and requests to speak with managers, or technical issues not solvable from the other agents, e.g. login problems, and system errors. His context is to create a Ticket about the problem. If the user asks about previous ticket, you always ask for ticket number.",
         "message_type": MessageType.ESCALATION_REQUEST,
+        "client_id": "insurance-escalation",
     },
     TargetAgent.ChattyAgent: {
         "description": "The fallback agent, engaging in friendly conversation, responding to greetings and guiding users to ask about their insurance needs. When User asks about an off topic question, you will kindly redirect the user to ask about their insurance needs, specifying that you are not a human and cannot answer those questions."
