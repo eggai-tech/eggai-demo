@@ -23,4 +23,4 @@ def create_kafka_transport(
     else:
         broker = KafkaBroker(bootstrap_servers=servers_list)
 
-    return KafkaTransport(broker=broker)
+    return KafkaTransport(broker=broker, bootstrap_servers=bootstrap_servers)
