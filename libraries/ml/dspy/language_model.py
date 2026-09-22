@@ -25,7 +25,7 @@ class ChatAdapter(dspy.ChatAdapter):
     def parse(self, signature, completion):
         for field in signature.output_fields.values():
             for enum_type in _enum_types(field.annotation):
-                names = "|".join(re.escape(m.name) for m in enum_type)
+                names = "|".join(map(re.escape, enum_type.__members__))
                 completion = re.sub(
                     rf"{enum_type.__name__}(?:\.|\(['\"]?)({names})['\"]?\)?", r"\1", completion
                 )
