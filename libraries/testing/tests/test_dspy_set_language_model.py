@@ -1,5 +1,6 @@
 """Tests for DSPy language model configuration."""
 
+import enum
 from unittest.mock import Mock, patch
 
 import dspy
@@ -8,6 +9,7 @@ import pytest
 from dspy.utils.exceptions import AdapterParseError
 
 from libraries.ml.dspy import (
+    ChatAdapter,
     TrackingLM,
     dspy_set_language_model,
 )
@@ -26,6 +28,34 @@ class UnparseableLM(dspy.BaseLM):
             choices=[{"message": {"content": "no field markers here"}, "finish_reason": "stop"}],
             usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
         )
+
+
+class Route(enum.StrEnum):
+    BillingAgent = "BillingAgent"
+    PolicyAgent = "PolicyAgent"
+
+
+class RouteSignature(dspy.Signature):
+    question: str = dspy.InputField()
+    route: Route = dspy.OutputField()
+    fallback: Route | None = dspy.OutputField()
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    ["BillingAgent", "Route.BillingAgent", "Route('BillingAgent')", 'Route("BillingAgent")'],
+)
+def test_lenient_adapter_accepts_enum_spellings(spelling):
+    completion = f"[[ ## route ## ]]\n{spelling}\n\n[[ ## fallback ## ]]\nRoute.PolicyAgent\n\n[[ ## completed ## ]]"
+    parsed = ChatAdapter().parse(RouteSignature, completion)
+    assert parsed["route"] is Route.BillingAgent
+    assert parsed["fallback"] is Route.PolicyAgent
+
+
+def test_lenient_adapter_still_rejects_unknown_members():
+    completion = "[[ ## route ## ]]\nRoute.ClaimsAgent\n\n[[ ## fallback ## ]]\nNone\n\n[[ ## completed ## ]]"
+    with pytest.raises(AdapterParseError):
+        ChatAdapter().parse(RouteSignature, completion)
 
 
 class TestTrackingLM:
@@ -133,7 +163,7 @@ class TestTrackingLM:
             )
             configure_kwargs = mock_configure.call_args.kwargs
             assert configure_kwargs["lm"] is mock_lm_instance
-            assert isinstance(configure_kwargs["adapter"], dspy.ChatAdapter)
+            assert isinstance(configure_kwargs["adapter"], ChatAdapter)
             assert configure_kwargs["adapter"].use_json_adapter_fallback is False
             mock_dspy_settings.configure.assert_called_once_with(track_usage=True)
             assert result is mock_lm_instance
