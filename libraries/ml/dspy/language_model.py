@@ -1,8 +1,35 @@
+import enum
+import re
 from time import perf_counter
-from typing import Any
+from typing import Any, get_args
 
 import dspy
 from dotenv import load_dotenv
+
+
+def _enum_types(annotation):
+    return [t for t in (annotation, *get_args(annotation)) if isinstance(t, enum.EnumMeta)]
+
+
+class ChatAdapter(dspy.ChatAdapter):
+    """Stock ChatAdapter without the hidden JSONAdapter retry, tolerant of enum spellings.
+
+    Kept under the name ChatAdapter because dspy's StreamListener dispatches on the adapter class name.
+    dspy asks the model for "a valid Python TargetAgent" and Llama-3.3 obliges with
+    ``TargetAgent.BillingAgent`` or ``TargetAgent('BillingAgent')``; dspy only accepts the bare member.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(use_json_adapter_fallback=False, **kwargs)
+
+    def parse(self, signature, completion):
+        for field in signature.output_fields.values():
+            for enum_type in _enum_types(field.annotation):
+                names = "|".join(re.escape(m.name) for m in enum_type)
+                completion = re.sub(
+                    rf"{enum_type.__name__}(?:\.|\(['\"]?)({names})['\"]?\)?", r"\1", completion
+                )
+        return super().parse(signature, completion)
 
 
 class TrackingLM(dspy.LM):
@@ -123,7 +150,7 @@ def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = Non
     logger.info(f"Max context window: {language_model.max_context_window}")
     logger.info(f"LM Studio model: {language_model.is_lm_studio}")
 
-    dspy.configure(lm=language_model, adapter=dspy.ChatAdapter(use_json_adapter_fallback=False))
+    dspy.configure(lm=language_model, adapter=ChatAdapter())
     dspy.settings.configure(track_usage=True)
 
     return language_model
