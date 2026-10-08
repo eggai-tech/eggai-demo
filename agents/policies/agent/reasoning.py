@@ -10,6 +10,7 @@ from dspy.streaming import StreamListener, StreamResponse
 
 from agents.policies.agent.config import settings
 from agents.policies.agent.tools.database.policy_data import get_personal_policy_details
+from agents.policies.agent.tools.mcp_policy_lookup import mcp_policy_lookup
 from agents.policies.agent.tools.retrieval.policy_search import (
     search_policy_documentation,
 )
@@ -100,9 +101,13 @@ optimized_model_path = (
     Path(__file__).resolve().parent / "optimization" / "optimized_policies_simba.json"
 )
 
+policy_lookup = (
+    mcp_policy_lookup(settings.mcp_url) if settings.mcp_url else get_personal_policy_details
+)
+
 policies_model = TracedReAct(
     PolicyAgentSignature,
-    tools=[get_personal_policy_details, search_policy_documentation],
+    tools=[policy_lookup, search_policy_documentation],
     name="policies_react",
     tracer=policies_tracer,
     max_iters=settings.max_iterations,

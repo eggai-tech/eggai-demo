@@ -37,6 +37,10 @@ class Settings(BaseAgentConfig):
         default=30, ge=5,
         description="Maximum conversation lines to keep when truncating"
     )
+    mcp_url: str = Field(
+        default="",
+        description="Streamable HTTP URL of the policies MCP server through the gateway; empty keeps the in-process lookup",
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="POLICIES_", env_file=".env", env_ignore_empty=True, extra="ignore"

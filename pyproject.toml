@@ -21,6 +21,7 @@ dependencies = [
     # Core framework
     "eggai>=0.1.46",
     "dspy>=2.6.24",
+    "mcp==1.30.0",  # dspy 3.3.0 Tool.from_mcp_tool reads mcp 1.x types (inputSchema); mcp 2.x renamed it
     "fastapi>=0.115.6",
     "uvicorn>=0.34.0",
     "pydantic>=2.0.0",
