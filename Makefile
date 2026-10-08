@@ -242,7 +242,7 @@ kind-repos: ## Add/update the Helm repos the local stack pulls from
 # --wait on kube-prom is load-bearing: the ServiceMonitor CRD has to exist
 # before any later chart renders one, or the release fails on an unknown kind.
 kind-infra: kind-repos ## Deploy enabled infrastructure components only
-	$(call kind_helm,kube-prom,$(KIND_PROMETHEUS),prometheus-community/kube-prometheus-stack,$(KIND_OBS_NS),kube-prom-kind.yaml,--version $(KIND_KUBEPROM_VER) --wait --timeout 10m)
+	$(call kind_helm,kube-prom,$(KIND_PROMETHEUS),prometheus-community/kube-prometheus-stack,$(KIND_OBS_NS),kube-prom-kind.yaml,--version $(KIND_KUBEPROM_VER) --wait --timeout 10m $(if $(filter true,$(KIND_KEYCLOAK)),-f $(KIND_DIR)/kube-prom-keycloak-kind.yaml))
 	@if [ "$(KIND_PROMETHEUS)" = "true" ]; then $(MAKE) --no-print-directory kind-dashboards; \
 	else $(KUBECTL) delete configmap grafana-dash-eggai -n $(KIND_OBS_NS) --ignore-not-found >/dev/null 2>&1 || true; fi
 	@$(MAKE) --no-print-directory kind-gateway-api
@@ -333,7 +333,8 @@ kind-urls: ## Print the local ingress hostnames for enabled components
 	@echo "  app        http://chat.eggai.localhost"
 	@echo "  traefik    http://traefik.eggai.localhost"
 	@[ "$(KIND_REDPANDA)"   = "true" ] && echo "  redpanda   http://redpanda.eggai.localhost" || true
-	@[ "$(KIND_PROMETHEUS)" = "true" ] && echo "  grafana    http://grafana.eggai.localhost   (admin/admin)" || true
+	@[ "$(KIND_PROMETHEUS)" = "true" ] && [ "$(KIND_KEYCLOAK)" = "true" ] && echo "  grafana    http://grafana.eggai.localhost  (Keycloak login: alice is Admin, john/jane Viewer; API admin/admin)" || true
+	@[ "$(KIND_PROMETHEUS)" = "true" ] && [ "$(KIND_KEYCLOAK)" != "true" ] && echo "  grafana    http://grafana.eggai.localhost   (admin/admin)" || true
 	@[ "$(KIND_TEMPORAL)"   = "true" ] && echo "  temporal   http://temporal.eggai.localhost" || true
 	@[ "$(KIND_KEYCLOAK)"   = "true" ] && echo "  keycloak   http://keycloak.eggai.localhost (admin/admin, users john jane alice / insurance)" || true
 

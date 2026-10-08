@@ -31,7 +31,7 @@ The system provides end-to-end observability across all agents:
 
 | Service    | URL                   | Purpose                         |
 | ---------- | --------------------- | ------------------------------- |
-| Grafana    | http://localhost:3000 | Dashboards, trace visualization |
+| Grafana    | http://localhost:3000 | Dashboards, trace visualization (Keycloak login) |
 | Prometheus | http://localhost:9090 | Metrics queries                 |
 | Tempo      | (via Grafana)         | Trace storage                   |
 

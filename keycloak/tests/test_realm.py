@@ -17,6 +17,7 @@ def test_realm_clients():
     assert {c["clientId"] for c in REALM["clients"]} == {
         "insurance-web", "insurance-frontend", "insurance-triage",
         "insurance-policies", "insurance-billing", "insurance-claims", "insurance-escalation",
+        "insurance-grafana",
     }
     assert _client("insurance-web")["publicClient"] is True
     assert _client("insurance-web")["redirectUris"] == ["${INSURANCE_WEB_URL}/*"]
@@ -27,6 +28,18 @@ def test_realm_clients():
         assert client["attributes"]["standard.token.exchange.enabled"] == "true"
         assert "insurance-policies-scope" in client["optionalClientScopes"]
         assert not any(s.endswith("-scope") and s.startswith("insurance-") for s in client["defaultClientScopes"])
+
+
+def test_grafana_client():
+    grafana = _client("insurance-grafana")
+    assert grafana["publicClient"] is False
+    assert grafana["secret"] == "${INSURANCE_GRAFANA_CLIENT_SECRET}"
+    assert grafana["standardFlowEnabled"] is True
+    assert grafana["redirectUris"] == ["${INSURANCE_GRAFANA_URL}/*"]
+    assert grafana["defaultClientScopes"] == ["profile", "policy-numbers"]
+    mappers = {m["name"]: m["config"] for m in _scope("profile")["protocolMappers"]}
+    assert mappers["email"]["claim.name"] == "email"
+    assert mappers["email"]["id.token.claim"] == "true"
 
 
 def test_agent_scopes_carry_audience_and_scp():

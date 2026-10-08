@@ -55,7 +55,9 @@
         { "name": "full name", "protocol": "openid-connect", "protocolMapper": "oidc-full-name-mapper", "consentRequired": false,
           "config": { "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } },
         { "name": "username", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "consentRequired": false,
-          "config": { "user.attribute": "username", "claim.name": "preferred_username", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } }
+          "config": { "user.attribute": "username", "claim.name": "preferred_username", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } },
+        { "name": "email", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "consentRequired": false,
+          "config": { "user.attribute": "email", "claim.name": "email", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" } }
       ]
     },
     {
@@ -98,6 +100,16 @@
       "redirectUris": ["${INSURANCE_WEB_URL}/*"], "webOrigins": ["${INSURANCE_WEB_URL}"],
       "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+" },
       "defaultClientScopes": ["profile", "policy-numbers", "insurance-frontend-scope"], "optionalClientScopes": []
+    },
+    {
+      "clientId": "insurance-grafana", "enabled": true, "publicClient": false,
+      "secret": "${INSURANCE_GRAFANA_CLIENT_SECRET}",
+      "standardFlowEnabled": true, "implicitFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "rootUrl": "${INSURANCE_GRAFANA_URL}", "baseUrl": "/",
+      "redirectUris": ["${INSURANCE_GRAFANA_URL}/*"], "webOrigins": ["${INSURANCE_GRAFANA_URL}"],
+      "attributes": { "post.logout.redirect.uris": "+" },
+      "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": []
     },
     {
       "clientId": "insurance-frontend", "enabled": true, "publicClient": false, "secret": "${INSURANCE_FRONTEND_CLIENT_SECRET}",

@@ -143,7 +143,7 @@ for info in list_classifiers():
 | Vespa            | http://localhost:8080 | Vector search       |
 | Temporal UI      | http://localhost:8081 | Workflow monitoring |
 | MLflow           | http://localhost:5001 | Experiment tracking |
-| Grafana          | http://localhost:3000 | Dashboards          |
+| Grafana          | http://localhost:3000 | Dashboards (Keycloak login) |
 | Prometheus       | http://localhost:9090 | Metrics             |
 
 ## Authentication (Keycloak)
@@ -165,12 +165,17 @@ Leaving them empty disables authentication everywhere; copying
 `.env.example` to `.env` turns enforcement on. On kind, set
 `KIND_KEYCLOAK=false` to remove Keycloak from the cluster.
 
+Grafana logs in through the same realm (client `insurance-grafana`, secret
+`INSURANCE_GRAFANA_CLIENT_SECRET`): `alice` gets the Grafana `Admin` role via
+`insurance-admin`, `john` and `jane` are `Viewer`. On kind, the local
+`admin`/`admin` stays usable for the Grafana HTTP API over basic auth.
+
 Realm edits in `keycloak/realm-export.json` do not re-import into an
 already-running Keycloak. To pick them up:
 
 ```bash
 # Docker Compose
-docker compose rm -sf keycloak && docker compose up -d keycloak
+docker compose rm -sf keycloak grafana && docker compose up -d keycloak grafana
 
 # kind
 make kind-infra
