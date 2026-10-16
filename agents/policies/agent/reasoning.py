@@ -102,7 +102,9 @@ optimized_model_path = (
 )
 
 policy_lookup = (
-    mcp_policy_lookup(settings.mcp_url) if settings.mcp_url else get_personal_policy_details
+    mcp_policy_lookup(settings.mcp_url, settings.language_model)
+    if settings.mcp_url
+    else get_personal_policy_details
 )
 
 policies_model = TracedReAct(
@@ -126,18 +128,14 @@ if (
             optimized_data = json.load(f)
 
             if "react" in optimized_data and "signature" in optimized_data["react"]:
-                optimized_instructions = optimized_data["react"]["signature"].get(
-                    "instructions"
-                )
+                optimized_instructions = optimized_data["react"]["signature"].get("instructions")
                 if optimized_instructions:
                     logger.info("Successfully loaded optimized instructions")
                     PolicyAgentSignature.__doc__ = optimized_instructions
                     using_optimized_prompts = True
 
             if not using_optimized_prompts:
-                logger.warning(
-                    "Optimized JSON file exists but doesn't have expected structure"
-                )
+                logger.warning("Optimized JSON file exists but doesn't have expected structure")
     except Exception as e:
         logger.error(f"Error loading optimized JSON: {e}")
 else:
@@ -148,9 +146,7 @@ logger.info(
 )
 
 
-def truncate_long_history(
-    chat_history: str, config: ModelConfig | None = None
-) -> dict[str, Any]:
+def truncate_long_history(chat_history: str, config: ModelConfig | None = None) -> dict[str, Any]:
     config = config or ModelConfig()
     max_length = config.truncation_length
 
