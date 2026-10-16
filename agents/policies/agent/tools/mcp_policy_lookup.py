@@ -22,8 +22,20 @@ TOOL_NAME = (
     "policies-mcp__get_policy_details"  # Agent Router prefixes every tool with the backendRef name
 )
 
+# litellm reads the provider's key from the environment by convention (<PROVIDER>_API_KEY); these two
+# are the names it uses for the providers the demo runs on.
+PROVIDER_KEY_ENV = {"openai": "OPENAI_API_KEY", "lm_studio": "LM_STUDIO_API_KEY"}
 
-async def lookup(url: str, policy_number: str) -> str:
+
+def gateway_key(language_model: str) -> str:
+    """The agent's gateway credential: the key litellm sends on this agent's model calls, read from the
+    environment variable of the model's provider (the prefix of LANGUAGE_MODEL). The gateway's policy
+    decision point maps it to the agent (AIC-AGT-007), at the model gate and at the MCP gate alike."""
+    provider = language_model.partition("/")[0]
+    return os.environ.get(PROVIDER_KEY_ENV.get(provider, f"{provider.upper()}_API_KEY"), "")
+
+
+async def lookup(url: str, policy_number: str, key: str) -> str:
     refusals: list[str] = []
 
     async def capture(response: httpx.Response) -> None:
@@ -36,9 +48,7 @@ async def lookup(url: str, policy_number: str) -> str:
             headers=headers, timeout=timeout, auth=auth, event_hooks={"response": [capture]}
         )
 
-    # The agent's gateway credential, the same bearer litellm sends on its model calls (identity/00-agent-keys.yaml):
-    # the MCP gate requires a registered agent identity (AIC-AGT-007).
-    headers = {"Authorization": f"Bearer {os.environ.get('LM_STUDIO_API_KEY', '')}"}
+    headers = {"Authorization": f"Bearer {key}"}
     try:
         async with streamablehttp_client(url, headers=headers, httpx_client_factory=client) as (
             read,
@@ -58,7 +68,9 @@ async def lookup(url: str, policy_number: str) -> str:
         return f"Tool call refused by the policy gateway: {refusals[0]}"
 
 
-def mcp_policy_lookup(url: str) -> Callable[[str], str]:
+def mcp_policy_lookup(url: str, language_model: str) -> Callable[[str], str]:
+    key = gateway_key(language_model)
+
     def get_personal_policy_details(policy_number: str) -> str:
         """
         Retrieve specific policy details from database using policy number.
@@ -69,6 +81,6 @@ def mcp_policy_lookup(url: str) -> Callable[[str], str]:
         if denied:
             return denied
         logger.info(f"Looking up policy '{policy_number}' over MCP at {url}")
-        return asyncio.run(lookup(url, policy_number))
+        return asyncio.run(lookup(url, policy_number, key))
 
     return get_personal_policy_details
