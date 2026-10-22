@@ -105,7 +105,7 @@ async def security_context(connection_id: str, token: str | None) -> dict:
             "access_token": "",
         }
     caller = keycloak.validate(token or "")
-    return caller.to_context(await keycloak.exchange(token or "", "insurance-triage"))
+    return caller.to_context(await keycloak.exchange(token or "", "insurance-triage", "insurance-triage-scope"))
 
 
 tracer = create_tracer("frontend_agent")

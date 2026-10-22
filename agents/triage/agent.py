@@ -58,8 +58,9 @@ async def _publish_to_agent(
         safe_set_attribute(span, "conversation_length", len(conversation_string))
         child_traceparent, child_tracestate = format_span_as_traceparent(span)
         if keycloak.enabled:
+            client_id = AGENT_REGISTRY[target_agent]["client_id"]
             token = await keycloak.exchange(
-                security_context["access_token"], AGENT_REGISTRY[target_agent]["client_id"]
+                security_context["access_token"], client_id, f"{client_id}-scope"
             )
             security_context = {**security_context, "access_token": token}
         triage_to_agent_messages = [
@@ -134,7 +135,6 @@ async def handle_user_message(msg: TracedMessage) -> None:
         return
 
     security_context: dict = msg.data.get("security_context") or {}
-    run_var.set(Run(security_context.get("access_token", ""), msg.traceparent or "", str(msg.id)))
     if keycloak.enabled:
         try:
             caller = keycloak.validate(security_context.get("access_token", ""))
@@ -155,6 +155,13 @@ async def handle_user_message(msg: TracedMessage) -> None:
         identity = identity_line(caller.to_context(""))
     else:
         identity = identity_line(security_context)
+    run_var.set(
+        Run(
+            await keycloak.gateway_token(security_context.get("access_token", "")),
+            msg.traceparent or "",
+            str(msg.id),
+        )
+    )
 
     conversation_string = identity + build_conversation_string(chat_messages)
     safe_set_attribute(span, "conversation_length", len(conversation_string))

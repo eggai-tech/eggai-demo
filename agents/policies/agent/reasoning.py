@@ -102,7 +102,7 @@ optimized_model_path = (
 )
 
 policy_lookup = (
-    mcp_policy_lookup(settings.mcp_url, settings.language_model_api_key_file)
+    mcp_policy_lookup(settings.mcp_url)
     if settings.mcp_url
     else get_personal_policy_details
 )

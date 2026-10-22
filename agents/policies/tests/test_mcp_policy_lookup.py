@@ -9,7 +9,7 @@ TRACEPARENT = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 
 
 @pytest.mark.asyncio
-async def test_lookup_sends_service_token_and_run_headers_per_call(tmp_path, monkeypatch):
+async def test_lookup_sends_gateway_token_and_run_headers(monkeypatch):
     sent = []
 
     @asynccontextmanager
@@ -19,15 +19,12 @@ async def test_lookup_sends_service_token_and_run_headers_per_call(tmp_path, mon
         yield
 
     monkeypatch.setattr(mod, "streamablehttp_client", client)
-    run_var.set(Run("obo-policies", TRACEPARENT, "msg-1"))
-    token_file = tmp_path / "token"
+    token = run_var.set(Run("gateway-token", TRACEPARENT, "msg-1"))
 
-    for token in ("sa-token-1", "sa-token-2"):
-        token_file.write_text(token)
-        with pytest.raises(ConnectionError):
-            await mod.lookup("http://gateway/mcp", str(token_file), "A12345")
+    with pytest.raises(ConnectionError):
+        await mod.lookup("http://gateway/mcp", "A12345")
+    run_var.reset(token)
 
-    assert [h["Authorization"] for h in sent] == ["Bearer sa-token-1", "Bearer sa-token-2"]
-    assert sent[1]["x-foundry-user-token"] == "obo-policies"
-    assert sent[1]["traceparent"] == TRACEPARENT
-    assert sent[1]["x-foundry-run"] == "msg-1"
+    assert sent == [
+        {"Authorization": "Bearer gateway-token", "traceparent": TRACEPARENT, "x-foundry-run": "msg-1"}
+    ]

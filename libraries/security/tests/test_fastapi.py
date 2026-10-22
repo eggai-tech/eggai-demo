@@ -11,6 +11,7 @@ class Settings:
     keycloak_realm = "insurance"
     keycloak_client_id = "insurance-billing"
     keycloak_client_secret = ""
+    gateway_audience = ""
 
 
 def _app(keycloak):

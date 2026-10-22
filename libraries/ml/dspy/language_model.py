@@ -7,7 +7,7 @@ import dspy
 from dotenv import load_dotenv
 from dspy.utils.exceptions import AdapterParseError
 
-from libraries.security.gateway import run_headers, service_token
+from libraries.security.gateway import gateway_token, run_headers
 
 
 def _enum_types(annotation):
@@ -43,8 +43,7 @@ class ChatAdapter(dspy.ChatAdapter):
 
 
 class TrackingLM(dspy.LM):
-    def __init__(self, *args, api_key_file: str = "", **kwargs):
-        self.api_key_file = api_key_file
+    def __init__(self, *args, **kwargs):
         model_name = args[0] if args else ""
         self.is_lm_studio = "lm_studio" in model_name or "lm-studio" in model_name
 
@@ -126,8 +125,8 @@ class TrackingLM(dspy.LM):
             if messages:
                 messages = self._truncate_messages(messages, self.max_context_window)
 
-        if self.api_key_file:
-            kwargs["api_key"] = service_token(self.api_key_file)
+        if gateway_token():
+            kwargs["api_key"] = gateway_token()
             kwargs["headers"] = run_headers()
 
         # dspy.LM.forward is unannotated and pyright infers a union that
@@ -150,7 +149,6 @@ def dspy_set_language_model(settings, overwrite_cache_enabled: bool | None = Non
     language_model = TrackingLM(
         settings.language_model,
         cache=cache_enabled,
-        api_key_file=settings.language_model_api_key_file,
         api_base=settings.language_model_api_base
         if settings.language_model_api_base
         else None,
@@ -178,7 +176,6 @@ if __name__ == "__main__":
         language_model = "lm_studio/gemma-3-12b-it-qat"
         cache_enabled = False
         language_model_api_base = "http://localhost:1234/v1"
-        language_model_api_key_file = ""
         max_context_window = 128000
 
     lm = dspy_set_language_model(Settings())

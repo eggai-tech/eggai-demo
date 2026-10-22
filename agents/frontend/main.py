@@ -126,7 +126,7 @@ async def proxy_api(agent: str, path: str, request: Request):
         if "insurance-admin" not in caller.roles:
             raise HTTPException(status_code=403, detail="insurance-admin role required")
         try:
-            exchanged = await keycloak.exchange(token, f"insurance-{agent}")
+            exchanged = await keycloak.exchange(token, f"insurance-{agent}", f"insurance-{agent}-scope")
         except httpx.HTTPError as e:
             raise HTTPException(status_code=502, detail=f"Token exchange failed: {e}")
         headers["authorization"] = f"Bearer {exchanged}"

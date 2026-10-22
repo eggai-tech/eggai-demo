@@ -120,11 +120,6 @@ spec:
           volumeMounts:
           - mountPath: /cache
             name: cache
-          {{- if $.Values.gatewayIdentity.enabled }}
-          - mountPath: /var/run/secrets/foundry
-            name: foundry-token
-            readOnly: true
-          {{- end }}
           {{- with $agent.extraVolumeMounts }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
@@ -134,15 +129,6 @@ spec:
       - emptyDir:
           sizeLimit: {{ $agent.cacheVolumeSize | default $.Values.cacheVolumeSize }}
         name: cache
-      {{- if $.Values.gatewayIdentity.enabled }}
-      - name: foundry-token
-        projected:
-          sources:
-          - serviceAccountToken:
-              audience: {{ $.Values.gatewayIdentity.audience }}
-              expirationSeconds: {{ $.Values.gatewayIdentity.expirationSeconds }}
-              path: token
-      {{- end }}
       {{- if $frontDoor }}
       - name: opa-config
         configMap:

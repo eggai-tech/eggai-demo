@@ -23,6 +23,10 @@ spec:
         - {name: INSURANCE_WEB_URL, value: http://chat.eggai.localhost}
         - {name: INSURANCE_FRONTEND_CLIENT_SECRET, value: dev-frontend-secret}
         - {name: INSURANCE_TRIAGE_CLIENT_SECRET, value: dev-triage-secret}
+        - {name: INSURANCE_POLICIES_CLIENT_SECRET, value: dev-policies-secret}
+        - {name: INSURANCE_BILLING_CLIENT_SECRET, value: dev-billing-secret}
+        - {name: INSURANCE_CLAIMS_CLIENT_SECRET, value: dev-claims-secret}
+        - {name: INSURANCE_ESCALATION_CLIENT_SECRET, value: dev-escalation-secret}
         - {name: INSURANCE_GRAFANA_URL, value: http://grafana.eggai.localhost}
         - {name: INSURANCE_GRAFANA_CLIENT_SECRET, value: dev-grafana-secret}
         - {name: INSURANCE_USER_PASSWORD, value: insurance}

@@ -51,7 +51,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-ServiceAccount of one agent, <fullname>-<label>: the workload identity the AI gateway reviews.
+ServiceAccount of one agent, <fullname>-<label>: the pod's identity in the cluster.
 Usage: include "eggai-multi-agent-chat.serviceAccountName" (dict "root" $ "agent" $name)
 */}}
 {{- define "eggai-multi-agent-chat.serviceAccountName" -}}
@@ -112,9 +112,9 @@ Usage: include "eggai-multi-agent-chat.agentEnv" (dict "root" $ "agent" $name)
   value: {{ join "," $links | quote }}
 {{- end }}
 {{- end }}
-{{- if $root.Values.gatewayIdentity.enabled }}
-- name: {{ $prefix }}LANGUAGE_MODEL_API_KEY_FILE
-  value: /var/run/secrets/foundry/token
+{{- with $root.Values.gateway.audience }}
+- name: {{ $prefix }}GATEWAY_AUDIENCE
+  value: {{ . | quote }}
 {{- end }}
 {{- if and (eq .agent "frontend") $root.Values.frontDoorPolicy.enabled }}
 - name: FRONTEND_FRONT_DOOR_POLICY_URL
