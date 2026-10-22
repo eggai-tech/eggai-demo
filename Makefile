@@ -155,6 +155,7 @@ full-reset: stop-all clean ## Full reset: stop everything, clean artifacts, remo
 KIND_DIR           := kind
 KIND_CLUSTER       ?= eggai
 KIND_NODE_IMAGE    ?= kindest/node:v1.31.2
+KIND_CONFIG        ?= $(KIND_DIR)/kind.yaml
 KIND_APP_NS        ?= eggai-demo
 # Fixed: kube-prom, tempo and otel-collector values reference this namespace by name.
 KIND_OBS_NS        := observability
@@ -217,7 +218,7 @@ kind-up: ## Create the kind cluster and local image registry
 			--name kind-registry registry:2
 	@kind get clusters 2>/dev/null | grep -qx $(KIND_CLUSTER) || \
 		kind create cluster --name $(KIND_CLUSTER) --image $(KIND_NODE_IMAGE) \
-			--config $(KIND_DIR)/kind.yaml
+			--config $(KIND_CONFIG)
 	@docker network inspect kind | grep -q kind-registry || \
 		docker network connect kind kind-registry
 	@for n in $$(kind get nodes --name $(KIND_CLUSTER)); do \
@@ -295,7 +296,7 @@ kind-llm: ## Point the cluster at LM Studio on the host
 	@IP="$(KIND_LLM_HOST_IP)"; \
 	if [ -z "$$IP" ]; then \
 		IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c \
-			"getent hosts host.docker.internal 2>/dev/null | awk '{print \$$1}' | head -1"); \
+			"getent hosts host.docker.internal 2>/dev/null | awk '\$$1 !~ /^127\\./ {print \$$1}' | head -1"); \
 	fi; \
 	if [ -z "$$IP" ]; then \
 		IP=$$(docker exec $(KIND_CLUSTER)-control-plane sh -c "ip route | awk '/default/{print \$$3}'"); \

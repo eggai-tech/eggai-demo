@@ -15,7 +15,7 @@ from libraries.communication.transport import create_kafka_transport
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import init_telemetry
 
-from .config import keycloak, settings
+from .config import front_door, keycloak, settings
 
 eggai_set_default_transport(
     lambda: create_kafka_transport(
@@ -105,8 +105,20 @@ async def proxy_api(agent: str, path: str, request: Request):
     if request.url.query:
         url = f"{url}?{request.url.query}"
     headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_BY_HOP}
+    token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+    if front_door.enabled:
+        decision = await front_door.decide(
+            "admin",
+            token,
+            traceparent=request.headers.get("traceparent", ""),
+            text=f"{request.method} /api/{agent}/{path}",
+        )
+        if not decision["allowed"]:
+            raise HTTPException(
+                status_code=403,
+                detail={"reasons": decision["reasons"], "controls": decision["controls"]},
+            )
     if keycloak.enabled:
-        token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
         try:
             caller = keycloak.validate(token)
         except jwt.PyJWTError as e:

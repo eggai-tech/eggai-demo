@@ -1,0 +1,17 @@
+{{- if and .Values.agents.frontend.enabled .Values.frontDoorPolicy.enabled }}
+{{- $p := .Values.frontDoorPolicy }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eggai-multi-agent-chat.fullname" . }}-frontdoor-opa
+  labels:
+    {{- include "eggai-multi-agent-chat.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- toYaml (dict
+      "services" (merge (dict "evidence" (dict "url" $p.evidenceUrl)) $p.services)
+      "bundles" $p.bundles
+      "keys" $p.keys
+      "decision_logs" (dict "service" "evidence" "reporting" (dict "min_delay_seconds" 5 "max_delay_seconds" 10))
+    ) | nindent 4 }}
+{{- end }}

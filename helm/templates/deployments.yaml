@@ -1,6 +1,7 @@
 {{- range $name, $agent := .Values.agents }}
 {{- if $agent.enabled }}
 {{- $meta := include "eggai-multi-agent-chat.agentMeta" $name | fromJson }}
+{{- $frontDoor := and (eq $name "frontend") $.Values.frontDoorPolicy.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -16,20 +17,73 @@ spec:
       egg-ai.com/agent: {{ $meta.label }}
   template:
     metadata:
-      {{- with $.Values.podAnnotations }}
+      {{- if or $.Values.podAnnotations $frontDoor }}
       annotations:
+        {{- with $.Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if $frontDoor }}
+        checksum/frontdoor-opa: {{ include (print $.Template.BasePath "/frontdoor-opa.yaml") $ | sha256sum }}
+        {{- end }}
       {{- end }}
       labels:
         {{- include "eggai-multi-agent-chat.selectorLabels" $ | nindent 8 }}
         egg-ai.com/agent: {{ $meta.label }}
     spec:
+      serviceAccountName: {{ include "eggai-multi-agent-chat.serviceAccountName" (dict "root" $ "agent" $name) }}
+      automountServiceAccountToken: false
       {{- with $.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- if $frontDoor }}
+      {{- with $.Values.frontDoorPolicy }}
+      initContainers:
+        # Native sidecar: the frontend starts once OPA has activated its signed bundles.
+        - name: opa
+          image: {{ .image }}
+          restartPolicy: Always
+          args:
+            - run
+            - --server
+            - --addr=127.0.0.1:8181
+            - --diagnostic-addr=0.0.0.0:8282
+            - --config-file=/config/opa/config.yaml
+            - --skip-version-check
+            - --log-format=json
+          ports:
+            - name: opa-health
+              containerPort: 8282
+              protocol: TCP
+          startupProbe:
+            httpGet: {path: "/health?bundles", port: opa-health}
+            periodSeconds: 2
+            failureThreshold: 150
+          readinessProbe:
+            httpGet: {path: "/health?bundles", port: opa-health}
+          livenessProbe:
+            httpGet: {path: /health, port: opa-health}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: opa-config
+              mountPath: /config/opa
+              readOnly: true
+            # The OCI downloader unpacks each bundle under a temporary directory.
+            - name: opa-tmp
+              mountPath: /tmp
+            {{- if .registryTokenSecret }}
+            - name: opa-registry
+              mountPath: /run/opa/registry
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+      {{- end }}
+      {{- end }}
       containers:
         - name: {{ $.Chart.Name }}
           args:
@@ -66,6 +120,11 @@ spec:
           volumeMounts:
           - mountPath: /cache
             name: cache
+          {{- if $.Values.gatewayIdentity.enabled }}
+          - mountPath: /var/run/secrets/foundry
+            name: foundry-token
+            readOnly: true
+          {{- end }}
           {{- with $agent.extraVolumeMounts }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
@@ -75,6 +134,28 @@ spec:
       - emptyDir:
           sizeLimit: {{ $agent.cacheVolumeSize | default $.Values.cacheVolumeSize }}
         name: cache
+      {{- if $.Values.gatewayIdentity.enabled }}
+      - name: foundry-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: {{ $.Values.gatewayIdentity.audience }}
+              expirationSeconds: {{ $.Values.gatewayIdentity.expirationSeconds }}
+              path: token
+      {{- end }}
+      {{- if $frontDoor }}
+      - name: opa-config
+        configMap:
+          name: {{ include "eggai-multi-agent-chat.fullname" $ }}-frontdoor-opa
+      - name: opa-tmp
+        emptyDir:
+          sizeLimit: 64Mi
+      {{- with $.Values.frontDoorPolicy.registryTokenSecret }}
+      - name: opa-registry
+        secret:
+          secretName: {{ . }}
+      {{- end }}
+      {{- end }}
       {{- with $agent.extraVolumes }}
       {{- toYaml . | nindent 6 }}
       {{- end }}

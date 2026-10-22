@@ -56,6 +56,7 @@ async def test_handler_refuses_invalid_token(monkeypatch):
             data={
                 "chat_messages": [{"role": "user", "content": "premium?"}],
                 "connection_id": "conn-1",
+                "message_id": "msg-1",
                 "security_context": {"access_token": "bad"},
             },
         )
@@ -84,6 +85,7 @@ async def test_handler_sets_caller(monkeypatch):
             data={
                 "chat_messages": [{"role": "user", "content": "premium?"}],
                 "connection_id": "conn-1",
+                "message_id": "msg-1",
                 "security_context": {"access_token": "good"},
             },
         )

@@ -6,6 +6,39 @@
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
+  "attributes": { "acr.loa.map": "{\"1\":1,\"2\":2}" },
+  "browserFlow": "browser-admin-otp",
+  "authenticationFlows": [
+    {
+      "alias": "browser-admin-otp", "description": "Password for everyone; insurance-admin also passes OTP, which makes the token's acr 2",
+      "providerId": "basic-flow", "topLevel": true, "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "auth-cookie", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 10 },
+        { "flowAlias": "browser-admin-otp forms", "authenticatorFlow": true, "requirement": "ALTERNATIVE", "priority": 20 }
+      ]
+    },
+    {
+      "alias": "browser-admin-otp forms", "description": "Username and password, then the admin step",
+      "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "auth-username-password-form", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10 },
+        { "flowAlias": "browser-admin-otp admin", "authenticatorFlow": true, "requirement": "CONDITIONAL", "priority": 20 }
+      ]
+    },
+    {
+      "alias": "browser-admin-otp admin", "description": "OTP for insurance-admin, recorded as level of authentication 2",
+      "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "conditional-user-role", "authenticatorConfig": "insurance-admin role", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10 },
+        { "authenticator": "conditional-level-of-authentication", "authenticatorConfig": "level 2", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 20 },
+        { "authenticator": "auth-otp-form", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 30 }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    { "alias": "insurance-admin role", "config": { "condUserRole": "insurance-admin", "negate": "false" } },
+    { "alias": "level 2", "config": { "loa-condition-level": "2", "loa-max-age": "36000" } }
+  ],
   "roles": {
     "realm": [
       { "name": "insurance-admin", "description": "Can open the admin dashboard" }
@@ -48,6 +81,14 @@
     ]
   },
   "clientScopes": [
+    {
+      "name": "acr", "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "false", "display.on.consent.screen": "false" },
+      "protocolMappers": [
+        { "name": "acr loa level", "protocol": "openid-connect", "protocolMapper": "oidc-acr-mapper", "consentRequired": false,
+          "config": { "id.token.claim": "true", "access.token.claim": "true", "introspection.token.claim": "true" } }
+      ]
+    },
     {
       "name": "profile", "protocol": "openid-connect",
       "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" },
@@ -99,7 +140,7 @@
       "rootUrl": "${INSURANCE_WEB_URL}", "baseUrl": "/",
       "redirectUris": ["${INSURANCE_WEB_URL}/*"], "webOrigins": ["${INSURANCE_WEB_URL}"],
       "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+" },
-      "defaultClientScopes": ["profile", "policy-numbers", "insurance-frontend-scope"], "optionalClientScopes": []
+      "defaultClientScopes": ["profile", "policy-numbers", "acr", "insurance-frontend-scope"], "optionalClientScopes": []
     },
     {
       "clientId": "insurance-grafana", "enabled": true, "publicClient": false,

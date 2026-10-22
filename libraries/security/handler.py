@@ -5,6 +5,7 @@ from libraries.communication.streaming import publish_error_message
 from libraries.observability.logger import get_console_logger
 from libraries.observability.tracing import TracedMessage
 
+from .gateway import Run, run_var
 from .keycloak import Keycloak, caller_var
 
 logger = get_console_logger("security.handler")
@@ -14,9 +15,10 @@ async def authenticate(
     keycloak: Keycloak, msg: TracedMessage, human_channel: Channel, agent_name: str, connection_id: str
 ) -> bool:
     caller_var.set(None)
+    token = (msg.data.get("security_context") or {}).get("access_token", "")
+    run_var.set(Run(token, msg.traceparent or "", msg.data["message_id"]))
     if not keycloak.enabled:
         return True
-    token = (msg.data.get("security_context") or {}).get("access_token", "")
     try:
         caller_var.set(keycloak.validate(token))
     except jwt.PyJWTError as e:

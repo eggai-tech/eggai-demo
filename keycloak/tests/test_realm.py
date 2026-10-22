@@ -63,3 +63,17 @@ def test_users_and_policies():
     assert users["alice"]["attributes"]["policy_numbers"] == ["C24680"]
     assert users["alice"]["realmRoles"] == ["insurance-admin"]
     assert all(u["credentials"][0]["value"] == "${INSURANCE_USER_PASSWORD}" for u in users.values())
+
+
+def test_admin_login_requires_otp_and_reaches_acr_2():
+    assert json.loads(REALM["attributes"]["acr.loa.map"]) == {"1": 1, "2": 2}
+    flows = {f["alias"]: f for f in REALM["authenticationFlows"]}
+    configs = {c["alias"]: c["config"] for c in REALM["authenticatorConfig"]}
+    assert REALM["browserFlow"] == "browser-admin-otp"
+    admin = {e["authenticator"]: e for e in flows["browser-admin-otp admin"]["authenticationExecutions"]}
+    assert configs[admin["conditional-user-role"]["authenticatorConfig"]]["condUserRole"] == "insurance-admin"
+    assert configs[admin["conditional-level-of-authentication"]["authenticatorConfig"]]["loa-condition-level"] == "2"
+    assert admin["auth-otp-form"]["requirement"] == "REQUIRED"
+    acr = {m["protocolMapper"] for m in _scope("acr")["protocolMappers"]}
+    assert acr == {"oidc-acr-mapper"}
+    assert "acr" in _client("insurance-web")["defaultClientScopes"]

@@ -22,8 +22,9 @@ from libraries.observability.tracing.otel import (
     safe_set_attribute,
     traced_handler,
 )
+from libraries.security.policy import notices
 
-from .config import keycloak, settings
+from .config import front_door, keycloak, settings
 from .websocket_manager import WebSocketManager
 
 logger = get_console_logger("frontend_agent")
@@ -46,6 +47,52 @@ frontend_agent = Agent(AGENT_NAME)
 human_channel = Channel(channels.human)
 human_stream_channel = Channel(channels.human_stream)
 websocket_manager = WebSocketManager()
+
+INTERACTION_NOTICE = "ai_interaction_notice"
+NOTICES = {
+    INTERACTION_NOTICE: (
+        "You are chatting with an AI assistant, not a person. "
+        "Its answers are generated automatically and can be wrong."
+    ),
+}
+AI_LABEL = "AI-generated content"
+
+
+def _refusal(decision: dict) -> str:
+    return f"Refused by policy: {', '.join(decision['reasons'])}."
+
+
+async def _disclose(connection_id: str, decision: dict) -> None:
+    if INTERACTION_NOTICE in notices(decision):
+        await websocket_manager.send_message_to_connection(
+            connection_id,
+            {"type": "notice", "notice": INTERACTION_NOTICE, "content": NOTICES[INTERACTION_NOTICE]},
+        )
+        websocket_manager.disclosures[connection_id].append(INTERACTION_NOTICE)
+
+
+async def _checked_reply(connection_id: str, message_id: str, traceparent: str | None, text: str) -> dict:
+    """The reply as the browser receives it: refused, or carrying the marks the decision asks for."""
+    if not front_door.enabled:
+        return {"content": text}
+    decision = await front_door.decide(
+        "output",
+        websocket_manager.user_tokens.get(connection_id, ""),
+        connection_id,
+        message_id,
+        traceparent or "",
+        text,
+        websocket_manager.disclosures.get(connection_id, []),
+    )
+    if not decision["allowed"]:
+        return {"content": _refusal(decision), "refused": True}
+    await _disclose(connection_id, decision)
+    reply: dict[str, str | bool] = {"content": text}
+    if "ai_generated_content_label" in notices(decision):
+        reply["label"] = AI_LABEL
+    if "synthetic_output_marking" in notices(decision):
+        reply["ai_generated"] = True
+    return reply
 
 
 async def security_context(connection_id: str, token: str | None) -> dict:
@@ -123,6 +170,31 @@ async def _process_user_messages(
                 },
             )
             continue
+
+        token = data.get("token") or ""
+        websocket_manager.user_tokens[connection_id] = token
+        if front_door.enabled:
+            decision = await front_door.decide(
+                "inbound",
+                token,
+                connection_id,
+                message_id,
+                traceparent,
+                content,
+                websocket_manager.disclosures[connection_id],
+            )
+            if not decision["allowed"]:
+                await websocket_manager.send_message_to_connection(
+                    connection_id,
+                    {
+                        "sender": "Policy",
+                        "content": _refusal(decision),
+                        "refused": True,
+                        "type": MessageType.ASSISTANT_MESSAGE.value,
+                    },
+                )
+                continue
+            await _disclose(connection_id, decision)
 
         if GUARDRAILS_ENABLED and toxic_language_guard:
             valid = await toxic_language_guard(content)
@@ -232,6 +304,9 @@ async def handle_human_stream_messages(message: TracedMessage):
         )
 
     elif message_type == MessageType.AGENT_MESSAGE_STREAM_CHUNK.value:
+        # Under the front door a reply reaches the browser only whole, after its output check.
+        if front_door.enabled:
+            return
         chunk = message.data.get("message_chunk", "")
         chunk_index = message.data.get("chunk_index")
         await websocket_manager.send_message_to_connection(
@@ -244,22 +319,20 @@ async def handle_human_stream_messages(message: TracedMessage):
             },
         )
     elif message_type == MessageType.AGENT_MESSAGE_STREAM_END.value:
-        final_content = message.data.get("message", "")
+        reply = await _checked_reply(
+            connection_id, str(message_id), message.traceparent, message.data.get("message", "")
+        )
         websocket_manager.chat_messages[connection_id].append(
             {
                 "role": "assistant",
-                "content": final_content,
+                "content": reply["content"],
                 "agent": agent,
                 "id": str(message_id),
             }
         )
         await websocket_manager.send_message_to_connection(
             connection_id,
-            {
-                "sender": agent,
-                "content": final_content,
-                "type": MessageType.ASSISTANT_MESSAGE_STREAM_END.value,
-            },
+            {"sender": agent, **reply, "type": MessageType.ASSISTANT_MESSAGE_STREAM_END.value},
         )
 
 
@@ -272,11 +345,13 @@ async def handle_human_messages(message: TracedMessage):
     message_id = message.id
 
     if message_type == MessageType.AGENT_MESSAGE.value:
-        content = message.data.get("message")
+        reply = await _checked_reply(
+            connection_id, str(message_id), message.traceparent, message.data.get("message", "")
+        )
         websocket_manager.chat_messages[connection_id].append(
             {
                 "role": "assistant",
-                "content": content,
+                "content": reply["content"],
                 "agent": agent,
                 "id": message_id,
             }
@@ -284,5 +359,5 @@ async def handle_human_messages(message: TracedMessage):
 
         await websocket_manager.send_message_to_connection(
             connection_id,
-            {"sender": agent, "content": content, "type": MessageType.ASSISTANT_MESSAGE.value},
+            {"sender": agent, **reply, "type": MessageType.ASSISTANT_MESSAGE.value},
         )

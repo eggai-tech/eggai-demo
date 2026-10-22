@@ -12,6 +12,8 @@ class WebSocketManager:
         self.message_buffers: dict[str, list] = defaultdict(list)
         self.message_ids: dict[str, str] = defaultdict(str)
         self.chat_messages: dict[str, list] = defaultdict(list)
+        self.user_tokens: dict[str, str] = {}
+        self.disclosures: dict[str, list[str]] = defaultdict(list)
 
     async def connect(self, websocket: WebSocket, connection_id: str) -> str:
         await websocket.accept()
@@ -48,6 +50,8 @@ class WebSocketManager:
                 pass
         self.active_connections.pop(connection_id, None)
         self.chat_messages.pop(connection_id, None)
+        self.user_tokens.pop(connection_id, None)
+        self.disclosures.pop(connection_id, None)
 
     async def send_message_to_connection(
         self, connection_id: str, message_data: dict

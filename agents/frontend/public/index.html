@@ -328,6 +328,14 @@
                 return;
               }
 
+              if (data.type === "notice") {
+                setMessages((prev) => [
+                  ...prev,
+                  { sender: "Notice", text: data.content },
+                ]);
+                return;
+              }
+
               // Handle waiting message (immediate feedback before streaming starts)
               if (
                 data.type === "assistant_message_stream_waiting_message"
@@ -433,6 +441,9 @@
                     sender,
                     text: finalText,
                     id: targetId,
+                    refused: data.refused,
+                    label: data.label,
+                    aiGenerated: data.ai_generated,
                   }]);
 
                   const newState = {};
@@ -453,7 +464,13 @@
                 const content = data.content || "";
                 setMessages((
                   prev,
-                ) => [...prev, { sender, text: content }]);
+                ) => [...prev, {
+                  sender,
+                  text: content,
+                  refused: data.refused,
+                  label: data.label,
+                  aiGenerated: data.ai_generated,
+                }]);
                 // Clear waiting indicators from any sender and entries from this sender
                 setStreamingMessages((prev) => {
                   const newState = {};
@@ -660,6 +677,17 @@
                       </div>
                     );
                   }
+                  if (msg.sender === "Notice") {
+                    return (
+                      <div key={i} className="py-2">
+                        <div className="max-w-7xl mx-auto px-6">
+                          <div className="text-sm text-amber-900 dark:text-amber-100 bg-amber-50 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 rounded-lg px-5 py-3">
+                            {msg.text}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
                   if (msg.sender === "You") {
                     return (
                       <div key={i} className="py-4 fade-in">
@@ -690,9 +718,19 @@
                                   msg.sender}
                               </span>
                             </div>
-                            <div className="max-w-[48rem] text-gray-700 dark:text-gray-300 text-sm leading-relaxed bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-5 py-4">
+                            <div
+                              className={msg.refused
+                                ? "max-w-[48rem] text-red-800 dark:text-red-200 text-sm leading-relaxed bg-red-50 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-lg px-5 py-4"
+                                : "max-w-[48rem] text-gray-700 dark:text-gray-300 text-sm leading-relaxed bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-5 py-4"}
+                              data-ai-generated={msg.aiGenerated ? "true" : undefined}
+                            >
                               <MarkdownContent content={msg.text} />
                             </div>
+                            {msg.label && (
+                              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                {msg.label}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

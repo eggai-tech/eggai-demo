@@ -43,10 +43,25 @@ class RouteSignature(dspy.Signature):
 
 @pytest.mark.parametrize(
     "spelling",
-    ["BillingAgent", "Route.BillingAgent", "Route('BillingAgent')", 'Route("BillingAgent")'],
+    [
+        "BillingAgent",
+        "Route.BillingAgent",
+        "Route('BillingAgent')",
+        'Route("BillingAgent")',
+        "BillingAgent        # note: the value you produce must be one of: BillingAgent; PolicyAgent",
+    ],
 )
 def test_lenient_adapter_accepts_enum_spellings(spelling):
     completion = f"[[ ## route ## ]]\n{spelling}\n\n[[ ## fallback ## ]]\nRoute.PolicyAgent\n\n[[ ## completed ## ]]"
+    parsed = ChatAdapter().parse(RouteSignature, completion)
+    assert parsed["route"] is Route.BillingAgent
+    assert parsed["fallback"] is Route.PolicyAgent
+
+
+def test_lenient_adapter_reads_fields_answered_as_json():
+    completion = (
+        '```json\n{"route": "BillingAgent", "fallback": "PolicyAgent", "completed": true}\n```'
+    )
     parsed = ChatAdapter().parse(RouteSignature, completion)
     assert parsed["route"] is Route.BillingAgent
     assert parsed["fallback"] is Route.PolicyAgent
@@ -145,6 +160,7 @@ class TestTrackingLM:
         mock_settings.language_model = "openai/gpt-4"
         mock_settings.cache_enabled = True
         mock_settings.language_model_api_base = None
+        mock_settings.language_model_api_key_file = "/var/run/secrets/foundry/token"
 
         # Mock TrackingLM by patching the class
         with patch("libraries.ml.dspy.language_model.TrackingLM") as mock_tracking_lm:
@@ -159,6 +175,7 @@ class TestTrackingLM:
             mock_tracking_lm.assert_called_once_with(
                 "openai/gpt-4",
                 cache=True,
+                api_key_file="/var/run/secrets/foundry/token",
                 api_base=None
             )
             configure_kwargs = mock_configure.call_args.kwargs
@@ -214,6 +231,7 @@ class TestTrackingLM:
         mock_settings.language_model = "lm_studio/model"
         mock_settings.cache_enabled = False
         mock_settings.language_model_api_base = "http://localhost:1234/v1"
+        mock_settings.language_model_api_key_file = ""
 
         mock_lm_instance = Mock()
         mock_tracking_lm.return_value = mock_lm_instance
@@ -223,6 +241,7 @@ class TestTrackingLM:
         mock_tracking_lm.assert_called_once_with(
             "lm_studio/model",
             cache=False,
+            api_key_file="",
             api_base="http://localhost:1234/v1"
         )
 

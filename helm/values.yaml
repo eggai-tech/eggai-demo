@@ -20,6 +20,46 @@ extraEnv: []
 # -- envFrom for every agent. The clean way to inject API keys.
 envFrom: []
 
+# -- Agent identity at the AI gateway. Every agent pod runs as its own ServiceAccount
+# (<fullname>-<agent>) and, when enabled, gets a projected token of it for this audience at
+# /var/run/secrets/foundry/token. The agents send it as the bearer on every model and tool call,
+# together with the user's exchanged token, traceparent and run id.
+gatewayIdentity:
+  enabled: false
+  audience: foundry-ai
+  expirationSeconds: 600
+
+# -- The front door's policy decision point: an OPA sidecar in the frontend pod, on 127.0.0.1:8181,
+# that the frontend asks on every user message, every reply and every admin API call. It pulls the
+# signed bundles named here and sends its decision logs to the evidence service.
+frontDoorPolicy:
+  enabled: false
+  image: openpolicyagent/opa:1.21.2-static
+  # Secret with a `token` key for the bundle registry, mounted at /run/opa/registry/token.
+  registryTokenSecret: ""
+  # OPA configuration, rendered as is. For example:
+  #   services:
+  #     registry:
+  #       url: https://ghcr.io
+  #       type: oci
+  #       credentials: {bearer: {token_path: /run/opa/registry/token}}
+  #     containment:
+  #       url: http://containment.example.svc.cluster.local
+  #   bundles:
+  #     policy: {service: registry, resource: ghcr.io/org/foundry-policy-gateway:0.1.0, signing: {keyid: policy}}
+  #     binding: {service: registry, resource: ghcr.io/org/foundry-binding-org:0.1.0, signing: {keyid: binding}}
+  #     containment: {service: containment, resource: /containment, signing: {keyid: containment}}
+  #   keys:
+  #     policy: {algorithm: ES256, key: "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"}
+  services: {}
+  bundles: {}
+  keys: {}
+  # Base URL of the evidence service that receives the decision logs.
+  evidenceUrl: ""
+  resources:
+    limits:   {cpu: "200m", memory: "256Mi"}
+    requests: {cpu: "50m",  memory: "64Mi"}
+
 # -- Links shown in the chat header, name -> URL. List only services that have
 # a route on this cluster. Empty keeps the frontend's compose defaults.
 platformLinks: {}

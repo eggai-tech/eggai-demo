@@ -5,6 +5,7 @@ from pydantic_settings import SettingsConfigDict
 
 from libraries.core import BaseAgentConfig
 from libraries.security.keycloak import Keycloak
+from libraries.security.policy import FrontDoor
 
 
 class Settings(BaseAgentConfig):
@@ -35,6 +36,9 @@ class Settings(BaseAgentConfig):
     api_claims_url: str = Field(default="http://localhost:8003/api/v1")
     api_billing_url: str = Field(default="http://localhost:8004/api/v1")
 
+    # The pod-local OPA's front door decision; empty runs without the policy enforcement point.
+    front_door_policy_url: str = Field(default="")
+
     keycloak_public_url: str = Field(default="")
     keycloak_web_client_id: str = Field(default="insurance-web")
 
@@ -53,3 +57,4 @@ settings = Settings()
 
 SCOPE = "api://insurance-frontend/Chat.ReadWrite"
 keycloak = Keycloak(settings, scope=SCOPE)
+front_door = FrontDoor(settings.front_door_policy_url)

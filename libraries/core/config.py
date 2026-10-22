@@ -7,6 +7,7 @@ class BaseAgentConfig(BaseSettings):
     deployment_namespace: str | None = Field(default=None)
     language_model: str = Field(default="openai/gpt-4o-mini")
     language_model_api_base: str | None = Field(default=None)
+    language_model_api_key_file: str = Field(default="")
     cache_enabled: bool = Field(default=False)
     kafka_bootstrap_servers: str = Field(default="localhost:19092")
     kafka_ca_content: str = Field(default="")
