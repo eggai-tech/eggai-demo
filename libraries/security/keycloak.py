@@ -48,6 +48,7 @@ class Keycloak:
         self.realm = settings.keycloak_realm
         self.client_id = settings.keycloak_client_id
         self.client_secret = settings.keycloak_client_secret
+        self.gateway_audience = settings.gateway_audience
         self.scope = scope
 
     @property
@@ -76,14 +77,14 @@ class Keycloak:
             raise jwt.InvalidTokenError("token missing preferred_username")
         return Caller.from_claims(claims)
 
-    async def exchange(self, token: str, audience: str) -> str:
+    async def exchange(self, token: str, audience: str, scope: str) -> str:
         data = {
             "grant_type": TOKEN_EXCHANGE_GRANT,
             "subject_token": token,
             "subject_token_type": ACCESS_TOKEN_TYPE,
             "requested_token_type": ACCESS_TOKEN_TYPE,
             "audience": audience,
-            "scope": f"{audience}-scope",
+            "scope": scope,
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }
@@ -91,6 +92,13 @@ class Keycloak:
             response = await client.post(self.token_endpoint, data=data)
         response.raise_for_status()
         return response.json()["access_token"]
+
+    async def gateway_token(self, token: str) -> str:
+        if not self.gateway_audience:
+            return ""
+        return await self.exchange(
+            token, self.gateway_audience, f"{self.gateway_audience}-scope {self.client_id}-scope"
+        )
 
 
 def assert_policy_access(policy_number: str) -> str | None:

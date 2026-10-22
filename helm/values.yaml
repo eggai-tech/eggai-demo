@@ -20,14 +20,12 @@ extraEnv: []
 # -- envFrom for every agent. The clean way to inject API keys.
 envFrom: []
 
-# -- Agent identity at the AI gateway. Every agent pod runs as its own ServiceAccount
-# (<fullname>-<agent>) and, when enabled, gets a projected token of it for this audience at
-# /var/run/secrets/foundry/token. The agents send it as the bearer on every model and tool call,
-# together with the user's exchanged token, traceparent and run id.
-gatewayIdentity:
-  enabled: false
-  audience: foundry-ai
-  expirationSeconds: 600
+# -- Agent identity at the AI gateway. When the audience is set, every agent exchanges the user's
+# token with Keycloak for this audience once per run and sends it as the bearer on every model and
+# tool call, with traceparent and run id. Each agent needs its Keycloak client id and secret
+# (<PREFIX>KEYCLOAK_CLIENT_ID, <PREFIX>KEYCLOAK_CLIENT_SECRET) in its environment.
+gateway:
+  audience: ""
 
 # -- The front door's policy decision point: an OPA sidecar in the frontend pod, on 127.0.0.1:8181,
 # that the frontend asks on every user message, every reply and every admin API call. It pulls the

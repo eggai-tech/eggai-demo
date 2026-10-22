@@ -128,7 +128,9 @@
       { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-claims/Claims.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
     { "name": "insurance-escalation-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
       { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "insurance-escalation", "id.token.claim": "false", "access.token.claim": "true" } },
-      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-escalation/Tickets.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] }
+      { "name": "scp", "protocol": "openid-connect", "protocolMapper": "oidc-hardcoded-claim-mapper", "consentRequired": false, "config": { "claim.name": "scp", "claim.value": "api://insurance-escalation/Tickets.ReadWrite", "jsonType.label": "String", "id.token.claim": "false", "access.token.claim": "true", "userinfo.token.claim": "false" } } ] },
+    { "name": "foundry-ai-scope", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" }, "protocolMappers": [
+      { "name": "audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "consentRequired": false, "config": { "included.client.audience": "foundry-ai", "id.token.claim": "false", "access.token.claim": "true" } } ] }
   ],
   "defaultDefaultClientScopes": ["profile", "policy-numbers"],
   "defaultOptionalClientScopes": [],
@@ -164,11 +166,40 @@
       "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": true, "fullScopeAllowed": true,
       "attributes": { "standard.token.exchange.enabled": "true" },
       "defaultClientScopes": ["profile", "policy-numbers"],
-      "optionalClientScopes": ["insurance-policies-scope", "insurance-billing-scope", "insurance-claims-scope", "insurance-escalation-scope"]
+      "optionalClientScopes": ["insurance-triage-scope", "insurance-policies-scope", "insurance-billing-scope", "insurance-claims-scope", "insurance-escalation-scope", "foundry-ai-scope"]
     },
-    { "clientId": "insurance-policies", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] },
-    { "clientId": "insurance-billing", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] },
-    { "clientId": "insurance-claims", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] },
-    { "clientId": "insurance-escalation", "enabled": true, "publicClient": false, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true, "attributes": {}, "defaultClientScopes": ["profile", "policy-numbers"], "optionalClientScopes": [] }
+    {
+      "clientId": "insurance-policies", "enabled": true, "publicClient": false, "secret": "${INSURANCE_POLICIES_CLIENT_SECRET}",
+      "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true,
+      "attributes": { "standard.token.exchange.enabled": "true" },
+      "defaultClientScopes": ["profile", "policy-numbers"],
+      "optionalClientScopes": ["insurance-policies-scope", "foundry-ai-scope"]
+    },
+    {
+      "clientId": "insurance-billing", "enabled": true, "publicClient": false, "secret": "${INSURANCE_BILLING_CLIENT_SECRET}",
+      "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true,
+      "attributes": { "standard.token.exchange.enabled": "true" },
+      "defaultClientScopes": ["profile", "policy-numbers"],
+      "optionalClientScopes": ["insurance-billing-scope", "foundry-ai-scope"]
+    },
+    {
+      "clientId": "insurance-claims", "enabled": true, "publicClient": false, "secret": "${INSURANCE_CLAIMS_CLIENT_SECRET}",
+      "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true,
+      "attributes": { "standard.token.exchange.enabled": "true" },
+      "defaultClientScopes": ["profile", "policy-numbers"],
+      "optionalClientScopes": ["insurance-claims-scope", "foundry-ai-scope"]
+    },
+    {
+      "clientId": "insurance-escalation", "enabled": true, "publicClient": false, "secret": "${INSURANCE_ESCALATION_CLIENT_SECRET}",
+      "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false, "fullScopeAllowed": true,
+      "attributes": { "standard.token.exchange.enabled": "true" },
+      "defaultClientScopes": ["profile", "policy-numbers"],
+      "optionalClientScopes": ["insurance-escalation-scope", "foundry-ai-scope"]
+    },
+    {
+      "clientId": "foundry-ai", "enabled": true, "publicClient": false,
+      "standardFlowEnabled": false, "implicitFlowEnabled": false, "directAccessGrantsEnabled": false, "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false, "attributes": {}, "defaultClientScopes": [], "optionalClientScopes": []
+    }
   ]
 }

@@ -17,7 +17,7 @@ def test_realm_clients():
     assert {c["clientId"] for c in REALM["clients"]} == {
         "insurance-web", "insurance-frontend", "insurance-triage",
         "insurance-policies", "insurance-billing", "insurance-claims", "insurance-escalation",
-        "insurance-grafana",
+        "insurance-grafana", "foundry-ai",
     }
     assert _client("insurance-web")["publicClient"] is True
     assert _client("insurance-web")["redirectUris"] == ["${INSURANCE_WEB_URL}/*"]
@@ -54,6 +54,22 @@ def test_agent_scopes_carry_audience_and_scp():
         mappers = {m["protocolMapper"]: m["config"] for m in _scope(f"insurance-{agent}-scope")["protocolMappers"]}
         assert mappers["oidc-audience-mapper"]["included.client.audience"] == f"insurance-{agent}"
         assert mappers["oidc-hardcoded-claim-mapper"]["claim.value"] == scp
+
+
+def test_agents_exchange_the_user_token_for_the_gateway():
+    gateway = _client("foundry-ai")
+    assert gateway["publicClient"] is False
+    assert not any(gateway[flow] for flow in (
+        "standardFlowEnabled", "implicitFlowEnabled", "directAccessGrantsEnabled", "serviceAccountsEnabled",
+    ))
+    mappers = {m["protocolMapper"]: m["config"] for m in _scope("foundry-ai-scope")["protocolMappers"]}
+    assert mappers["oidc-audience-mapper"]["included.client.audience"] == "foundry-ai"
+    assert mappers["oidc-audience-mapper"]["access.token.claim"] == "true"
+    for agent in ("triage", "policies", "billing", "claims", "escalation"):
+        client = _client(f"insurance-{agent}")
+        assert client["secret"] == f"${{INSURANCE_{agent.upper()}_CLIENT_SECRET}}"
+        assert client["attributes"]["standard.token.exchange.enabled"] == "true"
+        assert {"foundry-ai-scope", f"insurance-{agent}-scope"} <= set(client["optionalClientScopes"])
 
 
 def test_users_and_policies():

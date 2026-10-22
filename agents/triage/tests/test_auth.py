@@ -8,6 +8,7 @@ from agents.triage import agent as agent_mod
 from agents.triage.models import AGENT_REGISTRY, TargetAgent
 from libraries.communication.messaging import MessageType
 from libraries.observability.tracing import TracedMessage
+from libraries.security.gateway import gateway_token
 from libraries.security.keycloak import Caller
 
 
@@ -41,7 +42,9 @@ async def test_publish_to_agent_exchanges_token(monkeypatch):
 
     await agent_mod._publish_to_agent("User: hi\n", TargetAgent.ClaimsAgent, _msg(context), context)
 
-    agent_mod.keycloak.exchange.assert_awaited_once_with("triage-token", "insurance-claims")
+    agent_mod.keycloak.exchange.assert_awaited_once_with(
+        "triage-token", "insurance-claims", "insurance-claims-scope"
+    )
     published = publish.call_args.args[0]
     assert published.data["security_context"]["access_token"] == "claims-token"
     assert published.data["security_context"]["user_id"] == "john"
@@ -97,3 +100,31 @@ async def test_identity_line_prefixes_conversation(monkeypatch):
 
     conversation = route.call_args.args[0]
     assert conversation.startswith("Authenticated customer: John Doe, policies: A12345\n")
+
+
+@pytest.mark.asyncio
+async def test_run_carries_the_gateway_token(monkeypatch):
+    monkeypatch.setattr(agent_mod.keycloak, "url", "http://kc:8080")
+    monkeypatch.setattr(agent_mod.keycloak, "gateway_audience", "foundry-ai")
+    monkeypatch.setattr(agent_mod.keycloak, "client_id", "insurance-triage")
+    monkeypatch.setattr(agent_mod.keycloak, "validate", lambda token: Caller("john", "John Doe", ["A12345"], []))
+    exchange = AsyncMock(return_value="gateway-token")
+    monkeypatch.setattr(agent_mod.keycloak, "exchange", exchange)
+    monkeypatch.setattr(agent_mod, "publish_waiting_message", AsyncMock())
+    monkeypatch.setattr(agent_mod, "_publish_to_agent", AsyncMock())
+    seen = []
+
+    class Result:
+        target_agent = TargetAgent.BillingAgent
+        latency_ms = 1.0
+
+    def classify(chat_history):
+        seen.append(gateway_token())
+        return Result()
+
+    monkeypatch.setattr(agent_mod.current_classifier, "classify", classify)
+
+    await agent_mod.handle_user_message(_msg({"access_token": "triage-token"}))
+
+    exchange.assert_awaited_once_with("triage-token", "foundry-ai", "foundry-ai-scope insurance-triage-scope")
+    assert seen == ["gateway-token"]

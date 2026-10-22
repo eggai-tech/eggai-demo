@@ -160,7 +160,6 @@ class TestTrackingLM:
         mock_settings.language_model = "openai/gpt-4"
         mock_settings.cache_enabled = True
         mock_settings.language_model_api_base = None
-        mock_settings.language_model_api_key_file = "/var/run/secrets/foundry/token"
 
         # Mock TrackingLM by patching the class
         with patch("libraries.ml.dspy.language_model.TrackingLM") as mock_tracking_lm:
@@ -175,7 +174,6 @@ class TestTrackingLM:
             mock_tracking_lm.assert_called_once_with(
                 "openai/gpt-4",
                 cache=True,
-                api_key_file="/var/run/secrets/foundry/token",
                 api_base=None
             )
             configure_kwargs = mock_configure.call_args.kwargs
@@ -231,7 +229,6 @@ class TestTrackingLM:
         mock_settings.language_model = "lm_studio/model"
         mock_settings.cache_enabled = False
         mock_settings.language_model_api_base = "http://localhost:1234/v1"
-        mock_settings.language_model_api_key_file = ""
 
         mock_lm_instance = Mock()
         mock_tracking_lm.return_value = mock_lm_instance
@@ -241,7 +238,6 @@ class TestTrackingLM:
         mock_tracking_lm.assert_called_once_with(
             "lm_studio/model",
             cache=False,
-            api_key_file="",
             api_base="http://localhost:1234/v1"
         )
 

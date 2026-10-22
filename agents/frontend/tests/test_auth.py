@@ -36,7 +36,7 @@ async def test_security_context_exchanges_for_triage(enabled, monkeypatch):
     ctx = await agent_mod.security_context("conn", "browser-token")
     assert ctx["user_id"] == "john"
     assert ctx["access_token"] == "obo-token"
-    enabled.exchange.assert_awaited_once_with("browser-token", "insurance-triage")
+    enabled.exchange.assert_awaited_once_with("browser-token", "insurance-triage", "insurance-triage-scope")
 
 
 @pytest.mark.asyncio
@@ -80,7 +80,7 @@ def test_proxy_forwards_exchanged_token(enabled, monkeypatch):
     response = TestClient(main_mod.api).get("/api/billing/billing", headers={"Authorization": "Bearer t"})
 
     assert response.status_code == 200
-    enabled.exchange.assert_awaited_once_with("t", "insurance-billing")
+    enabled.exchange.assert_awaited_once_with("t", "insurance-billing", "insurance-billing-scope")
     assert upstream.call_args.kwargs["headers"]["authorization"] == "Bearer obo-token"
 
 

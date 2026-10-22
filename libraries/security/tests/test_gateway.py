@@ -5,7 +5,7 @@ import pytest
 
 from libraries.ml.dspy.language_model import TrackingLM
 from libraries.observability.tracing import TracedMessage
-from libraries.security.gateway import Run, run_headers, run_var
+from libraries.security.gateway import Run, gateway_token, run_headers, run_var
 from libraries.security.handler import authenticate
 from libraries.security.keycloak import Keycloak
 
@@ -14,7 +14,7 @@ TRACEPARENT = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 
 @pytest.fixture
 def run():
-    token = run_var.set(Run("user-token", TRACEPARENT, "msg-1"))
+    token = run_var.set(Run("gateway-token", TRACEPARENT, "msg-1"))
     yield
     run_var.reset(token)
 
@@ -26,39 +26,36 @@ def _completion(**kwargs):
     )
 
 
-def test_run_headers_without_run():
+def test_without_run():
     assert run_headers() == {}
+    assert gateway_token() == ""
 
 
-def test_llm_call_reads_token_file_per_call_and_sends_run_headers(run, tmp_path, monkeypatch):
-    token_file = tmp_path / "token"
-    completion = MagicMock(side_effect=_completion)
-    monkeypatch.setattr(litellm, "completion", completion)
-    lm = TrackingLM("openai/insurance", cache=False, api_key_file=str(token_file))
-
-    token_file.write_text("sa-token-1\n")
-    lm.forward(messages=[{"role": "user", "content": "hello"}])
-    token_file.write_text("sa-token-2\n")
-    lm.forward(messages=[{"role": "user", "content": "hello"}])
-
-    first, second = (c.kwargs for c in completion.call_args_list)
-    assert first["api_key"] == "sa-token-1"
-    assert second["api_key"] == "sa-token-2"
-    assert {
-        "x-foundry-user-token": "user-token",
-        "traceparent": TRACEPARENT,
-        "x-foundry-run": "msg-1",
-    }.items() <= second["headers"].items()
+def test_run_headers_are_trace_and_run_only(run):
+    assert run_headers() == {"traceparent": TRACEPARENT, "x-foundry-run": "msg-1"}
 
 
-def test_llm_call_without_token_file_keeps_environment_key(run, monkeypatch):
+def test_llm_call_sends_gateway_token_and_run_headers(run, monkeypatch):
     completion = MagicMock(side_effect=_completion)
     monkeypatch.setattr(litellm, "completion", completion)
 
     TrackingLM("openai/insurance", cache=False).forward(messages=[{"role": "user", "content": "hello"}])
 
+    kwargs = completion.call_args.kwargs
+    assert kwargs["api_key"] == "gateway-token"
+    assert {"traceparent": TRACEPARENT, "x-foundry-run": "msg-1"}.items() <= kwargs["headers"].items()
+
+
+def test_llm_call_without_gateway_token_keeps_environment_key(monkeypatch):
+    completion = MagicMock(side_effect=_completion)
+    monkeypatch.setattr(litellm, "completion", completion)
+    token = run_var.set(Run("", TRACEPARENT, "msg-1"))
+
+    TrackingLM("openai/insurance", cache=False).forward(messages=[{"role": "user", "content": "hello"}])
+    run_var.reset(token)
+
     assert "api_key" not in completion.call_args.kwargs
-    assert "x-foundry-user-token" not in completion.call_args.kwargs["headers"]
+    assert "x-foundry-run" not in completion.call_args.kwargs["headers"]
 
 
 class Settings:
@@ -66,15 +63,47 @@ class Settings:
     keycloak_realm = "insurance"
     keycloak_client_id = "insurance-billing"
     keycloak_client_secret = ""
+    gateway_audience = ""
 
 
-@pytest.mark.asyncio
-async def test_authenticate_binds_the_run():
-    msg = TracedMessage(
+class RecordingKeycloak(Keycloak):
+    def __init__(self, settings):
+        super().__init__(settings, scope="")
+        self.exchanges = []
+
+    async def exchange(self, token: str, audience: str, scope: str) -> str:
+        self.exchanges.append((token, audience, scope))
+        return f"exchanged-{token}"
+
+
+def _message():
+    return TracedMessage(
         type="billing_request",
         source="Triage",
         data={"message_id": "msg-7", "security_context": {"access_token": "obo"}},
         traceparent=TRACEPARENT,
     )
-    assert await authenticate(Keycloak(Settings(), scope=""), msg, AsyncMock(), "Billing", "conn-1")
-    assert run_var.get() == Run("obo", TRACEPARENT, "msg-7")
+
+
+@pytest.mark.asyncio
+async def test_authenticate_exchanges_the_user_token_for_the_gateway():
+    class WithGateway(Settings):
+        gateway_audience = "foundry-ai"
+
+    keycloak = RecordingKeycloak(WithGateway())
+    assert await authenticate(keycloak, _message(), AsyncMock(), "Billing", "conn-1")
+
+    assert keycloak.exchanges == [("obo", "foundry-ai", "foundry-ai-scope insurance-billing-scope")]
+    assert run_var.get() == Run("exchanged-obo", TRACEPARENT, "msg-7")
+    assert gateway_token() == "exchanged-obo"
+    assert run_headers() == {"traceparent": TRACEPARENT, "x-foundry-run": "msg-7"}
+
+
+@pytest.mark.asyncio
+async def test_authenticate_without_gateway_audience_does_not_exchange():
+    keycloak = RecordingKeycloak(Settings())
+    assert await authenticate(keycloak, _message(), AsyncMock(), "Billing", "conn-1")
+
+    assert keycloak.exchanges == []
+    assert gateway_token() == ""
+    assert run_var.get() == Run("", TRACEPARENT, "msg-7")

@@ -53,11 +53,14 @@ async def test_triage_token_is_rejected_by_billing():
         keycloak_realm = "insurance"
         keycloak_client_id = "insurance-frontend"
         keycloak_client_secret = "dev-frontend-secret"
+        gateway_audience = ""
 
     class Billing(Frontend):
         keycloak_client_id = "insurance-billing"
         keycloak_client_secret = ""
 
-    triage_token = await Keycloak(Frontend(), scope="").exchange(login("john"), "insurance-triage")
+    triage_token = await Keycloak(Frontend(), scope="").exchange(
+        login("john"), "insurance-triage", "insurance-triage-scope"
+    )
     with pytest.raises(jwt.InvalidTokenError):
         Keycloak(Billing(), scope="api://insurance-billing/Billing.ReadWrite").validate(triage_token)

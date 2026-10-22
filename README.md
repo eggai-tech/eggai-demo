@@ -170,6 +170,12 @@ Grafana logs in through the same realm (client `insurance-grafana`, secret
 `insurance-admin`, `john` and `jane` are `Viewer`. On kind, the local
 `admin`/`admin` stays usable for the Grafana HTTP API over basic auth.
 
+Behind an AI gateway, set `<PREFIX>GATEWAY_AUDIENCE=foundry-ai` (chart value
+`gateway.audience`): each agent then exchanges the user's token for that
+audience once per run, with its own client secret
+(`<PREFIX>KEYCLOAK_CLIENT_SECRET`), and sends it as the bearer on every model
+and MCP call.
+
 Realm edits in `keycloak/realm-export.json` do not re-import into an
 already-running Keycloak. To pick them up:
 

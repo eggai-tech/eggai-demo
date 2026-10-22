@@ -21,7 +21,6 @@ lm = dspy_set_language_model(
         language_model=settings.language_model,
         cache_enabled=False,  # Disable cache for tests to get accurate token counts
         language_model_api_base=settings.language_model_api_base,
-        language_model_api_key_file="",
     )
 )
 

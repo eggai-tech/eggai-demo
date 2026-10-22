@@ -16,17 +16,16 @@ async def authenticate(
 ) -> bool:
     caller_var.set(None)
     token = (msg.data.get("security_context") or {}).get("access_token", "")
-    run_var.set(Run(token, msg.traceparent or "", msg.data["message_id"]))
-    if not keycloak.enabled:
-        return True
-    try:
-        caller_var.set(keycloak.validate(token))
-    except jwt.PyJWTError as e:
-        logger.warning(f"Authentication failed for {connection_id}: {e}")
-        await publish_error_message(
-            human_channel, agent_name, connection_id,
-            message=f"Authentication failed: {e}",
-            traceparent=msg.traceparent, tracestate=msg.tracestate,
-        )
-        return False
+    if keycloak.enabled:
+        try:
+            caller_var.set(keycloak.validate(token))
+        except jwt.PyJWTError as e:
+            logger.warning(f"Authentication failed for {connection_id}: {e}")
+            await publish_error_message(
+                human_channel, agent_name, connection_id,
+                message=f"Authentication failed: {e}",
+                traceparent=msg.traceparent, tracestate=msg.tracestate,
+            )
+            return False
+    run_var.set(Run(await keycloak.gateway_token(token), msg.traceparent or "", msg.data["message_id"]))
     return True

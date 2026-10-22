@@ -13,7 +13,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 from libraries.observability.logger import get_console_logger
-from libraries.security.gateway import run_headers, service_token
+from libraries.security.gateway import gateway_token, run_headers
 from libraries.security.keycloak import assert_policy_access
 
 logger = get_console_logger("policies_agent.tools.mcp")
@@ -23,7 +23,7 @@ TOOL_NAME = (
 )
 
 
-async def lookup(url: str, token_file: str, policy_number: str) -> str:
+async def lookup(url: str, policy_number: str) -> str:
     refusals: list[str] = []
 
     async def capture(response: httpx.Response) -> None:
@@ -36,8 +36,8 @@ async def lookup(url: str, token_file: str, policy_number: str) -> str:
             headers=headers, timeout=timeout, auth=auth, event_hooks={"response": [capture]}
         )
 
-    # The same credentials the agent's model calls carry: its ServiceAccount token and the run.
-    headers = {"Authorization": f"Bearer {service_token(token_file)}", **run_headers()}
+    # The same credentials the agent's model calls carry: the run's gateway token and the run.
+    headers = {"Authorization": f"Bearer {gateway_token()}", **run_headers()}
     try:
         async with streamablehttp_client(url, headers=headers, httpx_client_factory=client) as (
             read,
@@ -57,7 +57,7 @@ async def lookup(url: str, token_file: str, policy_number: str) -> str:
         return f"Tool call refused by the policy gateway: {refusals[0]}"
 
 
-def mcp_policy_lookup(url: str, token_file: str) -> Callable[[str], str]:
+def mcp_policy_lookup(url: str) -> Callable[[str], str]:
     def get_personal_policy_details(policy_number: str) -> str:
         """
         Retrieve specific policy details from database using policy number.
@@ -68,6 +68,6 @@ def mcp_policy_lookup(url: str, token_file: str) -> Callable[[str], str]:
         if denied:
             return denied
         logger.info(f"Looking up policy '{policy_number}' over MCP at {url}")
-        return asyncio.run(lookup(url, token_file, policy_number))
+        return asyncio.run(lookup(url, policy_number))
 
     return get_personal_policy_details

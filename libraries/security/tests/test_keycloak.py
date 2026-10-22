@@ -14,6 +14,7 @@ class Settings:
     keycloak_realm = "insurance"
     keycloak_client_id = "insurance-triage"
     keycloak_client_secret = "secret"
+    gateway_audience = ""
 
 
 SCOPE = "api://insurance-triage/Route.ReadWrite"
@@ -86,7 +87,7 @@ def test_disabled_without_url():
 
 
 @pytest.mark.asyncio
-async def test_exchange_posts_token_exchange_grant(monkeypatch):
+async def test_exchange_posts_token_exchange_grant_with_the_given_scope(monkeypatch):
     seen = {}
 
     def handler(request):
@@ -101,7 +102,9 @@ async def test_exchange_posts_token_exchange_grant(monkeypatch):
         lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
     )
 
-    token = await kc.Keycloak(Settings(), scope=SCOPE).exchange("user-token", "insurance-billing")
+    token = await kc.Keycloak(Settings(), scope=SCOPE).exchange(
+        "user-token", "insurance-billing", "insurance-billing-scope extra-scope"
+    )
 
     assert token == "obo-token"
     assert seen["url"] == "http://kc:8080/realms/insurance/protocol/openid-connect/token"
@@ -111,7 +114,7 @@ async def test_exchange_posts_token_exchange_grant(monkeypatch):
         "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
         "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
         "audience": "insurance-billing",
-        "scope": "insurance-billing-scope",
+        "scope": "insurance-billing-scope extra-scope",
         "client_id": "insurance-triage",
         "client_secret": "secret",
     }
@@ -128,7 +131,7 @@ async def test_exchange_raises_on_error(monkeypatch):
         ),
     )
     with pytest.raises(httpx.HTTPStatusError):
-        await kc.Keycloak(Settings(), scope=SCOPE).exchange("bad", "insurance-billing")
+        await kc.Keycloak(Settings(), scope=SCOPE).exchange("bad", "insurance-billing", "insurance-billing-scope")
 
 
 def test_caller_to_context():

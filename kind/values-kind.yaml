@@ -35,13 +35,17 @@ agents:
       requests: { cpu: "500m", memory: "1Gi" }
     environment:
       - { name: POLICIES_KEYCLOAK_CLIENT_ID, value: insurance-policies }
+      - { name: POLICIES_KEYCLOAK_CLIENT_SECRET, value: dev-policies-secret }
   billing:
     environment:
       - { name: BILLING_KEYCLOAK_CLIENT_ID, value: insurance-billing }
+      - { name: BILLING_KEYCLOAK_CLIENT_SECRET, value: dev-billing-secret }
   claims:
     environment:
       - { name: CLAIMS_KEYCLOAK_CLIENT_ID, value: insurance-claims }
+      - { name: CLAIMS_KEYCLOAK_CLIENT_SECRET, value: dev-claims-secret }
   escalation:
     environment:
       - { name: ESCALATION_KEYCLOAK_CLIENT_ID, value: insurance-escalation }
+      - { name: ESCALATION_KEYCLOAK_CLIENT_SECRET, value: dev-escalation-secret }
   policiesDocumentIngestion: {enabled: false}
