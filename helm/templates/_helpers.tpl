@@ -51,14 +51,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+ServiceAccount of one agent, <fullname>-<label>: the workload identity the AI gateway reviews.
+Usage: include "eggai-multi-agent-chat.serviceAccountName" (dict "root" $ "agent" $name)
 */}}
 {{- define "eggai-multi-agent-chat.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "eggai-multi-agent-chat.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
+{{- $meta := include "eggai-multi-agent-chat.agentMeta" .agent | fromJson -}}
+{{- printf "%s-%s" (include "eggai-multi-agent-chat.fullname" .root) $meta.label | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*
@@ -113,6 +111,14 @@ Usage: include "eggai-multi-agent-chat.agentEnv" (dict "root" $ "agent" $name)
 - name: FRONTEND_PLATFORM_LINKS
   value: {{ join "," $links | quote }}
 {{- end }}
+{{- end }}
+{{- if $root.Values.gatewayIdentity.enabled }}
+- name: {{ $prefix }}LANGUAGE_MODEL_API_KEY_FILE
+  value: /var/run/secrets/foundry/token
+{{- end }}
+{{- if and (eq .agent "frontend") $root.Values.frontDoorPolicy.enabled }}
+- name: FRONTEND_FRONT_DOOR_POLICY_URL
+  value: http://127.0.0.1:8181/v1/data/foundry/frontdoor/decision
 {{- end }}
 {{- if $root.Values.monitoring.enabled }}
 - name: {{ $prefix }}PROMETHEUS_METRICS_PORT

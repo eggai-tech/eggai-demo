@@ -24,6 +24,7 @@ from libraries.observability.tracing import (
     traced_handler,
 )
 from libraries.observability.tracing.otel import safe_set_attribute
+from libraries.security.gateway import Run, run_var
 from libraries.security.keycloak import identity_line
 
 AGENT_NAME = AgentName.TRIAGE
@@ -133,6 +134,7 @@ async def handle_user_message(msg: TracedMessage) -> None:
         return
 
     security_context: dict = msg.data.get("security_context") or {}
+    run_var.set(Run(security_context.get("access_token", ""), msg.traceparent or "", str(msg.id)))
     if keycloak.enabled:
         try:
             caller = keycloak.validate(security_context.get("access_token", ""))

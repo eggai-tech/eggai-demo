@@ -36,6 +36,7 @@ def _msg(token):
         data={
             "chat_messages": [{"role": "user", "content": "I need a manager"}],
             "connection_id": "conn-1",
+            "message_id": "msg-1",
             "security_context": {"access_token": token},
         },
     )
