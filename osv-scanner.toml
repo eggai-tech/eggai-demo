@@ -8,18 +8,3 @@
 # Every entry MUST have a reason and an ignoreUntil date. When the date passes
 # the scanner reports the vulnerability again, forcing a re-evaluation.
 # Ignores are matched by alias too, so one id per advisory is enough.
-
-[[IgnoredVulns]]
-id = "PYSEC-2026-2132"              # CVE-2026-7246 / GHSA-47fr-3ffg-hgmw
-ignoreUntil = 2026-11-10
-reason = """
-click <=8.3.2: command injection via click.edit().
-
-Not reachable: no first-party code imports click or calls click.edit(). click is
-pulled in transitively by litellm, mlflow, guardrails-ai and typer, none of which
-this project invokes as a CLI.
-
-Cannot upgrade: guardrails-ai 0.10.2 (latest) pins click<=8.2.0, so the fixed
-8.3.3 cannot be resolved while guardrails-ai is a dependency.
-Revisit when guardrails-ai relaxes its click pin.
-"""

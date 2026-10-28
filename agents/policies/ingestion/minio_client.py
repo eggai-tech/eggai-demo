@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import aioboto3
+from aiobotocore.session import get_session
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class MinIOClient:
         self.access_key = access_key or os.getenv("MINIO_ACCESS_KEY", "user")
         self.secret_key = secret_key or os.getenv("MINIO_SECRET_KEY", "password")
         self.bucket_name = bucket_name
-        self.session = aioboto3.Session()
+        self.session = get_session()
 
     async def __aenter__(self):
         return self
@@ -43,10 +43,10 @@ class MinIOClient:
         pass
 
     def _get_client(self) -> Any:
-        # aioboto3's dynamically-generated client type isn't stubbed, so
+        # aiobotocore's dynamically-generated client type isn't stubbed, so
         # pyright can't see that the returned context manager implements
         # __aenter__/__aexit__ (it does, at runtime).
-        return self.session.client(
+        return self.session.create_client(
             's3',
             endpoint_url=self.endpoint_url,
             aws_access_key_id=self.access_key,
