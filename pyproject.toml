@@ -44,7 +44,7 @@ dependencies = [
     "sentence-transformers>=4.0.2",
 
     # ML & LLM
-    "litellm>=1.84.0",
+    "litellm>=1.100.4",
     "transformers[torch]>=4.51.3",
     "peft>=0.14.0",
     "datasets>=3.3.2",
@@ -55,8 +55,8 @@ dependencies = [
     "numpy>=2.2.4",
 
     # MLflow & experiment tracking
-    "mlflow>=3.11.0",
-    "aioboto3>=13.3.0",
+    "mlflow>=3.17.2",
+    "aiobotocore>=3.10.0",
 
     # Observability
     "openlit>=1.33.21",
@@ -121,6 +121,9 @@ constraint-dependencies = [
     "lxml>=6.1.0",           # CVE-2026-41066
     "pyarrow>=23.0.1",       # CVE-2026-25087
     "sqlparse>=0.6.0",       # CVE-2026-59893, CVE-2026-59894, CVE-2026-54284
+    "pillow>=13.0.0",        # 41 Pillow advisories, 5 critical (GHSA-8g5g-8vmr-9782, GHSA-w889-685w-c8fh, ...)
+    "opentelemetry-api>=1.45.1",  # CVE-2026-114603
+    "filelock>=4.2.1",       # CVE-2026-112940, CVE-2026-112913, CVE-2026-112907; caps litellm below 1.104 (filelock<4)
 ]
 
 dev-dependencies = [
