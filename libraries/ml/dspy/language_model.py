@@ -19,23 +19,27 @@ class ChatAdapter(dspy.ChatAdapter):
 
     Kept under the name ChatAdapter because dspy's StreamListener dispatches on the adapter class name.
     dspy asks the model for "a valid Python TargetAgent" and Llama-3.3 obliges with
-    ``TargetAgent.BillingAgent`` or ``TargetAgent('BillingAgent')``; gemma-3-4b repeats the prompt's
-    ``# note: the value you produce must be one of: ...`` after the member. dspy only accepts the bare member.
-    gemma-3-4b also answers with the output fields as one JSON object now and then; that is read as JSON,
-    without asking the model again.
+    ``TargetAgent.BillingAgent`` or ``TargetAgent('BillingAgent')``; dspy only accepts the bare member.
+    gemma-3-4b repeats the prompt's ``# note: the value you produce must ...`` or its own ``# comment`` after
+    a value, and writes ``NoneType`` or the field's JSON schema where it means None. It also answers with the
+    output fields as one JSON object now and then, keys sometimes still in ``[[ ## field ## ]]``; that is read
+    as JSON, without asking the model again.
     """
 
     def __init__(self, **kwargs):
         super().__init__(use_json_adapter_fallback=False, **kwargs)
 
     def parse(self, signature, completion):
+        completion = re.sub(r"[ \t]{2,}#[^\n]*", "", completion)
+        completion = re.sub(r'\{"anyOf":[^\n]*\}\n(?=[^\n\[])', "", completion)
+        completion = re.sub(r'"\[\[ ## (\w+) ## \]\]"', r'"\1"', completion)
+        completion = re.sub(r'\bNoneType\b|\{"anyOf":[^\n]*\}', "None", completion)
         for field in signature.output_fields.values():
             for enum_type in _enum_types(field.annotation):
                 names = "|".join(map(re.escape, enum_type.__members__))
                 completion = re.sub(
                     rf"{enum_type.__name__}(?:\.|\(['\"]?)({names})['\"]?\)?", r"\1", completion
                 )
-                completion = re.sub(rf"\b({names})[ \t]+# note:[^\n]*", r"\1", completion)
         try:
             return super().parse(signature, completion)
         except AdapterParseError:
