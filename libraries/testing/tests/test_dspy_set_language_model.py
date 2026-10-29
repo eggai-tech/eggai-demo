@@ -1,6 +1,7 @@
 """Tests for DSPy language model configuration."""
 
 import enum
+from typing import Literal
 from unittest.mock import Mock, patch
 
 import dspy
@@ -65,6 +66,36 @@ def test_lenient_adapter_reads_fields_answered_as_json():
     parsed = ChatAdapter().parse(RouteSignature, completion)
     assert parsed["route"] is Route.BillingAgent
     assert parsed["fallback"] is Route.PolicyAgent
+
+
+class CategorySignature(dspy.Signature):
+    question: str = dspy.InputField()
+    category: Literal["auto", "home"] | None = dspy.OutputField()
+    reference: str | None = dspy.OutputField()
+
+
+SCHEMA = '{"anyOf": [{"type": "string", "enum": ["auto", "home"]}, {"type": "null"}]}'
+
+
+@pytest.mark.parametrize(
+    "category, reference, expected",
+    [
+        (f"home        # note: the value you produce must adhere to the JSON schema: {SCHEMA}", "NoneType", "home"),
+        ("home        # The policy category is home based on the observation.", "None", "home"),
+        (SCHEMA, "NoneType", None),
+        (f"{SCHEMA}\nhome", "None", "home"),
+    ],
+)
+def test_lenient_adapter_strips_echoed_notes_and_schemas(category, reference, expected):
+    completion = f"[[ ## category ## ]]\n{category}\n[[ ## reference ## ]]\n{reference}\n\n[[ ## completed ## ]]"
+    parsed = ChatAdapter().parse(CategorySignature, completion)
+    assert parsed["category"] == expected
+
+
+def test_lenient_adapter_reads_json_keyed_by_field_markers():
+    completion = f'```json\n{{"[[ ## category ## ]]": {SCHEMA},\n"[[ ## reference ## ]]": "Section 3.1"}}\n```'
+    parsed = ChatAdapter().parse(CategorySignature, completion)
+    assert parsed == {"category": None, "reference": "Section 3.1"}
 
 
 def test_lenient_adapter_still_rejects_unknown_members():
