@@ -26,5 +26,5 @@ async def test_lookup_sends_gateway_token_and_run_headers(monkeypatch):
     run_var.reset(token)
 
     assert sent == [
-        {"Authorization": "Bearer gateway-token", "traceparent": TRACEPARENT, "x-foundry-run": "msg-1"}
+        {"Authorization": "Bearer gateway-token", "traceparent": TRACEPARENT, "x-eggai-foundry-run": "msg-1"}
     ]

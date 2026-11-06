@@ -32,7 +32,7 @@ def test_without_run():
 
 
 def test_run_headers_are_trace_and_run_only(run):
-    assert run_headers() == {"traceparent": TRACEPARENT, "x-foundry-run": "msg-1"}
+    assert run_headers() == {"traceparent": TRACEPARENT, "x-eggai-foundry-run": "msg-1"}
 
 
 def test_llm_call_sends_gateway_token_and_run_headers(run, monkeypatch):
@@ -43,7 +43,7 @@ def test_llm_call_sends_gateway_token_and_run_headers(run, monkeypatch):
 
     kwargs = completion.call_args.kwargs
     assert kwargs["api_key"] == "gateway-token"
-    assert {"traceparent": TRACEPARENT, "x-foundry-run": "msg-1"}.items() <= kwargs["headers"].items()
+    assert {"traceparent": TRACEPARENT, "x-eggai-foundry-run": "msg-1"}.items() <= kwargs["headers"].items()
 
 
 def test_llm_call_without_gateway_token_keeps_environment_key(monkeypatch):
@@ -55,7 +55,7 @@ def test_llm_call_without_gateway_token_keeps_environment_key(monkeypatch):
     run_var.reset(token)
 
     assert "api_key" not in completion.call_args.kwargs
-    assert "x-foundry-run" not in completion.call_args.kwargs["headers"]
+    assert "x-eggai-foundry-run" not in completion.call_args.kwargs["headers"]
 
 
 class Settings:
@@ -96,7 +96,7 @@ async def test_authenticate_exchanges_the_user_token_for_the_gateway():
     assert keycloak.exchanges == [("obo", "foundry-ai", "foundry-ai-scope insurance-billing-scope")]
     assert run_var.get() == Run("exchanged-obo", TRACEPARENT, "msg-7")
     assert gateway_token() == "exchanged-obo"
-    assert run_headers() == {"traceparent": TRACEPARENT, "x-foundry-run": "msg-7"}
+    assert run_headers() == {"traceparent": TRACEPARENT, "x-eggai-foundry-run": "msg-7"}
 
 
 @pytest.mark.asyncio

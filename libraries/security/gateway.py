@@ -25,4 +25,4 @@ def run_headers() -> dict[str, str]:
     run = run_var.get()
     if run is None:
         return {}
-    return {"traceparent": run.traceparent, "x-foundry-run": run.run_id}
+    return {"traceparent": run.traceparent, "x-eggai-foundry-run": run.run_id}
